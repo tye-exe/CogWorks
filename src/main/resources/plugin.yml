@@ -1,0 +1,21 @@
+name: FileManager
+version: '${version}'
+main: me.tye.filemanager.FileManager
+api-version: '1.20'
+load: STARTUP
+
+commands:
+  plugin:
+    usage: /<command> <install/remove> <install:pluginName/Url remove:pluginName>
+    description: The base command for installing or removing plugins from the server.
+    permission: plugin
+  file:
+    usage: /<command>
+    description: The command starts a terminal like state in chat for the user to navigate around the file system in and to edit files.
+    permission: file
+
+permissions:
+  plugin:
+    default: op
+  file:
+    default: op
