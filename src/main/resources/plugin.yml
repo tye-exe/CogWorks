@@ -11,7 +11,7 @@ commands:
     permission: plugin
   file:
     usage: /<command>
-    description: The command starts a terminal like state in chat for the user to navigate around the file system in and to edit files.
+    description: The command allows the user to navigate around the file system and to edit files.
     permission: file
 
 permissions:
