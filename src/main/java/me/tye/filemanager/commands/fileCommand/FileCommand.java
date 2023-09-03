@@ -27,7 +27,7 @@ public class FileCommand implements CommandExecutor {
         if (args.length == 1 && args[0].equals("help")) {
             sender.sendMessage(ChatColor.GREEN+"/file help - Shows this list.\n" +
                     "/file chat - (WIP) Turns your chat into a mock command line which lets you interact with files on the server.\n" +
-                    "/file gui - (WIP) Opens an inventory that lets you interact with the files on the server visually.");
+                    "/file gui - Opens an inventory that lets you interact with the files on the server visually.");
 
         } else if (args.length == 1 && args[0].equals("chat")) {
             String serverFolder = Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
