@@ -92,7 +92,7 @@ public class ChatEvent implements Listener {
                     } else if (compatibleFiles.size() == 1) {
                         JsonObject jo = compatibleFiles.get(0).getAsJsonObject();
                         JsonArray files = jo.get("files").getAsJsonArray();
-                        installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), true, files, sender);
+                        installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), true, files, sender, false);
                         return;
                     } else {
                         sender.sendMessage(ChatColor.GREEN+"Send the number corresponding to the plugin to install it in chat, or send q to quit.");
@@ -138,7 +138,7 @@ public class ChatEvent implements Listener {
 
                     JsonObject jo = chooseableFiles.get(chosenVersion-1);
                     JsonArray files = jo.get("files").getAsJsonArray();
-                    installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), true, files, sender);
+                    installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), true, files, sender, false);
                     return;
                 }
                 if (modifier.equals("ConfirmDependencies")) {
@@ -163,7 +163,7 @@ public class ChatEvent implements Listener {
 
                     if (installDependencies) {
                         sender.sendMessage(ChatColor.GREEN + "Installing required dependencies...");
-                        installModrinthDependencies(dependencies, false, null, sender);
+                        installModrinthDependencies(dependencies, false, null, sender, false);
                         sender.sendMessage(ChatColor.GREEN + "Finished installing required dependencies.");
                     } else {
                         sender.sendMessage(ChatColor.GREEN + "Skipping required dependencies.");
@@ -229,7 +229,7 @@ public class ChatEvent implements Listener {
     }
 
 
-    public static void installModrinthDependencies(JsonArray dependencies, boolean confirmDependencyInstallation, JsonArray files, CommandSender sender) {
+    public static void installModrinthDependencies(JsonArray dependencies, boolean confirmDependencyInstallation, JsonArray files, CommandSender sender, boolean recursion) {
 
         //TODO: needs to check if file is already installed
 
@@ -253,18 +253,20 @@ public class ChatEvent implements Listener {
         }
 
         if (projects.isEmpty() && versions.isEmpty()) {
-            sender.sendMessage(ChatColor.GREEN + "Installing plugin(s)...");
-            for (JsonElement je : files) {
-                JsonObject file = je.getAsJsonObject();
-                try {
-                    installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false, sender);
-                } catch (MalformedURLException e) {
-                    sender.sendMessage(ChatColor.YELLOW + "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
+            if (!recursion) {
+                sender.sendMessage(ChatColor.GREEN + "Installing plugin(s)...");
+                for (JsonElement je : files) {
+                    JsonObject file = je.getAsJsonObject();
+                    try {
+                        installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false, sender);
+                    } catch (MalformedURLException e) {
+                        sender.sendMessage(ChatColor.YELLOW + "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
+                    }
                 }
+                sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
+                responses.clear();
+                params.clear();
             }
-            sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
-            responses.clear();
-            params.clear();
             return;
         }
 
@@ -388,7 +390,7 @@ public class ChatEvent implements Listener {
             }
             JsonObject jo = ja.get(0).getAsJsonObject();
             JsonArray dependencyFiles = jo.get("files").getAsJsonArray();
-            installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), false, null, sender);
+            installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), false, dependencyFiles, sender, true);
 
             for (JsonElement je : dependencyFiles) {
                 JsonObject file = je.getAsJsonObject();
