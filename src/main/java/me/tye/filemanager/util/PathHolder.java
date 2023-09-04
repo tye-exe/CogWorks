@@ -13,9 +13,16 @@ public class PathHolder {
         this.currentPath = currentPath;
     }
 
+    /**
+     * @return Path to the server folder.
+     */
     public String getServerPath() {
         return serverPath;
     }
+
+    /**
+     * @return Full path to current file.
+     */
     public String getCurrentPath() {
         //guards against people trying to go higher in the file system
         String trueServerPath = Path.of(serverPath).normalize().toString();
@@ -24,6 +31,9 @@ public class PathHolder {
         else return trueServerPath;
     }
 
+    /**
+     * @return Sets the current path to teh given string.
+     */
     public void setCurrentPath(String currentPath) {
         //guards against people trying to go higher in the file system
         String trueServerPath = Path.of(serverPath).normalize().toString();
@@ -32,6 +42,9 @@ public class PathHolder {
         else this.currentPath = trueServerPath;
     }
 
+    /**
+     * @return The current path, with the path to the server removed from the start.
+     */
     public String getRelativePath() {
         return getCurrentPath().substring(getServerPath().length()) + File.separator;
     }
