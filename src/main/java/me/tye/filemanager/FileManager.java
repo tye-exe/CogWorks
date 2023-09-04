@@ -1,10 +1,8 @@
 package me.tye.filemanager;
 
+import me.tye.filemanager.commands.FileCommand;
 import me.tye.filemanager.commands.PluginCommand;
 import me.tye.filemanager.commands.TabComplete;
-import me.tye.filemanager.commands.fileCommand.FileCommand;
-import me.tye.filemanager.commands.fileCommand.FileGui;
-import me.tye.filemanager.events.ChatEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -27,7 +25,7 @@ public final class FileManager extends JavaPlugin {
         getCommand("file").setTabCompleter(new TabComplete());
 
         //Listeners
-        getServer().getPluginManager().registerEvents(new ChatEvent(), this);
+        getServer().getPluginManager().registerEvents(new ChatManager(), this);
         getServer().getPluginManager().registerEvents(new FileGui(), this);
 
     }

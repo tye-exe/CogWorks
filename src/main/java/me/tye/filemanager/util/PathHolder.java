@@ -5,9 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class PathHolder {
-
     String serverPath;
-
     String currentPath;
 
     public PathHolder(String serverPath, String currentPath) {

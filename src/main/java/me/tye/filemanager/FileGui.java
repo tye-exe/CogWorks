@@ -1,6 +1,5 @@
-package me.tye.filemanager.commands.fileCommand;
+package me.tye.filemanager;
 
-import me.tye.filemanager.FileManager;
 import me.tye.filemanager.util.PathHolder;
 import net.wesjd.anvilgui.AnvilGUI;
 import org.bukkit.Bukkit;
@@ -17,7 +16,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static me.tye.filemanager.FileManager.itemProperties;
-import static me.tye.filemanager.commands.fileCommand.FileCommand.position;
+import static me.tye.filemanager.commands.FileCommand.position;
 import static org.bukkit.plugin.java.JavaPlugin.getPlugin;
 
 public class FileGui implements Listener {

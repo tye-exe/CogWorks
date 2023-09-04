@@ -1,9 +1,8 @@
-package me.tye.filemanager.events;
+package me.tye.filemanager;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import me.tye.filemanager.FileManager;
 import me.tye.filemanager.util.PathHolder;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -27,10 +26,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static me.tye.filemanager.commands.FileCommand.position;
 import static me.tye.filemanager.commands.PluginCommand.*;
-import static me.tye.filemanager.commands.fileCommand.FileCommand.position;
 
-public class ChatEvent implements Listener {
+public class ChatManager implements Listener {
 
     public static HashMap<String, String> responses = new HashMap<>();
     public static HashMap<String, List<Object>> params = new HashMap<>();
@@ -231,7 +230,7 @@ public class ChatEvent implements Listener {
 
     public static void installModrinthDependencies(JsonArray dependencies, boolean confirmDependencyInstallation, JsonArray files, CommandSender sender, boolean recursion) {
 
-        //TODO: needs to check if file is already installed
+        //TODO: needs to check if dependency is already installed
 
         ArrayList<String> versions = new ArrayList<>();
         ArrayList<String> projects = new ArrayList<>();

@@ -1,4 +1,4 @@
-package me.tye.filemanager.commands.fileCommand;
+package me.tye.filemanager.commands;
 
 import me.tye.filemanager.FileManager;
 import me.tye.filemanager.util.PathHolder;
@@ -13,9 +13,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 
-import static me.tye.filemanager.commands.fileCommand.FileGui.openFolder;
-import static me.tye.filemanager.events.ChatEvent.params;
-import static me.tye.filemanager.events.ChatEvent.responses;
+import static me.tye.filemanager.ChatManager.params;
+import static me.tye.filemanager.ChatManager.responses;
+import static me.tye.filemanager.FileGui.openFolder;
 
 
 public class FileCommand implements CommandExecutor {

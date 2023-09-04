@@ -1,10 +1,14 @@
 package me.tye.filemanager.commands;
 
 import com.google.common.io.Files;
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import me.tye.filemanager.FileManager;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -14,7 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
-import org.apache.commons.io.FileUtils;
+
 import java.io.*;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
@@ -29,9 +33,9 @@ import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import static me.tye.filemanager.ChatManager.params;
+import static me.tye.filemanager.ChatManager.responses;
 import static me.tye.filemanager.FileManager.makeValidForUrl;
-import static me.tye.filemanager.events.ChatEvent.params;
-import static me.tye.filemanager.events.ChatEvent.responses;
 
 public class PluginCommand implements CommandExecutor {
 
