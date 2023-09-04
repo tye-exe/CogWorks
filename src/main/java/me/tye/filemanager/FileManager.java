@@ -3,11 +3,15 @@ package me.tye.filemanager;
 import me.tye.filemanager.commands.FileCommand;
 import me.tye.filemanager.commands.PluginCommand;
 import me.tye.filemanager.commands.TabComplete;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
+
+import static me.tye.filemanager.commands.FileCommand.position;
 
 public final class FileManager extends JavaPlugin {
 
@@ -32,11 +36,13 @@ public final class FileManager extends JavaPlugin {
 
     @Override
     public void onDisable() {
-
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (position.containsKey(player.getName())) player.closeInventory();
+        }
     }
 
     public static String makeValidForUrl(String text) {
-        return text.replaceAll("[^a-z0-9\s-]", "").replaceAll(" ", "%20");
+        return text.replaceAll("[^A-z0-9s-]", "").replaceAll(" ", "%20");
     }
     public static ItemStack itemProperties(ItemStack item, String displayName, List<String> lore) {
         ItemMeta itemMeta = item.getItemMeta();
