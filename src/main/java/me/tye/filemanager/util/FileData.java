@@ -4,13 +4,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class FileData {
 
-    int lineNumber;
+    int currentLine;
     int maxLine;
     String searchPhrase;
     int searchInstance;
 
-    public FileData(int lineNumber, int maxLine, @Nullable String searchPhrase, int searchInstance) {
-        setLineNumber(lineNumber);
+    public FileData(int currentLine, int maxLine, @Nullable String searchPhrase, int searchInstance) {
+        setCurrentLine(currentLine);
         setMaxLine(maxLine);
         setSearchPhrase(searchPhrase);
         this.searchInstance = searchInstance;
@@ -33,8 +33,8 @@ public class FileData {
     /**
      * @return Current line the player is viewing on the top row.
      */
-    public int getLineNumber() {
-        return lineNumber;
+    public int getCurrentLine() {
+        return currentLine;
     }
 
     /**
@@ -50,9 +50,9 @@ public class FileData {
      *                   Default: 1
      * @return Modified FileData object.
      */
-    public FileData setLineNumber(int lineNumber) {
+    public FileData setCurrentLine(int lineNumber) {
         if (lineNumber < 1) lineNumber = 1;
-        this.lineNumber = lineNumber;
+        this.currentLine = lineNumber;
         return this;
     }
 
@@ -83,7 +83,7 @@ public class FileData {
      */
     public FileData setSearchPhrase(String searchPhrase) {
         if (searchPhrase == null) searchPhrase = "";
-        if (searchPhrase.startsWith("\uFFFF")) searchPhrase = searchPhrase.substring(1);
+        if (searchPhrase.startsWith("\u200B")) searchPhrase = searchPhrase.substring(1);
         this.searchPhrase = searchPhrase;
         return this;
     }
