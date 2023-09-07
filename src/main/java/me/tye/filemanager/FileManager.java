@@ -38,8 +38,10 @@ public final class FileManager extends JavaPlugin {
     @Override
     public void onDisable() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (position.containsKey(player.getName())) player.closeInventory();
-            player.sendMessage(ChatColor.YELLOW + "[FileManager] Menu closed due to reload.");
+            if (position.containsKey(player.getName())) {
+                player.closeInventory();
+                player.sendMessage(ChatColor.YELLOW + "[FileManager] Menu closed due to reload.");
+            }
         }
     }
 
