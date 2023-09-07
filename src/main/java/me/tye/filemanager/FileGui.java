@@ -1,7 +1,7 @@
 package me.tye.filemanager;
 
+import me.tye.filemanager.util.FileData;
 import me.tye.filemanager.util.PathHolder;
-import me.tye.filemanager.util.FileViewContainer;
 import net.wesjd.anvilgui.AnvilGUI;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -23,17 +23,15 @@ import java.nio.file.Path;
 import java.util.*;
 
 import static me.tye.filemanager.FileManager.itemProperties;
-import static me.tye.filemanager.commands.FileCommand.position;
 import static org.bukkit.plugin.java.JavaPlugin.getPlugin;
 
 public class FileGui implements Listener {
 
-    //TODO: put all vars in hashmap rather than constantly passing them around.
-    public static HashMap<UUID, FileViewContainer> fileView = new HashMap<>();
+    //TODO: fix scroll and search not going to the correct lines.
+    public static HashMap<UUID, FileData> fileData = new HashMap<>();
+    public static HashMap<String, PathHolder> position = new HashMap<>();
 
     public static void openFolder(Player player) {
-        if (!FileGui.fileView.containsKey(player.getUniqueId())) FileGui.fileView.put(player.getUniqueId(), new FileViewContainer("", 1));
-
         Inventory gui = Bukkit.createInventory(player, 54, ChatColor.BLUE+"~"+position.get(player.getName()).getRelativePath()+ChatColor.GOLD+" $");
         List<Path> paths;
         try {
@@ -75,15 +73,11 @@ public class FileGui implements Listener {
         player.openInventory(gui);
     }
 
-    public static void openFile(Player player, int lineNumber) {
+    public static void openFile(Player player) {
+        FileData data =  fileData.get(player.getUniqueId());
 
-        String searchPhrase;
-        if (fileView.containsKey(player.getUniqueId())) {
-            searchPhrase = fileView.get(player.getUniqueId()).getSearchPhrase();
-        }
-        else {
-            searchPhrase = "";
-        }
+        int lineNumber = data.getCurrentLine();
+        String searchPhrase = data.getSearchPhrase();
 
         Inventory gui = Bukkit.createInventory(player, 54, ChatColor.BLUE+"~"+position.get(player.getName()).getRelativePath().substring(0, position.get(player.getName()).getRelativePath().length()-1)+ChatColor.GOLD+" $");
 
@@ -105,21 +99,24 @@ public class FileGui implements Listener {
         }
 
         if (lineNumber > lines.size()) lineNumber = lines.size();
+        if (lineNumber == 0) lineNumber++;
         if (lineNumber < 0) lineNumber = 1;
+
+        data.setMaxLine(lines.size());
 
         ArrayList<ItemStack> content = new ArrayList<>();
         for (int i = 0; i <= 8; i++) {
             if (i == 0) {
                 ItemStack down = itemProperties(new ItemStack(Material.TIPPED_ARROW), "Scroll Down", List.of("Scrolls down in the file."));
                 ItemMeta downMeta = down.getItemMeta();
-                downMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "line"), PersistentDataType.INTEGER, Math.min(lines.size()-4, lineNumber+5));
+                downMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "type"), PersistentDataType.STRING, "down");
                 down.setItemMeta(downMeta);
                 content.add(down);
             }
             else if (i == 1) {
                 ItemStack up = itemProperties(new ItemStack(Material.TIPPED_ARROW), "Scroll Up", List.of("Scrolls up in the file."));
                 ItemMeta upMeta = up.getItemMeta();
-                upMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "line"), PersistentDataType.INTEGER, Math.max(1, lineNumber-5));
+                upMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "type"), PersistentDataType.STRING, "up");
                 up.setItemMeta(upMeta);
                 content.add(up);
             }
@@ -130,18 +127,11 @@ public class FileGui implements Listener {
                 String name;
                 if (searchPhrase.isEmpty()) name = "Search";
                 else name = "Search: "+searchPhrase;
-                ItemStack search = itemProperties(new ItemStack(Material.WRITABLE_BOOK), name, List.of("Finds instances of certain words.","Left click: select search word.","Right click: moves to searched words."));
-                ItemMeta searchMeta = search.getItemMeta();
-                searchMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "currentLine"), PersistentDataType.INTEGER, lineNumber);
-                searchMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "search"), PersistentDataType.STRING, searchPhrase);
-                search.setItemMeta(searchMeta);
-                content.add(search);
+                content.add(itemProperties(new ItemStack(Material.WRITABLE_BOOK), name, List.of("Finds instances of certain words.","Left click: select search word.","Right click: moves to searched words.")));
             }
             else if (i == 4) {
                 ItemStack goTo = itemProperties(new ItemStack(Material.SPECTRAL_ARROW), "Go to", List.of("Go to a certain line by number."));
                 ItemMeta goToMeta = goTo.getItemMeta();
-                goToMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "max"), PersistentDataType.INTEGER, lines.size());
-                goToMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "currentLine"), PersistentDataType.INTEGER, lineNumber);
                 goToMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "type"), PersistentDataType.STRING, "goto");
                 goTo.setItemMeta(goToMeta);
                 content.add(goTo);
@@ -187,6 +177,7 @@ public class FileGui implements Listener {
             }
         }
 
+        fileData.put(player.getUniqueId(), data);
         gui.setContents(content.toArray(new ItemStack[0]));
         player.openInventory(gui);
     }
@@ -233,6 +224,7 @@ public class FileGui implements Listener {
             if (e.getCurrentItem() == null || e.getCurrentItem().getType() != Material.BARRIER || !position.containsKey(player.getName())) return;
             player.closeInventory();
             position.remove(player.getName());
+            fileData.remove(player.getUniqueId());
         }
     }
 
@@ -266,7 +258,8 @@ public class FileGui implements Listener {
             if (e.getCurrentItem().getItemMeta().getLore().get(0).equals("File")) {
                 PathHolder pathHolder = position.get(player.getName());
                 pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getDisplayName());
-                openFile(player, 1);
+                fileData.put(player.getUniqueId(), fileData.get(player.getUniqueId()).setCurrentLine(1));
+                openFile(player);
             }
         }
     }
@@ -275,8 +268,18 @@ public class FileGui implements Listener {
     public void fileScroll(InventoryClickEvent e) {
         if (e.getWhoClicked() instanceof Player player) {
             if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || e.getCurrentItem().getType() != Material.TIPPED_ARROW || !position.containsKey(player.getName())) return;
-            int line = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "line"), PersistentDataType.INTEGER);
-            openFile(player, line);
+            String type = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "type"), PersistentDataType.STRING);
+            if (type == null) return;
+            FileData data = fileData.get(player.getUniqueId());
+            if (type.equals("down")) {
+                data.setCurrentLine(Math.min(data.getMaxLine(), data.getCurrentLine()+5));
+            }
+            if (type.equals("up")) {
+                data.setCurrentLine(Math.max(1, data.getCurrentLine()-5));
+            }
+            data.setSearchInstance(0);
+            fileData.put(player.getUniqueId(), data);
+            openFile(player);
         }
     }
 
@@ -285,19 +288,17 @@ public class FileGui implements Listener {
         if (e.getWhoClicked() instanceof Player player) {
             if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || e.getCurrentItem().getType() != Material.SPECTRAL_ARROW || !position.containsKey(player.getName())) return;
             if (checkType(e.getCurrentItem(), "goto")) return;
-            int max = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "max"), PersistentDataType.INTEGER);
-            int currentLine = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "currentLine"), PersistentDataType.INTEGER);
+            FileData data = fileData.get(player.getUniqueId());
 
-            ItemStack paper = itemProperties(new ItemStack(Material.PAPER), String.valueOf(currentLine), null);
+            ItemStack paper = itemProperties(new ItemStack(Material.PAPER), String.valueOf(data.getCurrentLine()), null);
             ItemMeta meta = paper.getItemMeta();
-            meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "max"), PersistentDataType.INTEGER, max);
             meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "type"), PersistentDataType.STRING, "goto");
             paper.setItemMeta(meta);
 
             new AnvilGUI.Builder()
                     .plugin(JavaPlugin.getPlugin(FileManager.class))
                     .preventClose()
-                    .title("Min: 1, Max: "+max)
+                    .title("Min: 1, Max: "+data.getMaxLine())
                     .itemLeft(paper)
                     .onClick((slot, stateSnapshot) -> {
                         if (slot == AnvilGUI.Slot.OUTPUT) {
@@ -306,16 +307,13 @@ public class FileGui implements Listener {
                         return Collections.emptyList();
                     })
                     .onClose(stateSnapshot -> {
-                        int line;
                         if (stateSnapshot.getOutputItem().getItemMeta() != null) {
                             try {
-                                line = Integer.parseInt(stateSnapshot.getOutputItem().getItemMeta().getDisplayName().trim());
-                            } catch (NumberFormatException nfe) {
-                                line = 1;
-                            }
+                                int line = Integer.parseInt(stateSnapshot.getOutputItem().getItemMeta().getDisplayName().trim());
+                                fileData.put(stateSnapshot.getPlayer().getUniqueId(), fileData.get(stateSnapshot.getPlayer().getUniqueId()).setCurrentLine(line));
+                            } catch (Exception ignore) {}
                         }
-                        else line = 1;
-                        openFile(stateSnapshot.getPlayer(), line);
+                        openFile(stateSnapshot.getPlayer());
                     })
                     .open(player);
         }
@@ -326,21 +324,15 @@ public class FileGui implements Listener {
         if (e.getWhoClicked() instanceof Player player) {
             if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || e.getCurrentItem().getType() != Material.WRITABLE_BOOK || !position.containsKey(player.getName())) return;
 
-            Integer line = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(getPlugin(FileManager.class), "currentLine"), PersistentDataType.INTEGER);
-            if (line == null) line = 1;
-
             if (e.isLeftClick()) {
-                ItemStack itemStack = itemProperties(new ItemStack(Material.PAPER), "\uFFFF", null);
-                ItemMeta meta = itemStack.getItemMeta();
-                meta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "currentLine"), PersistentDataType.INTEGER, line);
-                itemStack.setItemMeta(meta);
+                ItemStack paper = itemProperties(new ItemStack(Material.PAPER), "\u200B", null);
 
                 new AnvilGUI.Builder()
                         .plugin(JavaPlugin.getPlugin(FileManager.class))
                         .preventClose()
                         .title("Search:")
-                        .itemLeft(itemStack)
-                        .itemOutput(itemStack)
+                        .itemLeft(paper)
+                        .itemOutput(paper)
                         .onClick((slot, stateSnapshot) -> {
                             if (slot == AnvilGUI.Slot.OUTPUT) {
                                 return List.of(AnvilGUI.ResponseAction.close());
@@ -348,49 +340,59 @@ public class FileGui implements Listener {
                             return Collections.emptyList();
                         })
                         .onClose(stateSnapshot -> {
-                            fileView.put(stateSnapshot.getPlayer().getUniqueId(), new FileViewContainer(stateSnapshot.getOutputItem().getItemMeta().getDisplayName(), 1));
-                            Integer line1 = stateSnapshot.getOutputItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(getPlugin(FileManager.class), "currentLine"), PersistentDataType.INTEGER);
-                            if (line1 == null) line1 = 1;
-                            openFile(stateSnapshot.getPlayer(), line1);
+                            fileData.put(stateSnapshot.getPlayer().getUniqueId(), fileData.get(stateSnapshot.getPlayer().getUniqueId()).setSearchPhrase(stateSnapshot.getOutputItem().getItemMeta().getDisplayName()));
+                            openFile(stateSnapshot.getPlayer());
                         })
                         .open(player);
             }
             else {
                 try {
-                    String searchPhrase = FileGui.fileView.get(player.getUniqueId()).getSearchPhrase();
-                    BufferedReader fileReader = new BufferedReader(new FileReader(position.get(player.getName()).getCurrentPath()));
-
+                    FileData data = fileData.get(player.getUniqueId());
+                    String searchPhrase = data.getSearchPhrase();
                     if (searchPhrase.isEmpty())  {
                         player.playNote(player.getLocation(), Instrument.PLING, Note.sharp(2, Note.Tone.F));
                         return;
                     }
 
+                    BufferedReader fileReader = new BufferedReader(new FileReader(position.get(player.getName()).getCurrentPath()));
+
                     String text;
-                    int i = 1;
-                    int instance = FileGui.fileView.get(player.getUniqueId()).getSearchInstance();
+                    int i = 0;
+                    int instance = data.getSearchInstance();
                     int instances = 1;
-                    int firstInstanceLine = 1;
+                    int firstInstance = 0;
 
                     while ((text = fileReader.readLine()) != null) {
-                        if (text.contains(searchPhrase)) {
-                            if (firstInstanceLine == 1) firstInstanceLine = i;
-                            if (instances == instance) {
-                                FileGui.fileView.put(player.getUniqueId(), new FileViewContainer(searchPhrase, instance+1));
-                                openFile(player, i);
+                        i++;
+                        if (instance == 0) {
+                            if (text.contains(searchPhrase)) {
+                                if (firstInstance == 0) firstInstance = i;
+                                instances++;
+                                if (i < data.getCurrentLine()) continue;
+                                fileData.put(player.getUniqueId(), data.setCurrentLine(i).setSearchInstance(instances));
+                                openFile(player);
                                 return;
                             }
-                            instances++;
+                        } else {
+                            if (text.contains(searchPhrase)) {
+                                if (firstInstance == 0) firstInstance = i;
+                                if (instances == instance) {
+                                    fileData.put(player.getUniqueId(), data.setSearchInstance(instance + 1).setCurrentLine(i));
+                                    openFile(player);
+                                    return;
+                                }
+                                instances++;
+                            }
                         }
-                        i++;
                     }
 
-                    if (instances == 1) {
+                    if (firstInstance == 0) {
                         player.playNote(player.getLocation(), Instrument.PLING, Note.sharp(2, Note.Tone.F));
                         return;
                     }
 
-                    FileGui.fileView.put(player.getUniqueId(), new FileViewContainer(searchPhrase, 1));
-                    openFile(player, firstInstanceLine);
+                    fileData.put(player.getUniqueId(), data.setSearchInstance(firstInstance));
+                    openFile(player);
 
                 } catch (IOException ex) {
                     player.sendMessage(ChatColor.RED + "There was an error trying to open that file.\nPlease see the console for error message and report this.");
@@ -428,12 +430,7 @@ public class FileGui implements Listener {
                     })
                     .onClose(stateSnapshot -> {
                         editFile(stateSnapshot.getPlayer(), stateSnapshot.getOutputItem());
-                        Integer line;
-                        if (stateSnapshot.getOutputItem().getItemMeta() != null)
-                            line = stateSnapshot.getOutputItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "line"), PersistentDataType.INTEGER);
-                        else  line = 1;
-                        if (line == null || line < 1) line = 1;
-                        openFile(stateSnapshot.getPlayer(), line);
+                        openFile(stateSnapshot.getPlayer());
                     })
                     .open(player);
         }

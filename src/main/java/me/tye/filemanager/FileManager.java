@@ -12,7 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
 
-import static me.tye.filemanager.commands.FileCommand.position;
+import static me.tye.filemanager.FileGui.position;
 
 public final class FileManager extends JavaPlugin {
 
@@ -38,8 +38,10 @@ public final class FileManager extends JavaPlugin {
     @Override
     public void onDisable() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (position.containsKey(player.getName())) player.closeInventory();
-            player.sendMessage(ChatColor.YELLOW + "[FileManager] Menu closed due to reload.");
+            if (position.containsKey(player.getName())) {
+                player.closeInventory();
+                player.sendMessage(ChatColor.YELLOW + "[FileManager] Menu closed due to reload.");
+            }
         }
     }
 
@@ -48,6 +50,7 @@ public final class FileManager extends JavaPlugin {
     }
     public static ItemStack itemProperties(ItemStack item, String displayName, List<String> lore) {
         ItemMeta itemMeta = item.getItemMeta();
+        if (itemMeta == null) return item;
         itemMeta.setDisplayName(displayName);
         if (lore != null) itemMeta.setLore(lore);
         item.setItemMeta(itemMeta);

@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static me.tye.filemanager.commands.FileCommand.position;
+import static me.tye.filemanager.FileGui.position;
 import static me.tye.filemanager.commands.PluginCommand.*;
 
 public class ChatManager implements Listener {
