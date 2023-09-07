@@ -1,6 +1,8 @@
 package me.tye.filemanager.commands;
 
+import me.tye.filemanager.FileGui;
 import me.tye.filemanager.FileManager;
+import me.tye.filemanager.util.FileData;
 import me.tye.filemanager.util.PathHolder;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -10,18 +12,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
 
 import static me.tye.filemanager.ChatManager.params;
 import static me.tye.filemanager.ChatManager.responses;
+import static me.tye.filemanager.FileGui.fileData;
 import static me.tye.filemanager.FileGui.openFolder;
 
 
 public class FileCommand implements CommandExecutor {
-
-    public static HashMap<String, PathHolder> position = new HashMap<>();
-
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 1 && args[0].equals("help")) {
@@ -31,8 +30,8 @@ public class FileCommand implements CommandExecutor {
 
         } else if (args.length == 1 && args[0].equals("chat")) {
             String serverFolder = Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
-            if (sender instanceof Player) position.put(sender.getName(), new PathHolder(serverFolder, serverFolder));
-            else position.put("~", new PathHolder(serverFolder, serverFolder));
+            if (sender instanceof Player) FileGui.position.put(sender.getName(), new PathHolder(serverFolder, serverFolder));
+            else FileGui.position.put("~", new PathHolder(serverFolder, serverFolder));
             if (sender instanceof Player) responses.put(sender.getName(), "Terminal");
             else responses.put("~", "Terminal");
             if (sender instanceof Player) params.put(sender.getName(), List.of(sender));
@@ -44,7 +43,8 @@ public class FileCommand implements CommandExecutor {
         } else {
             if (sender instanceof Player player) {
                 String serverFolder = Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
-                position.put(player.getName(), new PathHolder(serverFolder, serverFolder));
+                FileGui.position.put(player.getName(), new PathHolder(serverFolder, serverFolder));
+                fileData.put(player.getUniqueId(), new FileData(1, 1, null, 1));
                 openFolder(player);
             } else {
                 sender.sendMessage(ChatColor.RED+"This command is only available to online players.");
