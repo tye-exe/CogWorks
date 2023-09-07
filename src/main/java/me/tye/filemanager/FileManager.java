@@ -4,6 +4,7 @@ import me.tye.filemanager.commands.FileCommand;
 import me.tye.filemanager.commands.PluginCommand;
 import me.tye.filemanager.commands.TabComplete;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -38,6 +39,7 @@ public final class FileManager extends JavaPlugin {
     public void onDisable() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (position.containsKey(player.getName())) player.closeInventory();
+            player.sendMessage(ChatColor.YELLOW + "[FileManager] Menu closed due to reload.");
         }
     }
 
