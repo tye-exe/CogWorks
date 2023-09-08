@@ -169,7 +169,7 @@ public class PluginCommand implements CommandExecutor {
                                 if (validPluginKeys.size() <= i) break;
                                 JsonObject project = validPluginKeys.get(i*page);
                                 TextComponent projectName = new TextComponent(i+offset+": "+project.get("title").getAsString());
-                                projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").toString()+"/"+project.get("slug").getAsString())));
+                                projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
                                 projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
                                 projectName.setUnderlined(true);
                                 sender.spigot().sendMessage(projectName);

@@ -1,0 +1,3 @@
+- Fixed capital letters getting deleted from query when using /plugin install.
+- General improvements to /file command.
+- Fixed broken url for plugin main page when using /plugin install.
