@@ -48,10 +48,16 @@ public class FileGui implements Listener {
         for (Path path : paths) {
             if (Files.isDirectory(path)) {
                 ItemStack item = itemProperties(new ItemStack(Material.YELLOW_WOOL), ChatColor.YELLOW + path.getFileName().toString(), List.of("Folder"));
+                ItemMeta meta = item.getItemMeta();
+                meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING, path.getFileName().toString());
+                item.setItemMeta(meta);
                 folders.add(item);
             }
             else {
                 ItemStack item = itemProperties(new ItemStack(Material.WHITE_WOOL), path.getFileName().toString(), List.of("File"));
+                ItemMeta meta = item.getItemMeta();
+                meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING, path.getFileName().toString());
+                item.setItemMeta(meta);
                 files.add(item);
             }
         }
@@ -234,7 +240,7 @@ public class FileGui implements Listener {
             if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || e.getCurrentItem().getItemMeta().getLore() == null || !position.containsKey(player.getName())) return;
             if (e.getCurrentItem().getItemMeta().getLore().get(0).equals("Folder")) {
                 PathHolder pathHolder = position.get(player.getName());
-                pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getDisplayName());
+                pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING));
                 openFolder(player);
             }
         }
@@ -244,7 +250,8 @@ public class FileGui implements Listener {
     public void upFolder(InventoryClickEvent e) {
         if (e.getWhoClicked() instanceof Player player) {
             if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || e.getCurrentItem().getType() != Material.ARROW || !position.containsKey(player.getName())) return;
-            if (!e.getCurrentItem().getItemMeta().getDisplayName().equals("Back") && !e.getCurrentItem().getItemMeta().getDisplayName().equals("Up")) return;
+            String identifier = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING);
+            if (identifier != null) return;
             PathHolder pathHolder = position.get(player.getName());
             pathHolder.setCurrentPath(Path.of(pathHolder.getCurrentPath()).getParent().toString());
             openFolder(player);
@@ -257,7 +264,7 @@ public class FileGui implements Listener {
             if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || e.getCurrentItem().getItemMeta().getLore() == null || !position.containsKey(player.getName())) return;
             if (e.getCurrentItem().getItemMeta().getLore().get(0).equals("File")) {
                 PathHolder pathHolder = position.get(player.getName());
-                pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getDisplayName());
+                pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING));
                 fileData.put(player.getUniqueId(), fileData.get(player.getUniqueId()).setCurrentLine(1));
                 openFile(player);
             }

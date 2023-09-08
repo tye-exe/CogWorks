@@ -33,6 +33,8 @@ public final class FileManager extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ChatManager(), this);
         getServer().getPluginManager().registerEvents(new FileGui(), this);
 
+        if (!getDataFolder().exists()) getDataFolder().mkdir();
+
     }
 
     @Override
