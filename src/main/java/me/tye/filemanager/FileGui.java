@@ -47,7 +47,7 @@ public class FileGui implements Listener {
         ArrayList<ItemStack> folders = new ArrayList<>();
         for (Path path : paths) {
             if (Files.isDirectory(path)) {
-                ItemStack item = itemProperties(new ItemStack(Material.YELLOW_WOOL), path.getFileName().toString(), List.of("Folder"));
+                ItemStack item = itemProperties(new ItemStack(Material.YELLOW_WOOL), ChatColor.YELLOW + path.getFileName().toString(), List.of("Folder"));
                 folders.add(item);
             }
             else {

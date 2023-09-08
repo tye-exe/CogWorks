@@ -41,12 +41,11 @@ public class PluginCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length == 0 || (args.length == 1 && args[0].equals("help")))
+            sender.sendMessage(ChatColor.GREEN+"/plugin help - Shows this message.\n" +
+                "/plugin install <Plugin Name | URL> - If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download.\n"+
+                "/plugin remove <Plugin Name> - Disables and uninstalls the given plugin. If the plugin did not load it cannot be uninstalled.");
         if (args.length >= 1) {
-            if (args[0].equals("help")) {
-                sender.sendMessage(ChatColor.GREEN+"/plugin help - Shows this message.\n" +
-                        "/plugin install <Plugin Name | URL> - If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download.\n"+
-                        "/plugin remove <Plugin Name> - Disables and uninstalls the given plugin. If the plugin did not load it cannot be uninstalled.");
-            }
             if (args[0].equals("install")) {
                 if (args.length >= 2) {
                     try {
