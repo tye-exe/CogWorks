@@ -7,6 +7,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.tye.filemanager.FileManager;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
+import me.tye.filemanager.util.exceptions.PluginExistsException;
+import me.tye.filemanager.util.exceptions.PluginInstallException;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.apache.commons.io.FileUtils;
@@ -30,6 +32,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -206,12 +209,11 @@ public class PluginCommand implements CommandExecutor {
         return true;
     }
 
-    public static boolean installPluginURL(URL downloadURL, String fileName, Boolean addFileHash, CommandSender sender) {
+    public static boolean installPluginURL(URL downloadURL, String fileName, Boolean addFileHash, CommandSender sender) throws PluginExistsException, PluginInstallException {
 
         File file = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+fileName);
         if (file.exists()) {
-            sender.sendMessage(ChatColor.YELLOW + fileName + " is already installed: Skipping.");
-            return false;
+            throw new PluginExistsException(fileName + " is already installed: Skipping.");
         }
 
         try {
@@ -222,12 +224,9 @@ public class PluginCommand implements CommandExecutor {
             fos.close();
             rbc.close();
         } catch (FileNotFoundException noFile) {
-            sender.sendMessage(ChatColor.RED+"Requested file could not be found at that url.");
-            return false;
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            sender.sendMessage(ChatColor.RED+"Error installing plugin! Please see the console and report the error.");
-            return false;
+            throw new PluginInstallException("Requested file could not be found at that url.");
+        } catch (IOException ioException) {
+            throw new PluginInstallException("Error installing plugin! Please see the console and report the error.", ioException.getCause());
         }
 
         //adds the file hash to the name since alot of urls just have a generic filename like "download"
@@ -241,10 +240,8 @@ public class PluginCommand implements CommandExecutor {
                 is.close();
                 hash += "-";
                 hash += String.format("%032X", new BigInteger(1, dis.getMessageDigest().digest()));
-            } catch (Exception e) {
-                e.printStackTrace();
-                sender.sendMessage(ChatColor.RED + "Error naming plugin! Please see the console and report the error.");
-                return false;
+            } catch (IOException | NoSuchAlgorithmException e) {
+                throw new PluginInstallException("Error naming plugin! Please see the console and report the error.\n Context: Plugins installed with \"vague\" names have the file-hash appended to them to uniquely identify them.", e.getCause());
             }
         }
 
@@ -403,10 +400,9 @@ public class PluginCommand implements CommandExecutor {
             con.disconnect();
 
             return JsonParser.parseString(content.toString());
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            throw new ModrinthAPIException("There was a problem accessing the modrinth api website.", e.getCause());
         }
-        return null;
     }
 
 }
