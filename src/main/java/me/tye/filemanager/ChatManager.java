@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import me.tye.filemanager.util.PathHolder;
+import me.tye.filemanager.util.exceptions.ModrinthAPIException;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -286,7 +287,7 @@ public class ChatManager implements Listener {
             for (String projectID : projects) projectUrl.append("%22").append(projectID).append("%22").append(",");
 
             try {
-                JsonElement pluginProjects = modrinthAPI(new URL(projectUrl.substring(0, projectUrl.length() - 1) + "]"), "GET", sender);
+                JsonElement pluginProjects = modrinthAPI(new URL(projectUrl.substring(0, projectUrl.length() - 1) + "]"), "GET");
                 if (pluginProjects == null) {
                     sender.sendMessage(ChatColor.RED + "Error getting dependency plugins from Modrinth.");
                     return;
@@ -298,7 +299,7 @@ public class ChatManager implements Listener {
                     }
                 }
 
-            } catch (MalformedURLException e) {
+            } catch (MalformedURLException | ModrinthAPIException e) {
                 sender.sendMessage(ChatColor.RED + "Error getting dependency plugins from Modrinth.");
                 return;
             }
@@ -312,12 +313,12 @@ public class ChatManager implements Listener {
             versionsUrl.append("%22").append(versionID).append("%22").append(",");
         }
         try {
-            pluginVersions = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length() - 1) + "]"), "GET", sender);
+            pluginVersions = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length() - 1) + "]"), "GET");
             if (pluginVersions == null) {
                 sender.sendMessage(ChatColor.RED + "Error getting dependency versions from Modrinth.");
                 return;
             }
-        } catch (MalformedURLException e) {
+        } catch (MalformedURLException | ModrinthAPIException e) {
             sender.sendMessage(ChatColor.RED + "Error getting dependency versions from Modrinth.");
             return;
         }
@@ -370,15 +371,16 @@ public class ChatManager implements Listener {
                 incompatibleProjects.append("%22").append(projectID).append("%22").append(",");
             }
             try {
-                JsonElement incompatiblePlugins = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length() - 1) + "]"), "GET", sender);
+                JsonElement incompatiblePlugins = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length() - 1) + "]"), "GET");
                 StringBuilder incompatibleTitles = new StringBuilder();
                 for (JsonElement je : incompatiblePlugins.getAsJsonArray()) {
                     incompatibleTitles.append(je.getAsJsonObject().get("title").getAsString()).append(", ");
                 }
 
                 sender.sendMessage(ChatColor.YELLOW + "Error installing dependencies: "+incompatibleTitles.substring(incompatibleTitles.length()-2)+".\nEither doesn't support version or server software.");
-            } catch (Exception ignored){};
-            sender.sendMessage(ChatColor.YELLOW + "Error installing some dependencies!\nError getting incompatible dependencies!");
+            } catch (MalformedURLException | ModrinthAPIException e){
+                sender.sendMessage(ChatColor.YELLOW + "Error installing some dependencies!\nError getting incompatible dependencies!");
+            }
         }
 
         //installing files

@@ -2,3 +2,5 @@
 - General improvements to /file command.
 - Fixed broken url for plugin main page when using /plugin install.
 - Minor QOL changes
+- Reworked internal method handling
+- Checking for dependencies on startup and attempts to resolve them automatically

@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.tye.filemanager.FileManager;
+import me.tye.filemanager.util.exceptions.ModrinthAPIException;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.apache.commons.io.FileUtils;
@@ -66,7 +67,7 @@ public class PluginCommand implements CommandExecutor {
                             mcVersion = mcVersion.substring(0, mcVersion.length()-1);
                             String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
 
-                            JsonElement relevantPlugins = modrinthAPI(new URL("https://api.modrinth.com/v2/search?query="+makeValidForUrl(args[1])+"&facets=[[%22versions:"+mcVersion+"%22],[%22categories:"+serverSoftware+"%22]]"), "GET", sender);
+                            JsonElement relevantPlugins = modrinthAPI(new URL("https://api.modrinth.com/v2/search?query="+makeValidForUrl(args[1])+"&facets=[[%22versions:"+mcVersion+"%22],[%22categories:"+serverSoftware+"%22]]"), "GET");
                             if (relevantPlugins == null) return true;
                             JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
 
@@ -80,7 +81,7 @@ public class PluginCommand implements CommandExecutor {
                             for (JsonElement je :hits) {
                                 projectUrl.append("%22").append(je.getAsJsonObject().get("slug").getAsString()).append("%22").append(",");
                             }
-                            JsonElement pluginProjects = modrinthAPI(new URL(projectUrl.substring(0, projectUrl.length()-1)+"]"), "GET", sender);
+                            JsonElement pluginProjects = modrinthAPI(new URL(projectUrl.substring(0, projectUrl.length()-1)+"]"), "GET");
 
                             //gets the versions from the projects
                             if (pluginProjects == null) {
@@ -96,7 +97,7 @@ public class PluginCommand implements CommandExecutor {
                                 }
                             }
 
-                            JsonElement pluginVersions = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length()-1)+"]"), "GET", sender);
+                            JsonElement pluginVersions = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length()-1)+"]"), "GET");
                             if (pluginVersions == null) {
                                 sender.sendMessage(ChatColor.RED+"Error getting supported plugins from Modrinth.");
                                 return true;
@@ -377,7 +378,7 @@ public class PluginCommand implements CommandExecutor {
         }
     }
 
-    public static JsonElement modrinthAPI(URL url, String requestMethod, CommandSender sender) {
+    public static JsonElement modrinthAPI(URL url, String requestMethod) throws ModrinthAPIException {
         try {
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod(requestMethod);
@@ -386,12 +387,10 @@ public class PluginCommand implements CommandExecutor {
 
             int status = con.getResponseCode();
             if (status == 410) {
-                sender.sendMessage(ChatColor.RED + "Outdated Modrinth api, please update your version of the plugin!");
-                return null;
+                throw new ModrinthAPIException("The FileManager plugin is using an outdated version of the Modrinth api. Please update your version of the plugin!");
             }
             if (status != 200) {
-                sender.sendMessage(ChatColor.RED + "There was a problem using the Modrinth API.");
-                return null;
+                throw new ModrinthAPIException("There was a problem using the Modrinth API.\nURL: "+url.toExternalForm()+"\n request method: "+requestMethod);
             }
 
             BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
