@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.tye.filemanager.FileManager;
+import me.tye.filemanager.util.ModrinthSearch;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
 import me.tye.filemanager.util.exceptions.PluginExistsException;
 import me.tye.filemanager.util.exceptions.PluginInstallException;
@@ -411,4 +412,86 @@ public class PluginCommand implements CommandExecutor {
         }
     }
 
+
+    public static ModrinthSearch modrinthSearch(String searchQuery) throws MalformedURLException, ModrinthAPIException {
+        ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
+        HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
+
+        String mcVersion = Bukkit.getVersion().split(": ")[1];
+        mcVersion = mcVersion.substring(0, mcVersion.length() - 1);
+        String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
+
+        JsonElement relevantPlugins = modrinthAPI(new URL("https://api.modrinth.com/v2/search?query=" + makeValidForUrl(searchQuery) + "&facets=[[%22versions:" + mcVersion + "%22],[%22categories:" + serverSoftware + "%22]]"), "GET");
+        if (relevantPlugins == null) throw new ModrinthAPIException("Error getting relevant plugins from Modrinth.");
+        JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
+        if (hits.isEmpty()) return new ModrinthSearch(null, null);
+
+        //gets the projects
+        StringBuilder projectUrl = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
+        for (JsonElement je : hits) {
+            projectUrl.append("%22").append(je.getAsJsonObject().get("slug").getAsString()).append("%22").append(",");
+        }
+        JsonElement pluginProjects = modrinthAPI(new URL(projectUrl.substring(0, projectUrl.length() - 1) + "]"), "GET");
+
+        //gets the versions from the projects
+        if (pluginProjects == null) throw new ModrinthAPIException("Error getting supported plugins from Modrinth.");
+
+        //gets the information for all the versions
+        StringBuilder versionsUrl = new StringBuilder("https://api.modrinth.com/v2/versions?ids=[");
+        for (JsonElement je : pluginProjects.getAsJsonArray()) {
+            for (JsonElement jel : je.getAsJsonObject().get("versions").getAsJsonArray()) {
+                versionsUrl.append("%22").append(jel.getAsString()).append("%22").append(",");
+            }
+        }
+
+        JsonElement pluginVersions = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length() - 1) + "]"), "GET");
+        if (pluginVersions == null) throw new ModrinthAPIException("Error getting supported versions from Modrinth.");
+
+        //filters out incompatible versions/plugins
+        HashMap<String, JsonArray> compatibleFiles = new HashMap<>();
+        for (JsonElement je : pluginVersions.getAsJsonArray()) {
+            JsonObject jo = je.getAsJsonObject();
+            boolean supportsVersion = false;
+            boolean supportsServer = false;
+
+            for (JsonElement supportedVersions : jo.get("game_versions").getAsJsonArray()) {
+                if (supportedVersions.getAsString().equals(mcVersion)) supportsVersion = true;
+            }
+            for (JsonElement supportedLoaders : jo.get("loaders").getAsJsonArray()) {
+                if (supportedLoaders.getAsString().equals(serverSoftware)) supportsServer = true;
+            }
+
+            if (!(supportsVersion && supportsServer)) continue;
+
+            String projectID = jo.get("project_id").getAsString();
+
+            JsonArray array;
+            if (compatibleFiles.containsKey(projectID)) array = compatibleFiles.get(projectID);
+            else array = new JsonArray();
+            array.add(jo);
+            compatibleFiles.put(projectID, array);
+        }
+
+        if (compatibleFiles.isEmpty()) return new ModrinthSearch(null, null);
+
+        //hashmap of all valid plugins and there compatible versions
+        for (JsonElement je : hits) {
+            JsonObject jo = je.getAsJsonObject();
+            String projectID = jo.get("project_id").getAsString();
+            if (!compatibleFiles.containsKey(projectID)) continue;
+
+            JsonArray array;
+            if (validPlugins.containsKey(jo)) array = validPlugins.get(jo);
+            else array = new JsonArray();
+            array.add(compatibleFiles.get(projectID));
+            validPlugins.put(jo, array);
+        }
+
+        //adds them to the list in the order they were returned by Modrinth
+        for (JsonElement je : hits)
+            if (validPlugins.containsKey(je.getAsJsonObject())) validPluginKeys.add(je.getAsJsonObject());
+
+        if (validPluginKeys.isEmpty()) return new ModrinthSearch(null, null);
+        return new ModrinthSearch(validPluginKeys, validPlugins);
+    }
 }

@@ -6,20 +6,26 @@ import com.google.gson.stream.JsonReader;
 import me.tye.filemanager.commands.FileCommand;
 import me.tye.filemanager.commands.PluginCommand;
 import me.tye.filemanager.commands.TabComplete;
+import me.tye.filemanager.util.ModrinthSearch;
 import me.tye.filemanager.util.UrlFilename;
+import me.tye.filemanager.util.exceptions.ModrinthAPIException;
 import me.tye.filemanager.util.yamlClasses.DependencyInfo;
 import me.tye.filemanager.util.yamlClasses.PluginData;
+import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.FileUtil;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
+import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -30,6 +36,7 @@ import java.util.zip.ZipFile;
 
 import static me.tye.filemanager.FileGui.position;
 import static me.tye.filemanager.commands.PluginCommand.modrinthAPI;
+import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
 
 public final class FileManager extends JavaPlugin {
 
@@ -51,13 +58,20 @@ public final class FileManager extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new FileGui(), this);
 
         //Make required config files
-        if (!getDataFolder().exists()) getDataFolder().mkdir();
+
+        File pluginStore = new File(getDataFolder().getAbsoluteFile() + File.separator + "pluginStore");
         File plugins = new File(getDataFolder().getAbsolutePath() + File.separator + "pluginData.json");
         try {
-            if (!plugins.exists()) plugins.createNewFile();
-        } catch (Exception e) {
+            if (!getDataFolder().exists()) if (!getDataFolder().mkdir()) throw new Exception();
+            if (!pluginStore.exists()) if(!pluginStore.mkdir()) throw new Exception();
+            if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception();
+        }
+        catch (Exception e) {
+            getLogger().log(Level.SEVERE, "Error creating config folders, please report the follow error!");
             throw new RuntimeException(e);
         }
+
+
 
         //Gets the plugin.yml files from each plugin
         File pluginFolder = new File(getDataFolder().getParent());
@@ -122,186 +136,119 @@ public final class FileManager extends JavaPlugin {
         }
 
         //attempts to resolve unmet dependencies
-        //TODO: implement this for filtering versions https://api.modrinth.com/v2/project/fALzjamp/version?loaders=["paper"]&game_versions=["1.20.1"]
+        //TODO: implement this for filtering versions https://api.modrinth.com/v2/project/fALzjamp/version?loaders=["paper"]&game_versions=["1.20.1"] - would use more api requests.
+        //TODO: multithreading
+        //TODO: add tag for attempted to resolve dependency?
+        //TODO: PROPER ERROR MESSAGES
+        //TODO: check against plugins that hap[pen to be in the temp folder?
         for (DependencyInfo unmetDepInfo : unmetDependencies.keySet()) {
             String unmetDepName = unmetDepInfo.getName();
             String unmetDepVersion = unmetDepInfo.getVersion();
-            if (unmetDepVersion == null) {
-                ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
-                HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
+            if (unmetDepVersion != null) return;
+            ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
+            HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
+
+            try {
+                ModrinthSearch search = modrinthSearch(unmetDepName);
+                validPluginKeys = search.getValidPluginKeys();
+                validPlugins = search.getValidPlugins();
+            } catch (MalformedURLException | ModrinthAPIException e) {
+                getLogger().log(Level.WARNING, "Error querying Modrinth for automatic dependency resolution.");
+                getLogger().log(Level.WARNING, "Skipping resolving for: "+unmetDepName);
+                //TODO: remove stacktrace
+                e.printStackTrace();
+            }
+
+            System.out.println(validPluginKeys);
+
+            //gets the urls to download from
+            ArrayList<UrlFilename> downloads = new ArrayList<>();
+            for (JsonObject jo : validPluginKeys) {
+                JsonArray ja = validPlugins.get(jo);
+                JsonObject latestValidPlugin = null;
+
+                //gets the latest version of a compatible plugin
+                for (JsonElement je : ja) {
+                    if (latestValidPlugin == null) {
+                        latestValidPlugin = je.getAsJsonArray().get(0).getAsJsonObject();
+                    } else {
+                        LocalDateTime newDT = LocalDateTime.parse(je.getAsJsonObject().get("date_published").getAsString());
+                        LocalDateTime dt = LocalDateTime.parse(latestValidPlugin.get("date_published").getAsString());
+                        if (dt.isBefore(newDT)) {
+                            latestValidPlugin = je.getAsJsonObject();
+                        }
+                    }
+                }
+
+                JsonArray files = latestValidPlugin.get("files").getAsJsonArray();
+                int primaryIndex = 0;
+                int i = 0;
+                for (JsonElement je : files) {
+                    if (je.getAsJsonObject().get("primary").getAsBoolean()) primaryIndex = i;
+                    i++;
+                }
+                downloads.add(new UrlFilename(files.get(primaryIndex).getAsJsonObject().get("url").getAsString(), files.get(primaryIndex).getAsJsonObject().get("filename").getAsString()));
+                System.out.println(latestValidPlugin.get("name").getAsString()+"\n");
+            }
+
+            File moveFile = null;
+            dependencyInstall:
+            for (UrlFilename downloadData : downloads) {
+                File file = new File(pluginStore.getAbsolutePath()+File.separator+downloadData.getFilename());
+                if (file.exists()) {
+                    continue;
+                }
+
                 try {
-                    String mcVersion = Bukkit.getVersion().split(": ")[1];
-                    mcVersion = mcVersion.substring(0, mcVersion.length() - 1);
-                    String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
-
-                    JsonElement relevantPlugins = modrinthAPI(new URL("https://api.modrinth.com/v2/search?query=" + makeValidForUrl(unmetDepName) + "&facets=[[%22versions:" + mcVersion + "%22],[%22categories:" + serverSoftware + "%22]]"), "GET");
-                    if (relevantPlugins == null) return;
-                    JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
-
-                    if (hits.isEmpty()) {
-                        getLogger().log(Level.WARNING, "No plugins matching that "+unmetDepName+" could be found on Modrinth.");
-                        return;
-                    }
-
-                    //gets the projects
-                    StringBuilder projectUrl = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
-                    for (JsonElement je : hits) {
-                        projectUrl.append("%22").append(je.getAsJsonObject().get("slug").getAsString()).append("%22").append(",");
-                    }
-                    JsonElement pluginProjects = modrinthAPI(new URL(projectUrl.substring(0, projectUrl.length() - 1) + "]"), "GET");
-
-                    //gets the versions from the projects
-                    if (pluginProjects == null) {
-                        getLogger().log(Level.WARNING, "Error getting supported plugins from Modrinth.");
-                        return;
-                    }
-
-                    //gets the information for all the versions
-                    StringBuilder versionsUrl = new StringBuilder("https://api.modrinth.com/v2/versions?ids=[");
-                    for (JsonElement je : pluginProjects.getAsJsonArray()) {
-                        for (JsonElement jel : je.getAsJsonObject().get("versions").getAsJsonArray()) {
-                            versionsUrl.append("%22").append(jel.getAsString()).append("%22").append(",");
-                        }
-                    }
-
-                    JsonElement pluginVersions = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length() - 1) + "]"), "GET");
-                    if (pluginVersions == null) {
-                        //sender.sendMessage(ChatColor.RED + "Error getting supported plugins from Modrinth.");
-                        return;
-                    }
-
-                    //filters out incompatible versions/plugins
-                    HashMap<String, JsonArray> compatibleFiles = new HashMap<>();
-                    for (JsonElement je : pluginVersions.getAsJsonArray()) {
-                        JsonObject jo = je.getAsJsonObject();
-                        boolean supportsVersion = false;
-                        boolean supportsServer = false;
-
-                        for (JsonElement supportedVersions : jo.get("game_versions").getAsJsonArray()) {
-                            if (supportedVersions.getAsString().equals(mcVersion)) supportsVersion = true;
-                        }
-                        for (JsonElement supportedLoaders : jo.get("loaders").getAsJsonArray()) {
-                            if (supportedLoaders.getAsString().equals(serverSoftware)) supportsServer = true;
-                        }
-
-                        if (!(supportsVersion && supportsServer)) continue;
-
-                        String projectID = jo.get("project_id").getAsString();
-
-                        JsonArray array;
-                        if (compatibleFiles.containsKey(projectID)) array = compatibleFiles.get(projectID);
-                        else array = new JsonArray();
-                        array.add(jo);
-                        compatibleFiles.put(projectID, array);
-                    }
-
-                    if (compatibleFiles.isEmpty()) {
-                        //sender.sendMessage(ChatColor.YELLOW + "No compatible plugins with this name were found on Modrinth.");
-                        return;
-                    }
-
-                    //hashmap of all valid plugins and there compatible versions
-                    for (JsonElement je : hits) {
-                        JsonObject jo = je.getAsJsonObject();
-                        String projectID = jo.get("project_id").getAsString();
-                        if (!compatibleFiles.containsKey(projectID)) continue;
-
-                        JsonArray array;
-                        if (validPlugins.containsKey(jo)) array = validPlugins.get(jo);
-                        else array = new JsonArray();
-                        array.add(compatibleFiles.get(projectID));
-                        validPlugins.put(jo, array);
-                    }
-
-                    //adds them to the list in the order they were returned by Modrinth
-                    for (JsonElement je : hits)
-                        if (validPlugins.containsKey(je.getAsJsonObject())) validPluginKeys.add(je.getAsJsonObject());
-
-                    if (validPluginKeys.isEmpty()) {
-                        //sender.sendMessage(ChatColor.YELLOW + "No compatible plugins with this name were found on Modrinth.");
-                        return;
-                    }
+                    //downloads the file
+                    ReadableByteChannel rbc = Channels.newChannel(new URL(downloadData.getUrl()).openStream());
+                    FileOutputStream fos = new FileOutputStream(file);
+                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                    fos.close();
+                    rbc.close();
                 } catch (Exception e) {
                     e.printStackTrace();
+                    continue;
                 }
-                System.out.println(validPluginKeys);
 
-                //gets the urls to download from
-                ArrayList<UrlFilename> downloads = new ArrayList<>();
-                for (JsonObject jo : validPluginKeys) {
-                    JsonArray ja = validPlugins.get(jo);
-                    JsonObject latestValidPlugin = null;
+                //gets the plugin.yml data from the plugin
+                try {
+                    ZipFile zip = new ZipFile(file);
+                    for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
+                        ZipEntry entry = e.nextElement();
+                        if (!entry.getName().equals("plugin.yml")) continue;
 
-                    //gets the latest version of a compatible plugin
-                    for (JsonElement je : ja) {
-                        if (latestValidPlugin == null) {
-                            latestValidPlugin = je.getAsJsonArray().get(0).getAsJsonObject();
-                        } else {
-                            LocalDateTime newDT = LocalDateTime.parse(je.getAsJsonObject().get("date_published").getAsString());
-                            LocalDateTime dt = LocalDateTime.parse(latestValidPlugin.get("date_published").getAsString());
-                            if (dt.isBefore(newDT)) {
-                                latestValidPlugin = je.getAsJsonObject();
-                            }
+                        StringBuilder out = new StringBuilder();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
+                        String line;
+                        while ((line = reader.readLine()) != null) out.append(line).append("\n");
+                        reader.close();
+
+                        Yaml yaml = new Yaml();
+                        Map<String, Object> yamlData = yaml.load(out.toString());
+                        System.out.println(yamlData.get("name"));
+                        System.out.println(unmetDepName);
+                        if (yamlData.get("name").equals(unmetDepName)) {
+                            moveFile = file;
+                            getLogger().log(Level.INFO, "Unmet dependency for \""+unmetDependencies.get(unmetDepInfo).getName()+"\" successfully resolved by installing \""+yamlData.get("name")+"\".");
+                            break dependencyInstall;
                         }
                     }
-
-                    JsonArray files = latestValidPlugin.get("files").getAsJsonArray();
-                    int primaryIndex = 0;
-                    int i = 0;
-                    for (JsonElement je : files) {
-                        if (je.getAsJsonObject().get("primary").getAsBoolean()) primaryIndex = i;
-                        i++;
-                    }
-                    downloads.add(new UrlFilename(files.get(primaryIndex).getAsJsonObject().get("url").getAsString(), files.get(primaryIndex).getAsJsonObject().get("filename").getAsString()));
-                    System.out.println(latestValidPlugin.get("name").getAsString()+"\n");
+                } catch (Exception exception) {
+                    exception.printStackTrace();
                 }
-
-                //TODO: Maybe multithreading in the future?
-                dependencyInstall:
-                for (UrlFilename downloadData : downloads) {
-                    File file = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+downloadData.getFilename());
-                    if (file.exists()) {
-                        continue;
-                    }
-
+            }
+            System.out.println(moveFile);
+            try {
+                if (moveFile != null) FileUtils.copyFile(moveFile, new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + moveFile.getName()));
+                for (File file : pluginStore.listFiles()) {
                     try {
-                        //downloads the file
-                        ReadableByteChannel rbc = Channels.newChannel(new URL(downloadData.getUrl()).openStream());
-                        FileOutputStream fos = new FileOutputStream(file);
-                        fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-                        fos.close();
-                        rbc.close();
-                    } catch (Exception ignore) {
-                        continue;
-                    }
-
-                    //gets the plugin.yml data from the plugin
-                    try {
-                        ZipFile zip = new ZipFile(file);
-                        for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
-                            ZipEntry entry = e.nextElement();
-                            if (!entry.getName().equals("plugin.yml")) continue;
-
-                            StringBuilder out = new StringBuilder();
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
-                            String line;
-                            while ((line = reader.readLine()) != null) out.append(line).append("\n");
-                            reader.close();
-
-                            Yaml yaml = new Yaml();
-                            Map<String, Object> yamlData = yaml.load(out.toString());
-                            if (yamlData.get("name").equals(unmetDepName)) {
-                                //TODO: Move plugins into /plugins dir.
-                                //TODO: check if it works XD.
-                                getLogger().log(Level.INFO, "Unmet dependency for \""+unmetDependencies.get(unmetDepInfo).getName()+"\" successfully resolved by installing \""+yamlData.get("name")+"\"");
-                                break dependencyInstall;
-                            }
-                        }
-
-                    } catch (Exception exception) {
-                        exception.printStackTrace();
-                    }
+                        file.delete();
+                    } catch (Exception ignore) {}
                 }
+                FileUtils.forceDeleteOnExit(pluginStore);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
 
