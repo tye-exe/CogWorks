@@ -2,5 +2,6 @@
 - General improvements to /file command.
 - Fixed broken url for plugin main page when using /plugin install.
 - Minor QOL changes.
+- Can now delete plugins that didn't load.
 - Reworked internal method handling for errors.
 - Checking for dependencies on startup and attempts to resolve them automatically.
