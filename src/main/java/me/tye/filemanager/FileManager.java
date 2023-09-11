@@ -6,6 +6,7 @@ import com.google.gson.stream.JsonReader;
 import me.tye.filemanager.commands.FileCommand;
 import me.tye.filemanager.commands.PluginCommand;
 import me.tye.filemanager.commands.TabComplete;
+import me.tye.filemanager.util.UrlFilename;
 import me.tye.filemanager.util.yamlClasses.DependencyInfo;
 import me.tye.filemanager.util.yamlClasses.PluginData;
 import org.bukkit.Bukkit;
@@ -18,6 +19,10 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
@@ -102,7 +107,7 @@ public final class FileManager extends JavaPlugin {
         }
 
         //checks for uninstalled dependencies
-        ArrayList<DependencyInfo> unmetDependencies = new ArrayList<>();
+        HashMap<DependencyInfo, PluginData> unmetDependencies = new HashMap<>();
         for (PluginData data : identifiers) {
             ArrayList<DependencyInfo> dependencies = data.getDependencies();
             ArrayList<DependencyInfo> metDependencies = new ArrayList<>();
@@ -113,27 +118,28 @@ public final class FileManager extends JavaPlugin {
                 }
             }
             dependencies.removeAll(metDependencies);
-            unmetDependencies.addAll(dependencies);
+            for (DependencyInfo dep : dependencies) unmetDependencies.put(dep, data);
         }
 
         //attempts to resolve unmet dependencies
-        //TODO: change logging
-        for (DependencyInfo depInfo : unmetDependencies) {
-            String name = depInfo.getName();
-            String version = depInfo.getVersion();
-            if (version == null) {
+        //TODO: implement this for filtering versions https://api.modrinth.com/v2/project/fALzjamp/version?loaders=["paper"]&game_versions=["1.20.1"]
+        for (DependencyInfo unmetDepInfo : unmetDependencies.keySet()) {
+            String unmetDepName = unmetDepInfo.getName();
+            String unmetDepVersion = unmetDepInfo.getVersion();
+            if (unmetDepVersion == null) {
                 ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
+                HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
                 try {
                     String mcVersion = Bukkit.getVersion().split(": ")[1];
                     mcVersion = mcVersion.substring(0, mcVersion.length() - 1);
                     String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
 
-                    JsonElement relevantPlugins = modrinthAPI(new URL("https://api.modrinth.com/v2/search?query=" + makeValidForUrl(name) + "&facets=[[%22versions:" + mcVersion + "%22],[%22categories:" + serverSoftware + "%22]]"), "GET");
+                    JsonElement relevantPlugins = modrinthAPI(new URL("https://api.modrinth.com/v2/search?query=" + makeValidForUrl(unmetDepName) + "&facets=[[%22versions:" + mcVersion + "%22],[%22categories:" + serverSoftware + "%22]]"), "GET");
                     if (relevantPlugins == null) return;
                     JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
 
-                    if (hits.size() == 0) {
-                        getLogger().log(Level.WARNING, "No plugins matching that "+name+" could be found on Modrinth.");
+                    if (hits.isEmpty()) {
+                        getLogger().log(Level.WARNING, "No plugins matching that "+unmetDepName+" could be found on Modrinth.");
                         return;
                     }
 
@@ -195,7 +201,6 @@ public final class FileManager extends JavaPlugin {
                     }
 
                     //hashmap of all valid plugins and there compatible versions
-                    HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
                     for (JsonElement je : hits) {
                         JsonObject jo = je.getAsJsonObject();
                         String projectID = jo.get("project_id").getAsString();
@@ -212,7 +217,7 @@ public final class FileManager extends JavaPlugin {
                     for (JsonElement je : hits)
                         if (validPlugins.containsKey(je.getAsJsonObject())) validPluginKeys.add(je.getAsJsonObject());
 
-                    if (validPluginKeys.size() == 0) {
+                    if (validPluginKeys.isEmpty()) {
                         //sender.sendMessage(ChatColor.YELLOW + "No compatible plugins with this name were found on Modrinth.");
                         return;
                     }
@@ -220,7 +225,83 @@ public final class FileManager extends JavaPlugin {
                     e.printStackTrace();
                 }
                 System.out.println(validPluginKeys);
-                //TODO: check if plugin resolves dependency and if not install the next one. Maybe multithreading in the future?
+
+                //gets the urls to download from
+                ArrayList<UrlFilename> downloads = new ArrayList<>();
+                for (JsonObject jo : validPluginKeys) {
+                    JsonArray ja = validPlugins.get(jo);
+                    JsonObject latestValidPlugin = null;
+
+                    //gets the latest version of a compatible plugin
+                    for (JsonElement je : ja) {
+                        if (latestValidPlugin == null) {
+                            latestValidPlugin = je.getAsJsonArray().get(0).getAsJsonObject();
+                        } else {
+                            LocalDateTime newDT = LocalDateTime.parse(je.getAsJsonObject().get("date_published").getAsString());
+                            LocalDateTime dt = LocalDateTime.parse(latestValidPlugin.get("date_published").getAsString());
+                            if (dt.isBefore(newDT)) {
+                                latestValidPlugin = je.getAsJsonObject();
+                            }
+                        }
+                    }
+
+                    JsonArray files = latestValidPlugin.get("files").getAsJsonArray();
+                    int primaryIndex = 0;
+                    int i = 0;
+                    for (JsonElement je : files) {
+                        if (je.getAsJsonObject().get("primary").getAsBoolean()) primaryIndex = i;
+                        i++;
+                    }
+                    downloads.add(new UrlFilename(files.get(primaryIndex).getAsJsonObject().get("url").getAsString(), files.get(primaryIndex).getAsJsonObject().get("filename").getAsString()));
+                    System.out.println(latestValidPlugin.get("name").getAsString()+"\n");
+                }
+
+                //TODO: Maybe multithreading in the future?
+                dependencyInstall:
+                for (UrlFilename downloadData : downloads) {
+                    File file = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+downloadData.getFilename());
+                    if (file.exists()) {
+                        continue;
+                    }
+
+                    try {
+                        //downloads the file
+                        ReadableByteChannel rbc = Channels.newChannel(new URL(downloadData.getUrl()).openStream());
+                        FileOutputStream fos = new FileOutputStream(file);
+                        fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                        fos.close();
+                        rbc.close();
+                    } catch (Exception ignore) {
+                        continue;
+                    }
+
+                    //gets the plugin.yml data from the plugin
+                    try {
+                        ZipFile zip = new ZipFile(file);
+                        for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
+                            ZipEntry entry = e.nextElement();
+                            if (!entry.getName().equals("plugin.yml")) continue;
+
+                            StringBuilder out = new StringBuilder();
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
+                            String line;
+                            while ((line = reader.readLine()) != null) out.append(line).append("\n");
+                            reader.close();
+
+                            Yaml yaml = new Yaml();
+                            Map<String, Object> yamlData = yaml.load(out.toString());
+                            if (yamlData.get("name").equals(unmetDepName)) {
+                                //TODO: Move plugins into /plugins dir.
+                                //TODO: check if it works XD.
+                                getLogger().log(Level.INFO, "Unmet dependency for \""+unmetDependencies.get(unmetDepInfo).getName()+"\" successfully resolved by installing \""+yamlData.get("name")+"\"");
+                                break dependencyInstall;
+                            }
+                        }
+
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
+                    }
+                }
             }
         }
 

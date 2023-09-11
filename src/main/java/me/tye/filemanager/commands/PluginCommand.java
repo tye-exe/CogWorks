@@ -34,6 +34,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -61,7 +62,14 @@ public class PluginCommand implements CommandExecutor {
                         if (!Files.getFileExtension(fileName).equals("jar")) {
                             fileName+=".jar";
                         }
-                        installPluginURL(url, fileName, true, sender);
+                        try {
+                            installPluginURL(url, fileName, true);
+                        } catch (PluginExistsException e) {
+                            sender.sendMessage(ChatColor.RED + "The Plugin is already installed: Skipping");
+                        } catch (PluginInstallException e) {
+                            sender.sendMessage(ChatColor.RED + e.getMessage());
+                            Bukkit.getLogger().log(Level.WARNING, e.getCause().toString());
+                        }
                         sender.sendMessage(ChatColor.GREEN + "Reload or restart for the plugin to activate.");
 
                     } catch (MalformedURLException e) {
@@ -209,7 +217,7 @@ public class PluginCommand implements CommandExecutor {
         return true;
     }
 
-    public static boolean installPluginURL(URL downloadURL, String fileName, Boolean addFileHash, CommandSender sender) throws PluginExistsException, PluginInstallException {
+    public static boolean installPluginURL(URL downloadURL, String fileName, Boolean addFileHash) throws PluginExistsException, PluginInstallException {
 
         File file = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+fileName);
         if (file.exists()) {
@@ -219,12 +227,13 @@ public class PluginCommand implements CommandExecutor {
         try {
             //downloads the file
             ReadableByteChannel rbc = Channels.newChannel(downloadURL.openStream());
+            //has to downloaded to a generic places before the hash can be generated from the file.
             FileOutputStream fos = new FileOutputStream(fileName);
             fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
             fos.close();
             rbc.close();
         } catch (FileNotFoundException noFile) {
-            throw new PluginInstallException("Requested file could not be found at that url.");
+            throw new PluginInstallException("Requested file could not be found at that url.", noFile.getCause());
         } catch (IOException ioException) {
             throw new PluginInstallException("Error installing plugin! Please see the console and report the error.", ioException.getCause());
         }
@@ -254,13 +263,10 @@ public class PluginCommand implements CommandExecutor {
             File destination = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
             File downloadedFile = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString()+File.separator+fileName);
             Files.move(downloadedFile, destination);
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            sender.sendMessage(ChatColor.RED+"Error installing plugin! Please see the console and report the error.");
-            return false;
+        } catch (IOException ioException) {
+            throw new PluginExistsException("Error moving the plugin into the \""+File.separator+"plugins\" folder.", ioException.getCause());
         }
 
-        sender.sendMessage(ChatColor.GREEN+fileName+" installed.");
         return true;
 //        List<File> postMove = new ArrayList<>(Arrays.stream(destinationFolder.listFiles()).toList());
 //        postMove.removeAll(preMove);

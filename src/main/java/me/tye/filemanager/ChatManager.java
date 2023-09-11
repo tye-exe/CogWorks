@@ -5,6 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import me.tye.filemanager.util.PathHolder;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
+import me.tye.filemanager.util.exceptions.PluginExistsException;
+import me.tye.filemanager.util.exceptions.PluginInstallException;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -26,6 +28,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
 
 import static me.tye.filemanager.FileGui.position;
 import static me.tye.filemanager.commands.PluginCommand.*;
@@ -173,9 +176,14 @@ public class ChatManager implements Listener {
                     for (JsonElement je : files) {
                         JsonObject file = je.getAsJsonObject();
                         try {
-                            installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false, sender);
+                            if (installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false)) sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
                         } catch (MalformedURLException e) {
                             sender.sendMessage(ChatColor.YELLOW + "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
+                        } catch (PluginExistsException e) {
+                            sender.sendMessage(ChatColor.RED + "The Plugin is already installed: Skipping");
+                        } catch (PluginInstallException e) {
+                            sender.sendMessage(ChatColor.RED + e.getMessage());
+                            Bukkit.getLogger().log(Level.WARNING, e.getCause().toString());
                         }
                     }
                     sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
@@ -258,9 +266,14 @@ public class ChatManager implements Listener {
                 for (JsonElement je : files) {
                     JsonObject file = je.getAsJsonObject();
                     try {
-                        installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false, sender);
+                        if (installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false)) sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
                     } catch (MalformedURLException e) {
                         sender.sendMessage(ChatColor.YELLOW + "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
+                    } catch (PluginExistsException e) {
+                        sender.sendMessage(ChatColor.RED + "The Plugin is already installed: Skipping");
+                    } catch (PluginInstallException e) {
+                        sender.sendMessage(ChatColor.RED + e.getMessage());
+                        Bukkit.getLogger().log(Level.WARNING, e.getCause().toString());
                     }
                 }
                 sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
@@ -396,8 +409,15 @@ public class ChatManager implements Listener {
             for (JsonElement je : dependencyFiles) {
                 JsonObject file = je.getAsJsonObject();
                 try {
-                    installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false, sender);
-                } catch (MalformedURLException e) {sender.sendMessage(ChatColor.YELLOW + "Skipping dependency " + file.get("filename").getAsString() + ": Invalid download ulr");}
+                    if (installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false)) sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
+                } catch (MalformedURLException e) {
+                    sender.sendMessage(ChatColor.YELLOW + "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
+                } catch (PluginExistsException e) {
+                    sender.sendMessage(ChatColor.RED + "The Plugin is already installed: Skipping");
+                } catch (PluginInstallException e) {
+                    sender.sendMessage(ChatColor.RED + e.getMessage());
+                    Bukkit.getLogger().log(Level.WARNING, e.getCause().toString());
+                }
             }
         }
     }

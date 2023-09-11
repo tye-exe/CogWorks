@@ -1,6 +1,7 @@
 package me.tye.filemanager.commands;
 
 import me.tye.filemanager.FileManager;
+import me.tye.filemanager.util.yamlClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -26,9 +27,8 @@ public class TabComplete implements TabCompleter {
             if (args.length == 2 && args[0].equals("remove")) {
                 ArrayList<String> plugins = new ArrayList<>();
 
-                for (Plugin plugin : JavaPlugin.getPlugin(FileManager.class).getServer().getPluginManager().getPlugins()) {
-                    plugins.add(plugin.getName());
-                }
+                for (PluginData data : FileManager.readPluginData())
+                    plugins.add(data.getName());
 
                 StringUtil.copyPartialMatches(args[1], plugins, completions);
             }
