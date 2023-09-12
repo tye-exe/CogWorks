@@ -53,6 +53,7 @@ public class PluginCommand implements CommandExecutor {
                 "/plugin remove <Plugin Name> - Disables and uninstalls the given plugin. If the plugin did not load it cannot be uninstalled.");
         if (args.length >= 1) {
             if (args[0].equals("install")) {
+                //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
                 if (args.length >= 2) {
                     try {
                         URL url = new URL(args[1]);
