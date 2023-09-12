@@ -25,26 +25,26 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
-import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static me.tye.filemanager.FileGui.position;
-import static me.tye.filemanager.commands.PluginCommand.modrinthAPI;
 import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
 
 public final class FileManager extends JavaPlugin {
 
+    //TODO: add debug config that enables stacktrace for every error?
 
     @Override
     public void onEnable() {
-
-        //getLogger().log(Level.INFO, "Beep boop!");
 
         //Commands
         getCommand("plugin").setExecutor(new PluginCommand());
@@ -58,7 +58,6 @@ public final class FileManager extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new FileGui(), this);
 
         //Make required config files
-
         File pluginStore = new File(getDataFolder().getAbsoluteFile() + File.separator + "pluginStore");
         File plugins = new File(getDataFolder().getAbsolutePath() + File.separator + "pluginData.json");
         try {
@@ -67,11 +66,19 @@ public final class FileManager extends JavaPlugin {
             if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception();
         }
         catch (Exception e) {
-            getLogger().log(Level.SEVERE, "Error creating config folders, please report the follow error!");
+            getLogger().log(Level.SEVERE, "Error creating config folders, please report the following error!");
             throw new RuntimeException(e);
         }
 
-
+        //clears out leftover files in plugin store dir
+        for (File file : pluginStore.listFiles()) {
+            try {
+                if (file.isFile()) if (!file.delete()) throw new IOException();
+                if (file.isDirectory()) FileUtils.deleteDirectory(file);
+            } catch (IOException e) {
+                getLogger().log(Level.WARNING, "Unable to clean up unused file \""+file.getName()+"\". Please manually delete this file at your earliest convenience.");
+            }
+        }
 
         //Gets the plugin.yml files from each plugin
         File pluginFolder = new File(getDataFolder().getParent());
@@ -98,7 +105,7 @@ public final class FileManager extends JavaPlugin {
                     pluginData.add(yaml.load(out.toString()));
                     pluginFileName.add(file.getName());
                 }
-
+                zip.close();
             } catch (Exception exception) {
                 exception.printStackTrace();
             }
@@ -137,119 +144,160 @@ public final class FileManager extends JavaPlugin {
 
         //attempts to resolve unmet dependencies
         //TODO: implement this for filtering versions https://api.modrinth.com/v2/project/fALzjamp/version?loaders=["paper"]&game_versions=["1.20.1"] - would use more api requests.
-        //TODO: multithreading
         //TODO: add tag for attempted to resolve dependency?
-        //TODO: PROPER ERROR MESSAGES
-        //TODO: check against plugins that hap[pen to be in the temp folder?
         for (DependencyInfo unmetDepInfo : unmetDependencies.keySet()) {
-            String unmetDepName = unmetDepInfo.getName();
-            String unmetDepVersion = unmetDepInfo.getVersion();
-            if (unmetDepVersion != null) return;
-            ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
-            HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
+            new Thread(new Runnable() {
+                private DependencyInfo unmetDepInfo;
+                private File pluginStore;
+                private HashMap<DependencyInfo, PluginData> unmetDependencies;
 
-            try {
-                ModrinthSearch search = modrinthSearch(unmetDepName);
-                validPluginKeys = search.getValidPluginKeys();
-                validPlugins = search.getValidPlugins();
-            } catch (MalformedURLException | ModrinthAPIException e) {
-                getLogger().log(Level.WARNING, "Error querying Modrinth for automatic dependency resolution.");
-                getLogger().log(Level.WARNING, "Skipping resolving for: "+unmetDepName);
-                //TODO: remove stacktrace
-                e.printStackTrace();
-            }
+                public Runnable init(DependencyInfo unmetDepInfo, File pluginStore, HashMap<DependencyInfo, PluginData> unmetDependencies) {
+                    this.unmetDepInfo = unmetDepInfo;
+                    //so multiple threads get their own folder.
+                    this.pluginStore = new File(pluginStore.getAbsolutePath() + File.separator + LocalDateTime.now().hashCode());
+                    this.pluginStore.mkdir();
 
-            System.out.println(validPluginKeys);
-
-            //gets the urls to download from
-            ArrayList<UrlFilename> downloads = new ArrayList<>();
-            for (JsonObject jo : validPluginKeys) {
-                JsonArray ja = validPlugins.get(jo);
-                JsonObject latestValidPlugin = null;
-
-                //gets the latest version of a compatible plugin
-                for (JsonElement je : ja) {
-                    if (latestValidPlugin == null) {
-                        latestValidPlugin = je.getAsJsonArray().get(0).getAsJsonObject();
-                    } else {
-                        LocalDateTime newDT = LocalDateTime.parse(je.getAsJsonObject().get("date_published").getAsString());
-                        LocalDateTime dt = LocalDateTime.parse(latestValidPlugin.get("date_published").getAsString());
-                        if (dt.isBefore(newDT)) {
-                            latestValidPlugin = je.getAsJsonObject();
-                        }
-                    }
+                    this.unmetDependencies = unmetDependencies;
+                    return this;
                 }
 
-                JsonArray files = latestValidPlugin.get("files").getAsJsonArray();
-                int primaryIndex = 0;
-                int i = 0;
-                for (JsonElement je : files) {
-                    if (je.getAsJsonObject().get("primary").getAsBoolean()) primaryIndex = i;
-                    i++;
-                }
-                downloads.add(new UrlFilename(files.get(primaryIndex).getAsJsonObject().get("url").getAsString(), files.get(primaryIndex).getAsJsonObject().get("filename").getAsString()));
-                System.out.println(latestValidPlugin.get("name").getAsString()+"\n");
-            }
+                @Override
+                public void run() {
+                    String unmetDepName = this.unmetDepInfo.getName();
+                    String unmetDepVersion = this.unmetDepInfo.getVersion();
+                    if (unmetDepVersion != null) return;
+                    ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
+                    HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
 
-            File moveFile = null;
-            dependencyInstall:
-            for (UrlFilename downloadData : downloads) {
-                File file = new File(pluginStore.getAbsolutePath()+File.separator+downloadData.getFilename());
-                if (file.exists()) {
-                    continue;
-                }
+                    getLogger().log(Level.INFO, "Attempting to automatically resolve missing dependency \""+unmetDepInfo.getName()+"\" for \""+unmetDependencies.get(unmetDepInfo).getName()+"\".");
 
-                try {
-                    //downloads the file
-                    ReadableByteChannel rbc = Channels.newChannel(new URL(downloadData.getUrl()).openStream());
-                    FileOutputStream fos = new FileOutputStream(file);
-                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-                    fos.close();
-                    rbc.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    continue;
-                }
-
-                //gets the plugin.yml data from the plugin
-                try {
-                    ZipFile zip = new ZipFile(file);
-                    for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
-                        ZipEntry entry = e.nextElement();
-                        if (!entry.getName().equals("plugin.yml")) continue;
-
-                        StringBuilder out = new StringBuilder();
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
-                        String line;
-                        while ((line = reader.readLine()) != null) out.append(line).append("\n");
-                        reader.close();
-
-                        Yaml yaml = new Yaml();
-                        Map<String, Object> yamlData = yaml.load(out.toString());
-                        System.out.println(yamlData.get("name"));
-                        System.out.println(unmetDepName);
-                        if (yamlData.get("name").equals(unmetDepName)) {
-                            moveFile = file;
-                            getLogger().log(Level.INFO, "Unmet dependency for \""+unmetDependencies.get(unmetDepInfo).getName()+"\" successfully resolved by installing \""+yamlData.get("name")+"\".");
-                            break dependencyInstall;
-                        }
-                    }
-                } catch (Exception exception) {
-                    exception.printStackTrace();
-                }
-            }
-            System.out.println(moveFile);
-            try {
-                if (moveFile != null) FileUtils.copyFile(moveFile, new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + moveFile.getName()));
-                for (File file : pluginStore.listFiles()) {
+                    //searches the dependency name on modrinth
                     try {
-                        file.delete();
-                    } catch (Exception ignore) {}
+                        ModrinthSearch search = modrinthSearch(unmetDepName);
+                        validPluginKeys = search.getValidPluginKeys();
+                        validPlugins = search.getValidPlugins();
+                    } catch (MalformedURLException | ModrinthAPIException e) {
+                        getLogger().log(Level.WARNING, "Error querying Modrinth for automatic dependency resolution.");
+                        getLogger().log(Level.WARNING, "Skipping resolving for: "+unmetDepName);
+                    }
+
+                    //gets the urls to download from
+                    ArrayList<UrlFilename> downloads = new ArrayList<>();
+                    for (JsonObject jo : validPluginKeys) {
+                        JsonArray ja = validPlugins.get(jo);
+                        JsonObject latestValidPlugin = null;
+
+                        //gets the latest version of a compatible plugin
+                        for (JsonElement je : ja) {
+                            if (latestValidPlugin == null) {
+                                latestValidPlugin = je.getAsJsonArray().get(0).getAsJsonObject();
+                            } else {
+                                LocalDateTime newDT = LocalDateTime.parse(je.getAsJsonObject().get("date_published").getAsString());
+                                LocalDateTime dt = LocalDateTime.parse(latestValidPlugin.get("date_published").getAsString());
+                                if (dt.isBefore(newDT)) {
+                                    latestValidPlugin = je.getAsJsonObject();
+                                }
+                            }
+                        }
+
+                        JsonArray files = latestValidPlugin.get("files").getAsJsonArray();
+                        int primaryIndex = 0;
+                        int i = 0;
+                        for (JsonElement je : files) {
+                            if (je.getAsJsonObject().get("primary").getAsBoolean()) primaryIndex = i;
+                            i++;
+                        }
+                        downloads.add(new UrlFilename(files.get(primaryIndex).getAsJsonObject().get("url").getAsString(), files.get(primaryIndex).getAsJsonObject().get("filename").getAsString()));
+                    }
+
+                    //installs possible dependencies
+                    ExecutorService executorService = Executors.newCachedThreadPool();
+                    for (UrlFilename downloadData : downloads) {
+                        executorService.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                //This seems to work correctly for accessing the var outside of the run method
+                                File file = new File(pluginStore.getAbsolutePath()+File.separator+downloadData.getFilename());
+                                try {
+                                    ReadableByteChannel rbc = Channels.newChannel(new URL(downloadData.getUrl()).openStream());
+                                    FileOutputStream fos = new FileOutputStream(file);
+                                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                                    fos.close();
+                                    rbc.close();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                    }
+                    executorService.shutdown();
+                    try {
+                        executorService.awaitTermination(1, TimeUnit.MINUTES);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    File dependency = null;
+                    //gets the plugin.yml data from the plugins
+                    dependencyCheck:
+                    for (File file : pluginStore.listFiles()) {
+                        try {
+                            ZipFile zip = new ZipFile(file);
+                            for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
+                                ZipEntry entry = e.nextElement();
+                                if (!entry.getName().equals("plugin.yml")) continue;
+
+                                StringBuilder out = new StringBuilder();
+                                BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
+                                String line;
+                                while ((line = reader.readLine()) != null) out.append(line).append("\n");
+                                reader.close();
+
+                                Yaml yaml = new Yaml();
+                                Map<String, Object> yamlData = yaml.load(out.toString());
+                                if (yamlData.get("name").equals(unmetDepName)) {
+                                    dependency = file;
+                                    getLogger().log(Level.INFO, "Unmet dependency for \"" + unmetDependencies.get(unmetDepInfo).getName() + "\" successfully resolved by installing \"" + yamlData.get("name") + "\".");
+                                    break dependencyCheck;
+                                }
+                            }
+                            zip.close();
+                        } catch (Exception exception) {
+                            exception.printStackTrace();
+                        }
+                    }
+
+                    //copy dependency
+                    try {
+                        if (dependency != null) FileUtils.copyFile(dependency, new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
+
+                        //continuously attempts to delete file until it has finished copying.
+                        //TODO: check if the file actually becomes deletable after copying.
+                        new Thread((new Runnable() {
+                            File pluginStore;
+
+                            public Runnable init(File pluginStore) {
+                                this.pluginStore = pluginStore;
+                                return this;
+                            }
+                            public void run() {
+                                int i = 0;
+                                while (pluginStore.exists() && i < 10) {
+                                    i++;
+                                    try {
+                                        Thread.sleep(1000);
+                                        FileUtils.deleteDirectory(pluginStore);
+                                    } catch (Exception ignore) {}
+                                }
+                            }
+                        }).init(pluginStore)).start();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    if (dependency == null) getLogger().log(Level.WARNING, "Unmet dependency for \""+unmetDependencies.get(unmetDepInfo).getName()+"\" could not be automatically resolved.");
                 }
-                FileUtils.forceDeleteOnExit(pluginStore);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            }.init(unmetDepInfo, pluginStore, unmetDependencies)).start();
         }
 
     }

@@ -5,3 +5,4 @@
 - Can now delete plugins that didn't load.
 - Reworked internal method handling for errors.
 - Checking for dependencies on startup and attempts to resolve them automatically.
+- Made automatic dependency resolve occur in multiple threads.
