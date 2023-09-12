@@ -18,7 +18,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.FileUtil;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
@@ -41,8 +40,7 @@ import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
 
 public final class FileManager extends JavaPlugin {
 
-    //TODO: add debug config that enables stacktrace for every error?
-
+    public static HashMap<String, Object> configs = new HashMap<>();
     @Override
     public void onEnable() {
 
@@ -57,21 +55,46 @@ public final class FileManager extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ChatManager(), this);
         getServer().getPluginManager().registerEvents(new FileGui(), this);
 
-        //Make required config files
+        //TODO: relocate pluginData.json - make it clear to user that it is an important config file and not supposed to be user editable.
+        //TODO: make file for configs. - Is this going to be editable? maybe not blacklist/whitlists. Add command to blacklist file/dir?
+        //TODO: add debug config that enables stacktrace for every error?
+
+        //Set up required config files
+        File configsFile = new File(getDataFolder().getAbsolutePath() + File.separator + "configs.yml");
         File pluginStore = new File(getDataFolder().getAbsoluteFile() + File.separator + "pluginStore");
-        File plugins = new File(getDataFolder().getAbsolutePath() + File.separator + "pluginData.json");
+        File plugins = new File(pluginStore.getAbsolutePath() + File.separator + "pluginData.json");
         try {
             if (!getDataFolder().exists()) if (!getDataFolder().mkdir()) throw new Exception();
+
+            if (configsFile.exists()) {
+                InputStream is = new FileInputStream(configsFile);
+                configs = new Yaml().load(is);
+            } else {
+                if (!configsFile.createNewFile()) throw new Exception();
+            }
+
             if (!pluginStore.exists()) if(!pluginStore.mkdir()) throw new Exception();
             if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception();
         }
         catch (Exception e) {
-            getLogger().log(Level.SEVERE, "Error creating config folders, please report the following error!");
+            getLogger().log(Level.SEVERE, "Error initialising config folders, please report the following error!");
+            throw new RuntimeException(e);
+        }
+
+        //checks that config file has the correct content.
+        //TODO: this
+        try {
+            FileWriter fr = new FileWriter(configsFile);
+            if (!configs.containsKey("debug")) fr.write("\ndebug: false");
+            fr.close();
+        } catch (IOException e) {
+            getLogger().log(Level.SEVERE, "Error writing configurations to config file, please report the following error!");
             throw new RuntimeException(e);
         }
 
         //clears out leftover files in plugin store dir
         for (File file : pluginStore.listFiles()) {
+            if (file.getName().equals(plugins.getName())) continue;
             try {
                 if (file.isFile()) if (!file.delete()) throw new IOException();
                 if (file.isDirectory()) FileUtils.deleteDirectory(file);
@@ -325,7 +348,7 @@ public final class FileManager extends JavaPlugin {
     }
 
     public static void appendPluginData(ArrayList<String> fileNames, ArrayList<Map<String, Object>> pluginData) {
-        File plugins = new File(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + "pluginData.json");
+        File plugins = new File(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + "pluginStore" + File.separator + "pluginData.json");
         try {
             //appends data to file then writes it
             ArrayList<PluginData> identifiers = readPluginData();
@@ -350,7 +373,7 @@ public final class FileManager extends JavaPlugin {
     public static ArrayList<PluginData> readPluginData() {
         ArrayList<PluginData> pluginData = new ArrayList<>();
         try {
-            FileReader fr =  new FileReader(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + "pluginData.json");
+            FileReader fr =  new FileReader(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + "pluginStore" + File.separator + "pluginData.json");
             JsonReader jr = new JsonReader(fr);
             JsonElement jsonElement = JsonParser.parseReader(jr);
             if (jsonElement.isJsonNull()) return pluginData;
