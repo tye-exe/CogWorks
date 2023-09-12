@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.logging.Level;
 
 import static me.tye.filemanager.FileGui.position;
+import static me.tye.filemanager.FileManager.configs;
+import static me.tye.filemanager.FileManager.log;
 import static me.tye.filemanager.commands.PluginCommand.*;
 
 public class ChatManager implements Listener {
@@ -84,7 +86,7 @@ public class ChatManager implements Listener {
                     try {
                         chosenPlugin = Integer.parseInt(message);
                     } catch (NumberFormatException e) {
-                        sender.sendMessage(ChatColor.RED+"Please enter a listed number!");
+                        log(e, sender, Level.WARNING, "Please enter a listed number!");
                         return;
                     }
 
@@ -135,7 +137,7 @@ public class ChatManager implements Listener {
                     try {
                         chosenVersion = Integer.parseInt(message);
                     } catch (NumberFormatException e) {
-                        sender.sendMessage(ChatColor.RED+"Please enter a listed number!");
+                        log(e, sender, Level.WARNING, "Please enter a listed number!");
                         return;
                     }
 
@@ -178,12 +180,11 @@ public class ChatManager implements Listener {
                         try {
                             if (installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false)) sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
                         } catch (MalformedURLException e) {
-                            sender.sendMessage(ChatColor.YELLOW + "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
+                            log(e, sender, Level.WARNING, "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
                         } catch (PluginExistsException e) {
-                            sender.sendMessage(ChatColor.RED + "The Plugin is already installed: Skipping");
+                            log(e, sender, Level.WARNING, "The Plugin is already installed: Skipping");
                         } catch (PluginInstallException e) {
-                            sender.sendMessage(ChatColor.RED + e.getMessage());
-                            Bukkit.getLogger().log(Level.WARNING, e.getCause().toString());
+                            log(e, sender, Level.WARNING, e.getMessage());
                         }
                     }
                     sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
@@ -222,7 +223,7 @@ public class ChatManager implements Listener {
                             for (Path path : paths) files.append(path.toString().substring(length+1)+"\n");
                             sender.sendMessage(ChatColor.AQUA+files.toString());
                         } catch (Exception e) {
-                            sender.sendMessage(ChatColor.RED+"Error trying to get files from current folder.\nPlease see ths console for the error message.");
+                            log(e, sender, Level.WARNING, "Error trying to get files from current folder.");
                         }
                     }
                     if (message.startsWith("cd")) {
@@ -268,12 +269,11 @@ public class ChatManager implements Listener {
                     try {
                         if (installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false)) sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
                     } catch (MalformedURLException e) {
-                        sender.sendMessage(ChatColor.YELLOW + "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
+                        log(e, sender, Level.WARNING, "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
                     } catch (PluginExistsException e) {
-                        sender.sendMessage(ChatColor.RED + "The Plugin is already installed: Skipping");
+                        log(e, sender, Level.WARNING, "The Plugin is already installed: Skipping");
                     } catch (PluginInstallException e) {
-                        sender.sendMessage(ChatColor.RED + e.getMessage());
-                        Bukkit.getLogger().log(Level.WARNING, e.getCause().toString());
+                        log(e, sender, Level.WARNING, e.getMessage());
                     }
                 }
                 sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
@@ -313,7 +313,7 @@ public class ChatManager implements Listener {
                 }
 
             } catch (MalformedURLException | ModrinthAPIException e) {
-                sender.sendMessage(ChatColor.RED + "Error getting dependency plugins from Modrinth.");
+                log(e, sender, Level.SEVERE, "Error getting dependency plugins from Modrinth.");
                 return;
             }
         }
@@ -332,7 +332,7 @@ public class ChatManager implements Listener {
                 return;
             }
         } catch (MalformedURLException | ModrinthAPIException e) {
-            sender.sendMessage(ChatColor.RED + "Error getting dependency versions from Modrinth.");
+            log(e, sender, Level.SEVERE, "Error getting dependency plugins from Modrinth.");
             return;
         }
 
@@ -379,6 +379,7 @@ public class ChatManager implements Listener {
         }
         if (allProjectIDs.size() != compatibleProjectIDs.size()) {
             allProjectIDs.removeAll(compatibleProjectIDs);
+            //TODO: figure out what this is doing
             StringBuilder incompatibleProjects = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
             for (String projectID : allProjectIDs) {
                 incompatibleProjects.append("%22").append(projectID).append("%22").append(",");
@@ -392,7 +393,7 @@ public class ChatManager implements Listener {
 
                 sender.sendMessage(ChatColor.YELLOW + "Error installing dependencies: "+incompatibleTitles.substring(incompatibleTitles.length()-2)+".\nEither doesn't support version or server software.");
             } catch (MalformedURLException | ModrinthAPIException e){
-                sender.sendMessage(ChatColor.YELLOW + "Error installing some dependencies!\nError getting incompatible dependencies!");
+                log(e, sender, Level.WARNING, "Error installing some dependencies!\nError getting incompatible dependencies!");
             }
         }
 
@@ -411,12 +412,11 @@ public class ChatManager implements Listener {
                 try {
                     if (installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false)) sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
                 } catch (MalformedURLException e) {
-                    sender.sendMessage(ChatColor.YELLOW + "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
+                    log(e, sender, Level.WARNING, "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
                 } catch (PluginExistsException e) {
-                    sender.sendMessage(ChatColor.RED + "The Plugin is already installed: Skipping");
+                    log(e, sender, Level.WARNING, "The Plugin is already installed: Skipping");
                 } catch (PluginInstallException e) {
-                    sender.sendMessage(ChatColor.RED + e.getMessage());
-                    Bukkit.getLogger().log(Level.WARNING, e.getCause().toString());
+                    log(e, sender, Level.WARNING, e.getMessage());
                 }
             }
         }

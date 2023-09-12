@@ -14,10 +14,12 @@ import me.tye.filemanager.util.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
@@ -39,6 +41,7 @@ import static me.tye.filemanager.FileGui.position;
 import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
 
 public final class FileManager extends JavaPlugin {
+    //TODO: proper warning for every error alongside debug option
 
     public static HashMap<String, Object> configs = new HashMap<>();
     @Override
@@ -55,10 +58,6 @@ public final class FileManager extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ChatManager(), this);
         getServer().getPluginManager().registerEvents(new FileGui(), this);
 
-        //TODO: relocate pluginData.json - make it clear to user that it is an important config file and not supposed to be user editable.
-        //TODO: make file for configs. - Is this going to be editable? maybe not blacklist/whitlists. Add command to blacklist file/dir?
-        //TODO: add debug config that enables stacktrace for every error?
-
         //Set up required config files
         File configsFile = new File(getDataFolder().getAbsolutePath() + File.separator + "configs.yml");
         File pluginStore = new File(getDataFolder().getAbsoluteFile() + File.separator + "pluginStore");
@@ -68,7 +67,8 @@ public final class FileManager extends JavaPlugin {
 
             if (configsFile.exists()) {
                 InputStream is = new FileInputStream(configsFile);
-                configs = new Yaml().load(is);
+                HashMap<String, Object> map = new Yaml().load(is);
+                if (map != null) configs = map;
             } else {
                 if (!configsFile.createNewFile()) throw new Exception();
             }
@@ -77,18 +77,22 @@ public final class FileManager extends JavaPlugin {
             if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception();
         }
         catch (Exception e) {
-            getLogger().log(Level.SEVERE, "Error initialising config folders, please report the following error!");
+            log(null, Level.SEVERE, "Error initialising config folders, please report the following error!");
             throw new RuntimeException(e);
         }
 
         //checks that config file has the correct content.
-        //TODO: this
         try {
             FileWriter fr = new FileWriter(configsFile);
-            if (!configs.containsKey("debug")) fr.write("\ndebug: false");
+            if (!configs.containsKey("showErrors")) fr.write("#Displays custom error messages to inform exactly what went wrong.\nshowErrors: true\n");
+            if (!configs.containsKey("showErrorTrace")) fr.write("#Displays stack trace to help with debugging.\n#Turn this on before reporting a bug.\n#This will be enabled by default until release.\nshowErrorTrace: true\n");
             fr.close();
+
+            InputStream is = new FileInputStream(configsFile);
+            HashMap<String, Object> map = new Yaml().load(is);
+            if (map != null) configs = map;
         } catch (IOException e) {
-            getLogger().log(Level.SEVERE, "Error writing configurations to config file, please report the following error!");
+            log(null, Level.SEVERE, "Error writing configurations to config file, please report the following error!");
             throw new RuntimeException(e);
         }
 
@@ -99,7 +103,7 @@ public final class FileManager extends JavaPlugin {
                 if (file.isFile()) if (!file.delete()) throw new IOException();
                 if (file.isDirectory()) FileUtils.deleteDirectory(file);
             } catch (IOException e) {
-                getLogger().log(Level.WARNING, "Unable to clean up unused file \""+file.getName()+"\". Please manually delete this file at your earliest convenience.");
+                log(e, Level.WARNING, "Unable to clean up unused file \"" + file.getName() + "\". Please manually delete this file at your earliest convenience.");
             }
         }
 
@@ -129,8 +133,8 @@ public final class FileManager extends JavaPlugin {
                     pluginFileName.add(file.getName());
                 }
                 zip.close();
-            } catch (Exception exception) {
-                exception.printStackTrace();
+            } catch (Exception e) {
+                log(e, Level.WARNING, "Unable to access plugin.yml file for \"" + file.getName() + "\". \"" + file.getName() + "\" won't work for many features of this plugin.");
             }
         }
 
@@ -146,8 +150,8 @@ public final class FileManager extends JavaPlugin {
             gson.create().toJson(identifiers, fileWriter);
             fileWriter.close();
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (IOException e) {
+            log(e, Level.SEVERE, "Unable to access \""+getDataFolder().getName()+File.separator+configsFile.getName()+"\". Many features of the plugin WILL break!");
         }
 
         //checks for uninstalled dependencies
@@ -166,8 +170,6 @@ public final class FileManager extends JavaPlugin {
         }
 
         //attempts to resolve unmet dependencies
-        //TODO: implement this for filtering versions https://api.modrinth.com/v2/project/fALzjamp/version?loaders=["paper"]&game_versions=["1.20.1"] - would use more api requests.
-        //TODO: add tag for attempted to resolve dependency?
         for (DependencyInfo unmetDepInfo : unmetDependencies.keySet()) {
             new Thread(new Runnable() {
                 private DependencyInfo unmetDepInfo;
@@ -192,7 +194,7 @@ public final class FileManager extends JavaPlugin {
                     ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
                     HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
 
-                    getLogger().log(Level.INFO, "Attempting to automatically resolve missing dependency \""+unmetDepInfo.getName()+"\" for \""+unmetDependencies.get(unmetDepInfo).getName()+"\".");
+                    log(null, Level.INFO, "Attempting to automatically resolve missing dependency \""+unmetDepInfo.getName()+"\" for \""+unmetDependencies.get(unmetDepInfo).getName()+"\".");
 
                     //searches the dependency name on modrinth
                     try {
@@ -200,8 +202,8 @@ public final class FileManager extends JavaPlugin {
                         validPluginKeys = search.getValidPluginKeys();
                         validPlugins = search.getValidPlugins();
                     } catch (MalformedURLException | ModrinthAPIException e) {
-                        getLogger().log(Level.WARNING, "Error querying Modrinth for automatic dependency resolution.");
-                        getLogger().log(Level.WARNING, "Skipping resolving for: "+unmetDepName);
+                        log(null, Level.WARNING, "Error querying Modrinth for automatic dependency resolution.");
+                        log(e, Level.WARNING, "Skipping resolving for: " + unmetDepName);
                     }
 
                     //gets the urls to download from
@@ -247,8 +249,8 @@ public final class FileManager extends JavaPlugin {
                                     fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
                                     fos.close();
                                     rbc.close();
-                                } catch (Exception e) {
-                                    e.printStackTrace();
+                                } catch (IOException e) {
+                                    log(e, Level.WARNING, "Error downloading \""+file.getName()+"\" to check plugin name in \"plugin.yml\" for automatic dependency resolution. Skipping plugin.");
                                 }
                             }
                         });
@@ -257,7 +259,8 @@ public final class FileManager extends JavaPlugin {
                     try {
                         executorService.awaitTermination(1, TimeUnit.MINUTES);
                     } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                        log(null, Level.WARNING, "Threads attempting to download plugins for longer than 60 seconds.");
+                        log(e, Level.WARNING, "Skipping automatic dependency resolution for \""+unmetDepName+"\".");
                     }
 
                     File dependency = null;
@@ -280,13 +283,13 @@ public final class FileManager extends JavaPlugin {
                                 Map<String, Object> yamlData = yaml.load(out.toString());
                                 if (yamlData.get("name").equals(unmetDepName)) {
                                     dependency = file;
-                                    getLogger().log(Level.INFO, "Unmet dependency for \"" + unmetDependencies.get(unmetDepInfo).getName() + "\" successfully resolved by installing \"" + yamlData.get("name") + "\".");
+                                    log(null, Level.INFO, "Unmet dependency for \"" + unmetDependencies.get(unmetDepInfo).getName() + "\" successfully resolved by installing \"" + yamlData.get("name") + "\".");
                                     break dependencyCheck;
                                 }
                             }
                             zip.close();
-                        } catch (Exception exception) {
-                            exception.printStackTrace();
+                        } catch (Exception e) {
+                            log(e, Level.WARNING, "Error checking plugin name from \"plugin.yml\" for \""+file.getName()+"\". Skipping possible dependency.");
                         }
                     }
 
@@ -318,7 +321,7 @@ public final class FileManager extends JavaPlugin {
                         throw new RuntimeException(e);
                     }
 
-                    if (dependency == null) getLogger().log(Level.WARNING, "Unmet dependency for \""+unmetDependencies.get(unmetDepInfo).getName()+"\" could not be automatically resolved.");
+                    if (dependency == null) log(null, Level.WARNING, "Unmet dependency for \""+unmetDependencies.get(unmetDepInfo).getName()+"\" could not be automatically resolved.");
                 }
             }.init(unmetDepInfo, pluginStore, unmetDependencies)).start();
         }
@@ -366,8 +369,9 @@ public final class FileManager extends JavaPlugin {
             gson.create().toJson(identifiers, fileWriter);
             fileWriter.close();
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (IOException e) {
+            log(null, Level.SEVERE, "Error appending data to \""+JavaPlugin.getPlugin(FileManager.class).getDataFolder().getName() + File.separator + "pluginStore" + File.separator + "pluginData.json\".");
+            log(e, Level.SEVERE, "Parts of the plugin WILL break unpredictably.");
         }
     }
     public static ArrayList<PluginData> readPluginData() {
@@ -384,8 +388,54 @@ public final class FileManager extends JavaPlugin {
             jr.close();
             fr.close();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log(null, Level.WARNING, "Error reading data from \""+JavaPlugin.getPlugin(FileManager.class).getDataFolder().getName() + File.separator + "pluginStore" + File.separator + "pluginData.json\".");
+            log(e, Level.WARNING, "Whatever is trying to read from the file will produce unpredictable results.");
         }
         return pluginData;
+    }
+
+    public static void log(@Nullable Exception e, Level level, String message) {
+        if ((Boolean) configs.get("showErrors")) {
+            ChatColor colour;
+            if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
+            else if (level.getName().equals("SEVER")) colour = ChatColor.RED;
+            else colour = ChatColor.GREEN;
+
+            Bukkit.getLogger().log(level, message);
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!player.isOp()) continue;
+                player.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + level.getLocalizedName() + ": " + message);
+                if ((Boolean) configs.get("showErrorTrace") && e != null) player.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + "Please see the console for stack trace.");
+            }
+        }
+        if ((Boolean) configs.get("showErrorTrace") && e != null) e.printStackTrace();
+    }
+    public static void log(@Nullable Exception e, Player player, Level level, String message) {
+        ChatColor colour;
+        if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
+        else if (level.getName().equals("SEVER")) colour = ChatColor.RED;
+        else colour = ChatColor.GREEN;
+
+        if ((Boolean) configs.get("showErrors")) {
+            player.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + level.getLocalizedName() + ": " + message);
+        }
+        if ((Boolean) configs.get("showErrorTrace") && e != null) {
+            player.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + "Please see the console for stack trace.");
+            e.printStackTrace();
+        }
+    }
+    public static void log(@Nullable Exception e, CommandSender sender, Level level, String message) {
+        ChatColor colour;
+        if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
+        else if (level.getName().equals("SEVER")) colour = ChatColor.RED;
+        else colour = ChatColor.GREEN;
+
+        if ((Boolean) configs.get("showErrors")) {
+            sender.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + level.getLocalizedName() + ": " + message);
+        }
+        if ((Boolean) configs.get("showErrorTrace") && e != null) {
+            sender.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + "Please see the console for stack trace.");
+            e.printStackTrace();
+        }
     }
 }

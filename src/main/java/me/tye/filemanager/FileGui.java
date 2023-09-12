@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.logging.Level;
 
 import static me.tye.filemanager.FileManager.itemProperties;
+import static me.tye.filemanager.FileManager.log;
 import static org.bukkit.plugin.java.JavaPlugin.getPlugin;
 
 public class FileGui implements Listener {
@@ -100,8 +102,7 @@ public class FileGui implements Listener {
                 lines.add(text);
 
         } catch (IOException e) {
-            player.sendMessage(ChatColor.RED+"There was an error trying to open that file.\nPlease see the console for error message and report this.");
-            e.printStackTrace();
+            log(e, player, Level.WARNING, "There was an error trying to read \""+position.get(player.getName()).getRelativePath()+"\".");
             return;
         }
 
@@ -214,9 +215,8 @@ public class FileGui implements Listener {
             };
             br.close();
             Files.writeString(Path.of(pathHolder.getCurrentPath()), content.toString());
-        } catch (Exception ex) {
-            player.sendMessage(ChatColor.RED+"There was an error trying to edit that file.\nPlease see the console for error message and report this.");
-            ex.printStackTrace();
+        } catch (IOException e) {
+            log(e, player, Level.WARNING, "There was an error reading/writing to \""+position.get(player.getName()).getRelativePath()+"\".");
         }
     }
 
@@ -414,8 +414,7 @@ public class FileGui implements Listener {
                     openFile(player);
 
                 } catch (IOException ex) {
-                    player.sendMessage(ChatColor.RED + "There was an error trying to open that file.\nPlease see the console for error message and report this.");
-                    ex.printStackTrace();
+                    log(ex, player, Level.WARNING, "There was an error reading \""+position.get(player.getName()).getRelativePath()+"\" while trying to search.");
                 }
             }
 

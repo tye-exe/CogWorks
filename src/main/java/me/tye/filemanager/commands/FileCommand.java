@@ -13,14 +13,17 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.logging.Level;
 
 import static me.tye.filemanager.ChatManager.params;
 import static me.tye.filemanager.ChatManager.responses;
 import static me.tye.filemanager.FileGui.fileData;
 import static me.tye.filemanager.FileGui.openFolder;
+import static me.tye.filemanager.FileManager.log;
 
 
 public class FileCommand implements CommandExecutor {
+    //TODO: redirect to terminal if you try to use the gui when in console.
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 1 && args[0].equals("help")) {
@@ -48,7 +51,7 @@ public class FileCommand implements CommandExecutor {
                 fileData.put(player.getUniqueId(), new FileData(1, 1, null, 1));
                 openFolder(player);
             } else {
-                sender.sendMessage(ChatColor.RED+"This command is only available to online players.");
+                log(null, sender, Level.WARNING, "This command is only available to online players.");
             }
         }
         return true;

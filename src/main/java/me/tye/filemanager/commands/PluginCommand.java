@@ -41,6 +41,7 @@ import java.util.zip.ZipFile;
 
 import static me.tye.filemanager.ChatManager.params;
 import static me.tye.filemanager.ChatManager.responses;
+import static me.tye.filemanager.FileManager.log;
 import static me.tye.filemanager.FileManager.makeValidForUrl;
 
 public class PluginCommand implements CommandExecutor {
@@ -67,14 +68,15 @@ public class PluginCommand implements CommandExecutor {
                         try {
                             installPluginURL(url, fileName, true);
                         } catch (PluginExistsException e) {
-                            sender.sendMessage(ChatColor.RED + "The Plugin is already installed: Skipping");
+                            log(e, sender, Level.WARNING, "The Plugin is already installed.");
+                            return true;
                         } catch (PluginInstallException e) {
-                            sender.sendMessage(ChatColor.RED + e.getMessage());
-                            Bukkit.getLogger().log(Level.WARNING, e.getCause().toString());
+                            log(e, sender, Level.WARNING, e.getMessage());
+                            return true;
                         }
                         sender.sendMessage(ChatColor.GREEN + "Reload or restart for the plugin to activate.");
 
-                    } catch (MalformedURLException e) {
+                    } catch (MalformedURLException ignore) {
                         try {
                             String mcVersion = Bukkit.getVersion().split(": ")[1];
                             mcVersion = mcVersion.substring(0, mcVersion.length()-1);
@@ -197,8 +199,10 @@ public class PluginCommand implements CommandExecutor {
                             if (sender instanceof Player) params.put(sender.getName(), List.of(validPlugins, validPluginKeys, sender));
                             else params.put("~", List.of(validPlugins, validPluginKeys, sender));
 
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
+                        } catch (MalformedURLException e) {
+                            log(e, sender, Level.WARNING, "Error creating url to send api request to Modrinth.");
+                        } catch (ModrinthAPIException e) {
+                            log(e, sender, Level.WARNING, e.getMessage());
                         }
                     }
                 } else {
@@ -237,7 +241,7 @@ public class PluginCommand implements CommandExecutor {
         } catch (FileNotFoundException noFile) {
             throw new PluginInstallException("Requested file could not be found at that url.", noFile.getCause());
         } catch (IOException ioException) {
-            throw new PluginInstallException("Error installing plugin! Please see the console and report the error.", ioException.getCause());
+            throw new PluginInstallException("Error installing plugin!", ioException.getCause());
         }
 
         //adds the file hash to the name since alot of urls just have a generic filename like "download"
@@ -252,7 +256,7 @@ public class PluginCommand implements CommandExecutor {
                 hash += "-";
                 hash += String.format("%032X", new BigInteger(1, dis.getMessageDigest().digest()));
             } catch (IOException | NoSuchAlgorithmException e) {
-                throw new PluginInstallException("Error naming plugin! Please see the console and report the error.\n Context: Plugins installed with \"vague\" names have the file-hash appended to them to uniquely identify them.", e.getCause());
+                throw new PluginInstallException("Error naming plugin!\n Context: Plugins installed with \"vague\" names have the file-hash appended to them to uniquely identify them.", e.getCause());
             }
         }
 
@@ -332,7 +336,7 @@ public class PluginCommand implements CommandExecutor {
                     FileUtils.deleteDirectory(pluginDataFolder);
                     sender.sendMessage(ChatColor.GREEN + "Deleted "+pluginName+" configs.");
                 } catch (IOException e) {
-                    sender.sendMessage(ChatColor.RED + "Error deleting "+pluginName+" configs! Please report the error in the console.");
+                    sender.sendMessage(ChatColor.RED + "Error deleting "+pluginName+" configs!");
                     throw new RuntimeException(e);
                 }
             }
@@ -395,7 +399,7 @@ public class PluginCommand implements CommandExecutor {
                 throw new ModrinthAPIException("The FileManager plugin is using an outdated version of the Modrinth api. Please update your version of the plugin!");
             }
             if (status != 200) {
-                throw new ModrinthAPIException("There was a problem using the Modrinth API.\nURL: "+url.toExternalForm()+"\n request method: "+requestMethod);
+                throw new ModrinthAPIException("There was a problem using the Modrinth API.", new Throwable("URL: "+url.toExternalForm()+"\n request method: "+requestMethod));
             }
 
             BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
