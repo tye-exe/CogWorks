@@ -4,6 +4,7 @@ import me.tye.filemanager.util.FileData;
 import me.tye.filemanager.util.PathHolder;
 import net.wesjd.anvilgui.AnvilGUI;
 import org.bukkit.*;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -221,7 +222,18 @@ public class FileGui implements Listener {
 
     @EventHandler
     public void stopStealing(InventoryClickEvent e) {
-        if (position.containsKey(e.getWhoClicked().getName())) e.setCancelled(true);
+        HumanEntity player = e.getWhoClicked();
+        String inventoryTitle = player.getOpenInventory().getTitle();
+        System.out.println(inventoryTitle);
+        System.out.println(ChatColor.BLUE+"~"+position.get(player.getName()).getRelativePath().substring(0, position.get(player.getName()).getRelativePath().length()-1)+ChatColor.GOLD+" $");
+        if (inventoryTitle.equals(ChatColor.BLUE+"~"+position.get(player.getName()).getRelativePath().substring(0, position.get(player.getName()).getRelativePath().length()-1)+ChatColor.GOLD+" $")
+                || inventoryTitle.equals(ChatColor.BLUE+"~"+position.get(player.getName()).getRelativePath()+ChatColor.GOLD+" $")
+                || inventoryTitle.startsWith("Min: 1, Max:") || inventoryTitle.startsWith("Search:") || inventoryTitle.startsWith("File editor:"))
+            e.setCancelled(true);
+        else {
+            position.remove(player.getName());
+            fileData.remove(player.getUniqueId());
+        }
     }
 
     @EventHandler
