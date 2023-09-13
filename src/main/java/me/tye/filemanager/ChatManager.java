@@ -89,6 +89,10 @@ public class ChatManager implements Listener {
                         log(e, sender, Level.WARNING, "Please enter a listed number!");
                         return;
                     }
+                    if (chosenPlugin > validPluginKeys.size() || chosenPlugin < 1) {
+                        log(null, sender, Level.WARNING, "Please enter a listed number!");
+                        return;
+                    }
 
                     JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosenPlugin-1)).get(0).getAsJsonArray();
                     ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
@@ -138,6 +142,10 @@ public class ChatManager implements Listener {
                         chosenVersion = Integer.parseInt(message);
                     } catch (NumberFormatException e) {
                         log(e, sender, Level.WARNING, "Please enter a listed number!");
+                        return;
+                    }
+                    if (chosenVersion > chooseableFiles.size() || chosenVersion < 1) {
+                        log(null, sender, Level.WARNING, "Please enter a listed number!");
                         return;
                     }
 
