@@ -7,5 +7,6 @@
 - Checking for dependencies on startup and attempts to resolve them automatically.
 - Made automatic dependency resolve occur in multiple threads.
 - Fixed bug where played would still have inventory interact events canceled after closing the  "/file" gui.
+- Added user editable config options.
 - Added understandable error messages.
 - Added check for an out-of-bounds number input when installing a plugin.
