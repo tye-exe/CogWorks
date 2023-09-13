@@ -83,10 +83,11 @@ public final class FileManager extends JavaPlugin {
         }
 
         //checks that config file has the correct content.
+        //TODO: remove lines of text that don't conform to the notes/keys that aren't valid?
         try {
             FileWriter fr = new FileWriter(configsFile);
-            if (!configs.containsKey("showErrors")) fr.write("#Displays custom error messages to inform exactly what went wrong.\nshowErrors: true\n");
-            if (!configs.containsKey("showErrorTrace")) fr.write("#Displays stack trace to help with debugging.\n#Turn this on before reporting a bug.\n#This will be enabled by default until release.\nshowErrorTrace: true\n");
+            if (!configs.containsKey("showErrors")) fr.write("#Displays custom error messages to inform exactly what went wrong.\nshowErrors: true\n\n");
+            if (!configs.containsKey("showErrorTrace")) fr.write("#Displays stack trace to help with debugging.\n#Turn this on before reporting a bug.\n#This will be enabled by default until release.\nshowErrorTrace: true\n\n");
             fr.close();
 
             InputStream is = new FileInputStream(configsFile);

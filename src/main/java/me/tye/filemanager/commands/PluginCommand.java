@@ -226,7 +226,7 @@ public class PluginCommand implements CommandExecutor {
                                     return true;
                                 }
                             } catch (PluginExistsException e) {
-
+                                //TODO: finish this
                             }
                         }
                     }
@@ -247,6 +247,7 @@ public class PluginCommand implements CommandExecutor {
         return true;
     }
 
+    //TODO: change methods to return strings with logging info?
     public static boolean installPluginURL(URL downloadURL, String fileName, Boolean addFileHash) throws PluginExistsException, PluginInstallException {
 
         File file = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+fileName);
@@ -321,7 +322,7 @@ public class PluginCommand implements CommandExecutor {
 //        }
     }
 
-    public static void deletePlugin(CommandSender sender, String pluginName, boolean deleteConfig) throws PluginExistsException {
+    public static String deletePlugin(CommandSender sender, String pluginName, boolean deleteConfig) throws PluginExistsException {
         //TODO: change to not use sender.
         //TODO: change to use pluginData.json
         //TODO: allow to delete multiple plugins at once - separate by ","?
@@ -336,7 +337,6 @@ public class PluginCommand implements CommandExecutor {
         Plugin plugin = JavaPlugin.getPlugin(FileManager.class).getServer().getPluginManager().getPlugin(pluginName);
         if (plugin != null) {
             plugin.getPluginLoader().disablePlugin(plugin);
-            sender.sendMessage(ChatColor.GREEN + "Disabled " + name + ".");
         }
 
         //deletes config files if specified
@@ -344,19 +344,16 @@ public class PluginCommand implements CommandExecutor {
             if (pluginDataFolder.exists()) {
                 try {
                     FileUtils.deleteDirectory(pluginDataFolder);
-                    sender.sendMessage(ChatColor.GREEN + "Deleted "+name+" configs.");
                 } catch (IOException e) {
                     pluginDataFolder.deleteOnExit();
                     sender.sendMessage(ChatColor.YELLOW + "Marking "+name+" configs for deletion on server stop, as another process is using the files.");
                 }
             }
-        } else {
-            sender.sendMessage(ChatColor.YELLOW+"Preserving "+name+" configs.");
         }
 
         try {
             FileUtils.delete(new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getFileName()));
-            sender.sendMessage(ChatColor.GREEN+name+" deleted.\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
+            return ChatColor.GREEN+name+" deleted.\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.";
         } catch (IOException ex) {
             sender.sendMessage(ChatColor.RED+"Error deleting "+name+"! Please report the error in the console.");
             throw new RuntimeException(ex);
