@@ -10,6 +10,7 @@ import me.tye.filemanager.util.ModrinthSearch;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
 import me.tye.filemanager.util.exceptions.PluginExistsException;
 import me.tye.filemanager.util.exceptions.PluginInstallException;
+import me.tye.filemanager.util.yamlClasses.PluginData;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.apache.commons.io.FileUtils;
@@ -41,8 +42,7 @@ import java.util.zip.ZipFile;
 
 import static me.tye.filemanager.ChatManager.params;
 import static me.tye.filemanager.ChatManager.responses;
-import static me.tye.filemanager.FileManager.log;
-import static me.tye.filemanager.FileManager.makeValidForUrl;
+import static me.tye.filemanager.FileManager.*;
 
 public class PluginCommand implements CommandExecutor {
 
@@ -212,7 +212,31 @@ public class PluginCommand implements CommandExecutor {
             if (args[0].equals("remove")) {
                 if (args.length >= 2) {
 
-                    deletePlugin(sender, args, null);
+                    //modifier checks
+                    Boolean deleteConfigs = null;
+                    for (String arg : args) {
+                        if (!arg.startsWith("-")) continue;
+                        String modifiers = arg.substring(1);
+                        for (char letter : modifiers.toCharArray()) {
+                            try {
+                                if (letter == 'y') deleteConfigs = true;
+                                if (letter == 'n') deleteConfigs = false;
+                                if (deleteConfigs != null) {
+                                    deletePlugin(sender, args[1], deleteConfigs);
+                                    return true;
+                                }
+                            } catch (PluginExistsException e) {
+
+                            }
+                        }
+                    }
+
+                    //prompt to delete config files
+                    if (deleteConfigs == null) {
+                        sender.sendMessage(ChatColor.YELLOW + "Do you wish to delete the "+args[1]+" config files?\nSend y or n in chat to choose.\nNote: You can add -y to the end of the command to confirm or -n to decline.");
+                        if (sender instanceof Player) { responses.put(sender.getName(), "DeletePluginConfigs"); params.put(sender.getName(), List.of(sender, args[1]));}
+                        else { responses.put("~", "DeletePluginConfigs"); params.put("~", List.of(sender, args[1]));}
+                    }
 
                 } else {
                     sender.sendMessage(ChatColor.RED + "Please provide a running plugin name!");
@@ -297,93 +321,45 @@ public class PluginCommand implements CommandExecutor {
 //        }
     }
 
-    public static void deletePlugin(CommandSender sender, String[] args, Boolean deleteConfig) {
+    public static void deletePlugin(CommandSender sender, String pluginName, boolean deleteConfig) throws PluginExistsException {
+        //TODO: change to not use sender.
+        //TODO: change to use pluginData.json
+        //TODO: allow to delete multiple plugins at once - separate by ","?
+        //TODO: put prompt to delete configs into chat manager
+
         //gets plugin that will be deleted
-        Plugin plugin = JavaPlugin.getPlugin(FileManager.class).getServer().getPluginManager().getPlugin(args[1]);
-        if (plugin == null) {
-            sender.sendMessage(ChatColor.RED + "Invalid plugin name.");
-            return;
-        }
-        String pluginName = plugin.getName();
-        File pluginDataFolder = plugin.getDataFolder();
-
-        //modifier checks
-        for (String arg : args) {
-            if (!arg.startsWith("-")) continue;
-            String modifiers = arg.substring(1);
-            for (char letter : modifiers.toCharArray()) {
-                if (letter == 'y') deleteConfig = true;
-                if (letter == 'n') deleteConfig = false;
-            }
-        }
-
-        //prompt to delete config files
-        if (deleteConfig == null) {
-            sender.sendMessage(ChatColor.YELLOW + "Do you wish to delete the "+pluginName+" config files?\nSend y or n in chat to choose.\nNote: You can add -y to the end of the command to confirm or -n to decline.");
-            if (sender instanceof Player) { responses.put(sender.getName(), "DeletePluginConfigs"); params.put(sender.getName(), List.of(sender, args));}
-            else { responses.put("~", "DeletePluginConfigs"); params.put("~", List.of(sender, args));}
-            return;
-        }
+        PluginData data = readPluginData(pluginName);
+        String name = data.getName();
+        File pluginDataFolder = new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getName());
 
         //disables the plugin so that the file can be deleted
-        plugin.getPluginLoader().disablePlugin(plugin);
-        sender.sendMessage(ChatColor.GREEN+"Disabled "+pluginName+".");
+        Plugin plugin = JavaPlugin.getPlugin(FileManager.class).getServer().getPluginManager().getPlugin(pluginName);
+        if (plugin != null) {
+            plugin.getPluginLoader().disablePlugin(plugin);
+            sender.sendMessage(ChatColor.GREEN + "Disabled " + name + ".");
+        }
 
         //deletes config files if specified
         if (deleteConfig) {
             if (pluginDataFolder.exists()) {
                 try {
                     FileUtils.deleteDirectory(pluginDataFolder);
-                    sender.sendMessage(ChatColor.GREEN + "Deleted "+pluginName+" configs.");
+                    sender.sendMessage(ChatColor.GREEN + "Deleted "+name+" configs.");
                 } catch (IOException e) {
-                    sender.sendMessage(ChatColor.RED + "Error deleting "+pluginName+" configs!");
-                    throw new RuntimeException(e);
+                    pluginDataFolder.deleteOnExit();
+                    sender.sendMessage(ChatColor.YELLOW + "Marking "+name+" configs for deletion on server stop, as another process is using the files.");
                 }
             }
         } else {
-            sender.sendMessage(ChatColor.YELLOW+"Preserving "+pluginName+" configs.");
+            sender.sendMessage(ChatColor.YELLOW+"Preserving "+name+" configs.");
         }
 
-        //finds the file name of the disabled plugin by searching though all the plugin.yml files.
-        //idk how else to find the corresponding file from the name.
-        File pluginFolder = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString());
-
-        pluginFolderLoop:
-        for (File file : pluginFolder.listFiles()) {
-            if (file.isDirectory()) continue;
-            if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
-
-            try {
-                ZipFile zip = new ZipFile(file);
-                for (Enumeration e = zip.entries(); e.hasMoreElements(); ) {
-                    ZipEntry entry = (ZipEntry) e.nextElement();
-                    if (!entry.getName().equals("plugin.yml")) continue;
-
-                    StringBuilder out = new StringBuilder();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
-                    String line;
-                    while ((line = reader.readLine()) != null) out.append(line+"\n");
-                    reader.close();
-
-                    Yaml yaml = new Yaml();
-                    Map<String, Object> data = yaml.load(out.toString());
-                    if (!data.get("name").equals(pluginName)) continue;
-                    zip.close();
-
-                    try {
-                        java.nio.file.Files.delete(Path.of(file.getAbsolutePath()));
-                        sender.sendMessage(ChatColor.GREEN+pluginName+" deleted.\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
-                    } catch (IOException ex) {
-                        sender.sendMessage(ChatColor.RED+"Error deleting "+pluginName+"! Please report the error in the console.");
-                        throw new RuntimeException(ex);
-                    }
-
-                    break pluginFolderLoop;
-                }
-
-            } catch (Exception exception) {
-                exception.printStackTrace();
-            }
+        try {
+            FileUtils.delete(new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getFileName()));
+            sender.sendMessage(ChatColor.GREEN+name+" deleted.\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
+        } catch (IOException ex) {
+            sender.sendMessage(ChatColor.RED+"Error deleting "+name+"! Please report the error in the console.");
+            throw new RuntimeException(ex);
         }
     }
 

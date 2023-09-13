@@ -63,13 +63,22 @@ public class ChatManager implements Listener {
                 if (message.startsWith("plugin")) return;
                 if (modifier.equals("DeletePluginConfigs")) {
                     List<Object> param = params.get(name);
-                    boolean deleteConfig;
-                    if (message.equals("y")) deleteConfig = true;
-                    else if (message.equals("n")) deleteConfig = false;
-                    else deleteConfig = false;
+                    CommandSender sender = (CommandSender) param.get(0);
+
+                    boolean deleteConfigs;
+                    if (message.equals("y")) deleteConfigs = true;
+                    else if (message.equals("n")) deleteConfigs = false;
+                    else {
+                        sender.sendMessage(ChatColor.YELLOW + "Please enter either \"y\" or \"n\".");
+                        return;
+                    }
                     responses.remove(name);
                     params.remove(name);
-                    deletePlugin((CommandSender) param.get(0), (String[]) param.get(1), deleteConfig);
+                    try {
+                        deletePlugin(sender, (String) param.get(1), deleteConfigs);
+                    } catch (PluginExistsException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 if (modifier.equals("PluginSelect")) {
                     List<Object> param = params.get(name);

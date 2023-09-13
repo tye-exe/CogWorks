@@ -9,6 +9,7 @@ import me.tye.filemanager.commands.TabComplete;
 import me.tye.filemanager.util.ModrinthSearch;
 import me.tye.filemanager.util.UrlFilename;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
+import me.tye.filemanager.util.exceptions.PluginExistsException;
 import me.tye.filemanager.util.yamlClasses.DependencyInfo;
 import me.tye.filemanager.util.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
@@ -41,7 +42,7 @@ import static me.tye.filemanager.FileGui.position;
 import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
 
 public final class FileManager extends JavaPlugin {
-    //TODO: proper warning for every error alongside debug option
+    //TODO: add central lang file to allow for translation
 
     public static HashMap<String, Object> configs = new HashMap<>();
     @Override
@@ -392,6 +393,12 @@ public final class FileManager extends JavaPlugin {
             log(e, Level.WARNING, "Whatever is trying to read from the file will produce unpredictable results.");
         }
         return pluginData;
+    }
+    public static PluginData readPluginData(String pluginName) throws PluginExistsException {;
+        for (PluginData data : readPluginData()) {
+            if (data.getName().equals(pluginName)) return data;
+        }
+        throw new PluginExistsException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(FileManager.class).getName());
     }
 
     public static void log(@Nullable Exception e, Level level, String message) {
