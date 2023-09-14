@@ -47,10 +47,6 @@ public class PluginCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length == 0 || (args.length == 1 && args[0].equals("help")))
-            sender.sendMessage(ChatColor.GREEN+"/plugin help - Shows this message.\n" +
-                    "/plugin install <Plugin Name | URL> - If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download.\n"+
-                    "/plugin remove <Plugin Name> - Disables and uninstalls the given plugin. If the plugin did not load it cannot be uninstalled.");
         if (args.length >= 1) {
             if (args[0].equals("install")) {
                 //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
@@ -110,8 +106,7 @@ public class PluginCommand implements CommandExecutor {
                 } else {
                     sender.sendMessage(ChatColor.RED + "Please provide a plugin name to search or an url to download from!");
                 }
-            }
-            if (args[0].equals("remove")) {
+            } else if (args[0].equals("remove")) {
                 if (args.length >= 2) {
                     Boolean deleteConfigs = null;
 
@@ -138,7 +133,7 @@ public class PluginCommand implements CommandExecutor {
                     try {
                         if (deleteConfigs != null) {
                             deletePlugin(args[1], deleteConfigs);
-                            sender.sendMessage(ChatColor.GREEN+args[1]+" deleted."+ChatColor.WHITE+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
+                            sender.sendMessage(ChatColor.GREEN+args[1]+" deleted."+ChatColor.GRAY+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
                             return true;
                         }
                     } catch (NoSuchPluginException e) {
@@ -157,8 +152,16 @@ public class PluginCommand implements CommandExecutor {
                 } else {
                     sender.sendMessage(ChatColor.RED + "Please provide a plugin name!");
                 }
+            } else {
+                sender.sendMessage(ChatColor.GREEN+"/plugin help - Shows this message."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
+                        "/plugin install <Plugin Name | URL> - If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
+                        "/plugin remove <Plugin Name> - Disables and uninstalls the given plugin. If the plugin did not load it cannot be uninstalled.");
             }
+            return true;
         }
+        sender.sendMessage(ChatColor.GREEN+"/plugin help - Shows this message."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
+                "/plugin install <Plugin Name | URL> - If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
+                "/plugin remove <Plugin Name> - Disables and uninstalls the given plugin. If the plugin did not load it cannot be uninstalled.");
         return true;
     }
 
@@ -269,7 +272,7 @@ public class PluginCommand implements CommandExecutor {
                 throw new ModrinthAPIException("The FileManager plugin is using an outdated version of the Modrinth api. Please update your version of the plugin!");
             }
             if (status != 200) {
-                throw new ModrinthAPIException("There was a problem using the Modrinth API.", new Throwable("URL: "+url.toExternalForm()+"\n request method: "+requestMethod));
+                throw new ModrinthAPIException("There was a problem using the Modrinth API.", new Throwable("URL: "+url.toExternalForm()+"\n request method: "+requestMethod + "\n response message:" + con.getResponseMessage()));
             }
 
             BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));

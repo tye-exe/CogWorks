@@ -79,7 +79,7 @@ public class ChatManager implements Listener {
                     params.remove(name);
                     try {
                         deletePlugin((String) param.get(1), deleteConfigs);
-                        sender.sendMessage(ChatColor.GREEN+(String) param.get(1)+" deleted.\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
+                        sender.sendMessage(ChatColor.GREEN+(String) param.get(1)+" deleted."+ChatColor.GRAY+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
                     } catch (NoSuchPluginException e) {
                         log(e, sender, Level.WARNING, "No plugin with this name could be found on your system.");
                     } catch (IOException e) {
@@ -200,17 +200,18 @@ public class ChatManager implements Listener {
                     sender.sendMessage(ChatColor.GREEN + "Installing plugin(s)...");
                     for (JsonElement je : files) {
                         JsonObject file = je.getAsJsonObject();
+                        String fileName = file.get("filename").getAsString();
                         try {
-                            installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false);
-                            sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
+                            installPluginURL(new URL(file.get("url").getAsString()), fileName, false);
+                            sender.sendMessage(ChatColor.GREEN + fileName + " installed successfully.");
                         } catch (MalformedURLException e) {
-                            log(e, sender, Level.WARNING, "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
+                            log(e, sender, Level.WARNING, "Skipping " + fileName + ": Invalid download ulr");
                         } catch (PluginExistsException e) {
-                            log(e, sender, Level.WARNING, "The Plugin is already installed: Skipping");
+                            log(e, sender, Level.WARNING,  fileName+" is already installed: Skipping");
                         } catch (PluginInstallException e) {
                             log(e, sender, Level.WARNING, e.getMessage());
                         } catch (IOException e) {
-                            log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + file.get("filename").getAsString() + "\". \"" + file.get("filename").getAsString() + "\" won't work for many features of this plugin.");
+                            log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + fileName + "\". \"" + fileName + "\" won't work for many features of this plugin.");
                         }
                     }
                     sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
@@ -266,8 +267,6 @@ public class ChatManager implements Listener {
 
     public static void installModrinthDependencies(JsonArray dependencies, boolean confirmDependencyInstallation, JsonArray files, CommandSender sender, boolean recursion) {
 
-        //TODO: needs to check if dependency is already installed
-
         ArrayList<String> versions = new ArrayList<>();
         ArrayList<String> projects = new ArrayList<>();
         for (JsonElement je : dependencies) {
@@ -292,17 +291,18 @@ public class ChatManager implements Listener {
                 sender.sendMessage(ChatColor.GREEN + "Installing plugin(s)...");
                 for (JsonElement je : files) {
                     JsonObject file = je.getAsJsonObject();
+                    String fileName = file.get("filename").getAsString();
                     try {
-                        installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false);
-                        sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
+                        installPluginURL(new URL(file.get("url").getAsString()), fileName, false);
+                        sender.sendMessage(ChatColor.GREEN + fileName + " installed successfully.");
                     } catch (MalformedURLException e) {
-                        log(e, sender, Level.WARNING, "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
+                        log(e, sender, Level.WARNING, "Skipping " + fileName + ": Invalid download ulr");
                     } catch (PluginExistsException e) {
-                        log(e, sender, Level.WARNING, "The Plugin is already installed: Skipping");
+                        log(e, sender, Level.WARNING,  fileName+" is already installed: Skipping");
                     } catch (PluginInstallException e) {
                         log(e, sender, Level.WARNING, e.getMessage());
                     } catch (IOException e) {
-                        log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + file.get("filename").getAsString() + "\". \"" + file.get("filename").getAsString() + "\" won't work for many features of this plugin.");
+                        log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + fileName + "\". \"" + fileName + "\" won't work for many features of this plugin.");
                     }
                 }
                 sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
@@ -408,11 +408,7 @@ public class ChatManager implements Listener {
         }
         if (allProjectIDs.size() != compatibleProjectIDs.size()) {
             allProjectIDs.removeAll(compatibleProjectIDs);
-            //TODO: figure out what this is doing
-            StringBuilder incompatibleProjects = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
-            for (String projectID : allProjectIDs) {
-                incompatibleProjects.append("%22").append(projectID).append("%22").append(",");
-            }
+
             try {
                 JsonElement incompatiblePlugins = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length() - 1) + "]"), "GET");
                 StringBuilder incompatibleTitles = new StringBuilder();
@@ -438,17 +434,18 @@ public class ChatManager implements Listener {
 
             for (JsonElement je : dependencyFiles) {
                 JsonObject file = je.getAsJsonObject();
+                String fileName = file.get("filename").getAsString();
                 try {
-                    installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false);
-                    sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
+                    installPluginURL(new URL(file.get("url").getAsString()), fileName, false);
+                    sender.sendMessage(ChatColor.GREEN + fileName + " installed successfully.");
                 } catch (MalformedURLException e) {
-                    log(e, sender, Level.WARNING, "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
+                    log(e, sender, Level.WARNING, "Skipping " + fileName + ": Invalid download ulr");
                 } catch (PluginExistsException e) {
-                    log(e, sender, Level.WARNING, "The Plugin is already installed: Skipping");
+                    log(e, sender, Level.WARNING,  fileName+" is already installed: Skipping");
                 } catch (PluginInstallException e) {
                     log(e, sender, Level.WARNING, e.getMessage());
                 } catch (IOException e) {
-                    log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + file.get("filename").getAsString() + "\". \"" + file.get("filename").getAsString() + "\" won't work for many features of this plugin.");
+                    log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + fileName + "\". \"" + fileName + "\" won't work for many features of this plugin.");
                 }
             }
         }

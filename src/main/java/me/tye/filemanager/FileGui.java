@@ -29,8 +29,6 @@ import static me.tye.filemanager.FileManager.log;
 import static org.bukkit.plugin.java.JavaPlugin.getPlugin;
 
 public class FileGui implements Listener {
-
-    //TODO: fix scroll and search not going to the correct lines.
     public static HashMap<UUID, FileData> fileData = new HashMap<>();
     public static HashMap<String, PathHolder> position = new HashMap<>();
 
@@ -40,8 +38,7 @@ public class FileGui implements Listener {
         try {
             paths = Files.list(Path.of(position.get(player.getName()).getCurrentPath())).toList();
         } catch (Exception e) {
-            player.sendMessage(ChatColor.RED+"There was an error trying to get the files in that folder.\nPlease see the console for error message and report this.");
-            e.printStackTrace();
+            log(e, player, Level.SEVERE, "There was an error trying to get the files in that folder.");
             return;
         }
 
@@ -224,8 +221,7 @@ public class FileGui implements Listener {
     public void stopStealing(InventoryClickEvent e) {
         HumanEntity player = e.getWhoClicked();
         String inventoryTitle = player.getOpenInventory().getTitle();
-        System.out.println(inventoryTitle);
-        System.out.println(ChatColor.BLUE+"~"+position.get(player.getName()).getRelativePath().substring(0, position.get(player.getName()).getRelativePath().length()-1)+ChatColor.GOLD+" $");
+        if (!position.containsKey(player.getName())) return;
         if (inventoryTitle.equals(ChatColor.BLUE+"~"+position.get(player.getName()).getRelativePath().substring(0, position.get(player.getName()).getRelativePath().length()-1)+ChatColor.GOLD+" $")
                 || inventoryTitle.equals(ChatColor.BLUE+"~"+position.get(player.getName()).getRelativePath()+ChatColor.GOLD+" $")
                 || inventoryTitle.startsWith("Min: 1, Max:") || inventoryTitle.startsWith("Search:") || inventoryTitle.startsWith("File editor:"))

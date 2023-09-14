@@ -6,6 +6,7 @@ import com.google.gson.stream.JsonReader;
 import me.tye.filemanager.commands.FileCommand;
 import me.tye.filemanager.commands.PluginCommand;
 import me.tye.filemanager.commands.TabComplete;
+import me.tye.filemanager.events.SendErrorSummary;
 import me.tye.filemanager.util.ModrinthSearch;
 import me.tye.filemanager.util.UrlFilename;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
@@ -29,6 +30,7 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
+import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -43,15 +45,13 @@ import static me.tye.filemanager.FileGui.position;
 import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
 
 public final class FileManager extends JavaPlugin {
-    //TODO: check that plugins listed in pluginData are still installed on start up
-    //TODO: add advise on how to fix errors in the error message.
-    //TODO: figure out how to delete file from automatic dependency resolution without requiring restart - context: when a dependency is automaticcly resolved the plugin will attempt to delete all other files for the attemtped resolution, but if sucessful the one coppied won't be delteted until the servers restarts.
-    //TODO: send warm message to ops on join that there was errors during start up?
-
-    //TODO: add central lang file to allow for translation.
     //TODO: /plugin brows
     //TODO: editing files in /file by adding toggle to separate mode - new permission : add check before deleting or creating anything
 
+    //TODO: convert install modrinth dependencies to use errors, not sender
+    //TODO: run install dependencies on plugins installed from auto dependency resolve
+    //TODO: add advise on how to fix errors in the error message.
+    //TODO: add central lang file to allow for translation.
 
     public static HashMap<String, Object> configs = new HashMap<>();
     @Override
@@ -67,6 +67,7 @@ public final class FileManager extends JavaPlugin {
         //Listeners
         getServer().getPluginManager().registerEvents(new ChatManager(), this);
         getServer().getPluginManager().registerEvents(new FileGui(), this);
+        getServer().getPluginManager().registerEvents(new SendErrorSummary(), this);
 
         //Set up required config files
         File configsFile = new File(getDataFolder().getAbsolutePath() + File.separator + "configs.yml");
@@ -87,9 +88,8 @@ public final class FileManager extends JavaPlugin {
             if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception("Unable to create pluginData.json file in ./plugins/FileManager/.pluginStore");
         }
         catch (Exception e) {
-            //TODO: make it fallback to defaults?
-            log(e, Level.SEVERE, "Error initialising config folders, the plugin will be unable to load!");
-            getPluginLoader().disablePlugin(this);
+            setConfigsToDefault();
+            log(e, Level.SEVERE, "Error initialising config folders. Reverting to default settings. Please report the following error.");
         }
 
         //checks that config file has the correct content.
@@ -98,14 +98,15 @@ public final class FileManager extends JavaPlugin {
             FileWriter fr = new FileWriter(configsFile);
             if (!configs.containsKey("showErrors")) fr.write("#Displays custom error messages to inform exactly what went wrong.\nshowErrors: true\n\n");
             if (!configs.containsKey("showErrorTrace")) fr.write("#Displays stack trace to help with debugging.\n#Turn this on before reporting a bug.\n#This will be enabled by default until release.\nshowErrorTrace: true\n\n");
+            if (!configs.containsKey("showOpErrorSummary")) fr.write("#On join send op players the amount of errors and warnings have happened with this plugin since last reload/restart.\nshowOpErrorSummary: true\n\n");
             fr.close();
 
             InputStream is = new FileInputStream(configsFile);
             HashMap<String, Object> map = new Yaml().load(is);
             if (map != null) configs = map;
         } catch (IOException e) {
-            log(null, Level.SEVERE, "Error writing configurations to config file, please report the following error!");
-            throw new RuntimeException(e);
+            setConfigsToDefault();
+            log(null, Level.SEVERE, "Error writing configurations to config file. Reverting to default settings. Please report the following error.");
         }
 
         //clears out leftover files in plugin store dir
@@ -127,7 +128,6 @@ public final class FileManager extends JavaPlugin {
             log(e, Level.SEVERE, "Unable to access plugin.yml file, many features of this plugin WILL break.");
         }
 
-        //TODO: Test this
         //removes any plugin from plugin data that have been deleted
         PluginLoop:
         for (PluginData data : identifiers) {
@@ -259,11 +259,13 @@ public final class FileManager extends JavaPlugin {
                                 //This seems to work correctly for accessing the var outside of the run method
                                 File file = new File(pluginStore.getAbsolutePath()+File.separator+downloadData.getFilename());
                                 try {
-                                    ReadableByteChannel rbc = Channels.newChannel(new URL(downloadData.getUrl()).openStream());
+                                    InputStream inputStream = new URL(downloadData.getUrl()).openStream();
+                                    ReadableByteChannel rbc = Channels.newChannel(inputStream);
                                     FileOutputStream fos = new FileOutputStream(file);
                                     fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
                                     fos.close();
                                     rbc.close();
+                                    inputStream.close();
                                 } catch (IOException e) {
                                     log(e, Level.WARNING, "Error downloading \""+file.getName()+"\" to check plugin name in \"plugin.yml\" for automatic dependency resolution. Skipping plugin.");
                                 }
@@ -299,6 +301,7 @@ public final class FileManager extends JavaPlugin {
                                 if (yamlData.get("name").equals(unmetDepName)) {
                                     dependency = file;
                                     log(null, Level.INFO, "Unmet dependency for \"" + unmetDependencies.get(unmetDepInfo).getName() + "\" successfully resolved by installing \"" + yamlData.get("name") + "\".");
+                                    zip.close();
                                     break dependencyCheck;
                                 }
                             }
@@ -308,30 +311,10 @@ public final class FileManager extends JavaPlugin {
                         }
                     }
 
-                    //copy dependency
+                    //if one of the dependencies matched teh required one it moves it to the ./plugins folder and deletes the rest of the plugins
                     try {
-                        if (dependency != null) FileUtils.copyFile(dependency, new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
-
-                        //continuously attempts to delete file until it has finished copying.
-                        //TODO: see top
-                        new Thread((new Runnable() {
-                            File pluginStore;
-
-                            public Runnable init(File pluginStore) {
-                                this.pluginStore = pluginStore;
-                                return this;
-                            }
-                            public void run() {
-                                int i = 0;
-                                while (pluginStore.exists() && i < 10) {
-                                    i++;
-                                    try {
-                                        Thread.sleep(1000);
-                                        FileUtils.deleteDirectory(pluginStore);
-                                    } catch (Exception ignore) {}
-                                }
-                            }
-                        }).init(pluginStore)).start();
+                        if (dependency != null) FileUtils.moveFile(dependency, new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
+                        FileUtils.deleteDirectory(pluginStore);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -348,9 +331,15 @@ public final class FileManager extends JavaPlugin {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (position.containsKey(player.getName())) {
                 player.closeInventory();
-                player.sendMessage(ChatColor.YELLOW + "[FileManager] Menu closed due to reload.");
+                log(null, Level.WARNING, "Menu closed due to reload to prevent errors.");
             }
         }
+    }
+
+    public static void setConfigsToDefault() {
+        configs.put("showErrors", true);
+        configs.put("showErrorTrace", true);
+        configs.put("showOpErrorSummary", true);
     }
 
     /**
@@ -376,6 +365,7 @@ public final class FileManager extends JavaPlugin {
         item.setItemMeta(itemMeta);
         return item;
     }
+
 
     /**
      * Removes a plugin from plugin data.
@@ -486,9 +476,8 @@ public final class FileManager extends JavaPlugin {
             FileWriter fileWriter = new FileWriter((plugins));
             gson.create().toJson(pluginData, fileWriter);
             fileWriter.close();
-//            log(null, Level.SEVERE, "Error appending data to \""+JavaPlugin.getPlugin(FileManager.class).getDataFolder().getName() + File.separator + ".pluginStore" + File.separator + "pluginData.json\".");
-//            log(e, Level.SEVERE, "Parts of the plugin WILL break unpredictably.");
     }
+
 
     /**
      * Sends log message to console and all online op players.
@@ -497,14 +486,15 @@ public final class FileManager extends JavaPlugin {
         if ((Boolean) configs.get("showErrors")) {
             ChatColor colour;
             if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
-            else if (level.getName().equals("SEVER")) colour = ChatColor.RED;
+            else if (level.getName().equals("SEVERE")) {colour = ChatColor.RED; SendErrorSummary.severe++;}
             else colour = ChatColor.GREEN;
 
-            Bukkit.getLogger().log(level, message);
+            Bukkit.getLogger().log(level, MessageFormat.format("[{0}]: {1}" ,JavaPlugin.getPlugin(FileManager.class).getName(), message));
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (!player.isOp()) continue;
-                player.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + level.getLocalizedName() + ": " + message);
-                if ((Boolean) configs.get("showErrorTrace") && e != null) player.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + "Please see the console for stack trace.");
+                String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(FileManager.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+                if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
+                player.sendMessage(formattedMessage);
             }
         }
         if ((Boolean) configs.get("showErrorTrace") && e != null) e.printStackTrace();
@@ -515,15 +505,13 @@ public final class FileManager extends JavaPlugin {
     public static void log(@Nullable Exception e, Player player, Level level, String message) {
         ChatColor colour;
         if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
-        else if (level.getName().equals("SEVER")) colour = ChatColor.RED;
+        else if (level.getName().equals("SEVERE")) {colour = ChatColor.RED; SendErrorSummary.severe++;}
         else colour = ChatColor.GREEN;
 
         if ((Boolean) configs.get("showErrors")) {
-            player.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + level.getLocalizedName() + ": " + message);
-        }
-        if ((Boolean) configs.get("showErrorTrace") && e != null) {
-            player.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + "Please see the console for stack trace.");
-            e.printStackTrace();
+            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(FileManager.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+            if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
+            player.sendMessage(formattedMessage);
         }
     }
     /**
@@ -532,15 +520,13 @@ public final class FileManager extends JavaPlugin {
     public static void log(@Nullable Exception e, CommandSender sender, Level level, String message) {
         ChatColor colour;
         if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
-        else if (level.getName().equals("SEVER")) colour = ChatColor.RED;
+        else if (level.getName().equals("SEVERE")) {colour = ChatColor.RED; SendErrorSummary.severe++;}
         else colour = ChatColor.GREEN;
 
         if ((Boolean) configs.get("showErrors")) {
-            sender.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + level.getLocalizedName() + ": " + message);
-        }
-        if ((Boolean) configs.get("showErrorTrace") && e != null) {
-            sender.sendMessage(colour + "[" + JavaPlugin.getPlugin(FileManager.class).getName() + "] " + "Please see the console for stack trace.");
-            e.printStackTrace();
+            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(FileManager.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+            if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
+            sender.sendMessage(formattedMessage);
         }
     }
 }
