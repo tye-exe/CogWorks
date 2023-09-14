@@ -48,6 +48,10 @@ public final class FileManager extends JavaPlugin {
     //TODO: add advise on how to fix errors in the error message.
     //TODO: figure out how to delete file from automatic dependency resolution without requiring restart - context: when a dependency is automaticcly resolved the plugin will attempt to delete all other files for the attemtped resolution, but if sucessful the one coppied won't be delteted until the servers restarts.
 
+    //TODO: /plugin brows
+    //TODO: editing files in /file by adding toggle to separate mode - new permission : add check before deleting or creating anything
+
+
     public static HashMap<String, Object> configs = new HashMap<>();
     @Override
     public void onEnable() {
