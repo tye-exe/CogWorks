@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,7 +33,6 @@ import java.util.List;
 import java.util.logging.Level;
 
 import static me.tye.filemanager.FileGui.position;
-import static me.tye.filemanager.FileManager.configs;
 import static me.tye.filemanager.FileManager.log;
 import static me.tye.filemanager.commands.PluginCommand.*;
 
