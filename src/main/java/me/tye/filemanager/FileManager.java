@@ -9,6 +9,7 @@ import me.tye.filemanager.commands.TabComplete;
 import me.tye.filemanager.util.ModrinthSearch;
 import me.tye.filemanager.util.UrlFilename;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
+import me.tye.filemanager.util.exceptions.NoSuchPluginException;
 import me.tye.filemanager.util.yamlClasses.DependencyInfo;
 import me.tye.filemanager.util.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
@@ -27,7 +28,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -36,18 +36,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import static me.tye.filemanager.FileGui.position;
 import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
 
 public final class FileManager extends JavaPlugin {
-    //TODO: add central lang file to allow for translation.
-    //TODO: proper errors for pluginData methods
     //TODO: check that plugins listed in pluginData are still installed on start up
     //TODO: add advise on how to fix errors in the error message.
     //TODO: figure out how to delete file from automatic dependency resolution without requiring restart - context: when a dependency is automaticcly resolved the plugin will attempt to delete all other files for the attemtped resolution, but if sucessful the one coppied won't be delteted until the servers restarts.
+    //TODO: send warm message to ops on join that there was errors during start up?
 
+    //TODO: add central lang file to allow for translation.
     //TODO: /plugin brows
     //TODO: editing files in /file by adding toggle to separate mode - new permission : add check before deleting or creating anything
 
@@ -69,7 +70,7 @@ public final class FileManager extends JavaPlugin {
 
         //Set up required config files
         File configsFile = new File(getDataFolder().getAbsolutePath() + File.separator + "configs.yml");
-        File pluginStore = new File(getDataFolder().getAbsoluteFile() + File.separator + "pluginStore");
+        File pluginStore = new File(getDataFolder().getAbsoluteFile() + File.separator + ".pluginStore");
         File plugins = new File(pluginStore.getAbsolutePath() + File.separator + "pluginData.json");
         try {
             if (!getDataFolder().exists()) if (!getDataFolder().mkdir()) throw new Exception();
@@ -79,15 +80,16 @@ public final class FileManager extends JavaPlugin {
                 HashMap<String, Object> map = new Yaml().load(is);
                 if (map != null) configs = map;
             } else {
-                if (!configsFile.createNewFile()) throw new Exception();
+                if (!configsFile.createNewFile()) throw new Exception("Unable to create config.yml file in ./plugins/FileManager");
             }
 
-            if (!pluginStore.exists()) if(!pluginStore.mkdir()) throw new Exception();
-            if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception();
+            if (!pluginStore.exists()) if(!pluginStore.mkdir()) throw new Exception("Unable to create .pluginStore file in ./plugins/FileManager");
+            if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception("Unable to create pluginData.json file in ./plugins/FileManager/.pluginStore");
         }
         catch (Exception e) {
-            log(null, Level.SEVERE, "Error initialising config folders, please report the following error!");
-            throw new RuntimeException(e);
+            //TODO: make it fallback to defaults?
+            log(e, Level.SEVERE, "Error initialising config folders, the plugin will be unable to load!");
+            getPluginLoader().disablePlugin(this);
         }
 
         //checks that config file has the correct content.
@@ -117,51 +119,54 @@ public final class FileManager extends JavaPlugin {
             }
         }
 
-        //Gets the plugin.yml files from each plugin
         File pluginFolder = new File(getDataFolder().getParent());
-        ArrayList<Map<String, Object>> pluginData = new ArrayList<>();
-        ArrayList<String> pluginFileName = new ArrayList<>();
+        ArrayList<PluginData> identifiers = new ArrayList<>();
+        try {
+            identifiers = readPluginData();
+        } catch (IOException e) {
+            log(e, Level.SEVERE, "Unable to access plugin.yml file, many features of this plugin WILL break.");
+        }
 
+        //TODO: Test this
+        //removes any plugin from plugin data that have been deleted
+        PluginLoop:
+        for (PluginData data : identifiers) {
+
+            for (File file : pluginFolder.listFiles()) {
+                if (file.isDirectory()) continue;
+                if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
+
+                if (data.getFileName().equals(file.getName())) {
+                    continue PluginLoop;
+                }
+            }
+            try {
+                removePluginData(data.getName());
+            } catch (NoSuchPluginException e) {
+                log(e, Level.WARNING, "Error deleting removed plugin from pluginData.");
+            } catch (IOException e) {
+                log(e, Level.WARNING, "Unable to access pluginData file to remove "+data.getName()+". This will cause the plugn to appear present when interacting with "+this.getDataFolder().getName());
+            }
+        }
+
+        //adds any new plugins to the pluginData
+
+        pluginFolder = new File(getDataFolder().getParent());
         for (File file : pluginFolder.listFiles()) {
             if (file.isDirectory()) continue;
             if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
-
             try {
-                ZipFile zip = new ZipFile(file);
-                for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
-                    ZipEntry entry = e.nextElement();
-                    if (!entry.getName().equals("plugin.yml")) continue;
-
-                    StringBuilder out = new StringBuilder();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
-                    String line;
-                    while ((line = reader.readLine()) != null) out.append(line).append("\n");
-                    reader.close();
-
-                    Yaml yaml = new Yaml();
-                    pluginData.add(yaml.load(out.toString()));
-                    pluginFileName.add(file.getName());
-                }
-                zip.close();
-            } catch (Exception e) {
+                appendPluginData(file);
+            } catch (IOException e) {
                 log(e, Level.WARNING, "Unable to access plugin.yml file for \"" + file.getName() + "\". \"" + file.getName() + "\" won't work for many features of this plugin.");
             }
         }
 
-        //Writes plugin information to file.
-        ArrayList<PluginData> identifiers = new ArrayList<>();
+        identifiers = new ArrayList<>();
         try {
-            GsonBuilder gson = new GsonBuilder();
-            gson.setPrettyPrinting();
-            FileWriter fileWriter = new FileWriter((plugins));
-            for (int i = 0; i < pluginData.size(); i++) {
-                identifiers.add(new PluginData(pluginFileName.get(i), pluginData.get(i)));
-            }
-            gson.create().toJson(identifiers, fileWriter);
-            fileWriter.close();
-
+            identifiers = readPluginData();
         } catch (IOException e) {
-            log(e, Level.SEVERE, "Unable to access \""+getDataFolder().getName()+File.separator+configsFile.getName()+"\". Many features of the plugin WILL break!");
+            log(e, Level.SEVERE, "Unable to access plugin.yml file, many features of this plugin WILL break.");
         }
 
         //checks for uninstalled dependencies
@@ -375,9 +380,10 @@ public final class FileManager extends JavaPlugin {
     /**
      * Removes a plugin from plugin data.
      * @param pluginName The name of the plugin to remove.
-     * @exception NoSuchFileException Thrown if the plugin cannot be found in the plugin data.
+     * @throws NoSuchPluginException Thrown if the plugin cannot be found in the plugin data.
+     * @throws IOException Thrown if the pluginData file can't be read from/written to.
      */
-    public static void removePluginData(String pluginName) throws NoSuchFileException {
+    public static void removePluginData(String pluginName) throws NoSuchPluginException, IOException {
         ArrayList<PluginData> pluginData = readPluginData();
         PluginData pluginToRemove = null;
 
@@ -386,7 +392,7 @@ public final class FileManager extends JavaPlugin {
         }
 
         if (pluginToRemove == null) {
-            throw new NoSuchFileException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(FileManager.class).getName());
+            throw new NoSuchPluginException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(FileManager.class).getName());
         }
 
         pluginData.remove(pluginToRemove);
@@ -396,8 +402,9 @@ public final class FileManager extends JavaPlugin {
     /**
      * Adds a plugin to pluginData.
      * @param newPlugin The new plugin file to be added.
+     * @throws IOException Thrown if there is an error accessing the pluginData file, or if there is an error accessing the plugin.yml file of the new plugin.
      */
-    public static void appendPluginData(File newPlugin) {
+    public static void appendPluginData(File newPlugin) throws IOException {
         ArrayList<PluginData> identifiers = readPluginData();
 
         //reads data from new plugin
@@ -415,15 +422,18 @@ public final class FileManager extends JavaPlugin {
 
                 Yaml yaml = new Yaml();
                 PluginData newPluginData = new PluginData(newPlugin.getName(), yaml.load(out.toString()));
-                if (!identifiers.contains(newPluginData)) identifiers.add(newPluginData);
-                else {
-                    zip.close();
-                    return;
+                //uses the plugin name to check if it is a copy of an already installed plugin
+                for (PluginData data : identifiers) {
+                    if (data.getName().equals(newPluginData.getName())) {
+                        zip.close();
+                        return;
+                    }
                 }
+                identifiers.add(newPluginData);
             }
             zip.close();
-        } catch (Exception e) {
-            log(e, Level.WARNING, "Unable to access plugin.yml file for \"" + newPlugin.getName() + "\". \"" + newPlugin.getName() + "\" won't work for many features of this plugin.");
+        } catch (ZipException e) {
+            throw new IOException(e.getMessage(), e.getCause());
         }
 
         writePluginData(identifiers);
@@ -432,24 +442,20 @@ public final class FileManager extends JavaPlugin {
     /**
      * Reads the data from the pluginData.json file
      * @return The data of all the plugins in the pluginData.json file.
+     * @throws IOException Thrown if there is an error reading from the pluginData file.
      */
-    public static ArrayList<PluginData> readPluginData() {
+    public static ArrayList<PluginData> readPluginData() throws IOException {
         ArrayList<PluginData> pluginData = new ArrayList<>();
-        try {
-            FileReader fr =  new FileReader(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + "pluginStore" + File.separator + "pluginData.json");
-            JsonReader jr = new JsonReader(fr);
-            JsonElement jsonElement = JsonParser.parseReader(jr);
-            if (jsonElement.isJsonNull()) return pluginData;
-            Gson gsonReader = new Gson();
-            for (JsonElement je : jsonElement.getAsJsonArray()) {
-                pluginData.add(gsonReader.fromJson(je, PluginData.class));
-            }
-            jr.close();
-            fr.close();
-        } catch (Exception e) {
-            log(null, Level.WARNING, "Error reading data from \""+JavaPlugin.getPlugin(FileManager.class).getDataFolder().getName() + File.separator + "pluginStore" + File.separator + "pluginData.json\".");
-            log(e, Level.WARNING, "Whatever is trying to read from the file will produce unpredictable results.");
+        FileReader fr =  new FileReader(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + ".pluginStore" + File.separator + "pluginData.json");
+        JsonReader jr = new JsonReader(fr);
+        JsonElement jsonElement = JsonParser.parseReader(jr);
+        if (jsonElement.isJsonNull()) return pluginData;
+        Gson gsonReader = new Gson();
+        for (JsonElement je : jsonElement.getAsJsonArray()) {
+            pluginData.add(gsonReader.fromJson(je, PluginData.class));
         }
+        jr.close();
+        fr.close();
         return pluginData;
     }
 
@@ -457,32 +463,31 @@ public final class FileManager extends JavaPlugin {
      * Gets the data of a specified plugin.
      * @param pluginName Name of the plugin to get data for.
      * @return Data of the plugin.
-     * @throws NoSuchFileException Thrown if the plugin couldn't be found in the pluginData file.
+     * @throws NoSuchPluginException Thrown if the plugin couldn't be found in the pluginData file.
+     * @throws IOException Thrown if there was an error reading from the pluginData file.
      */
-    public static PluginData readPluginData(String pluginName) throws NoSuchFileException {;
+    public static PluginData readPluginData(String pluginName) throws NoSuchPluginException, IOException {;
         for (PluginData data : readPluginData()) {
             if (data.getName().equals(pluginName)) return data;
         }
-        throw new NoSuchFileException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(FileManager.class).getName());
+        throw new NoSuchPluginException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(FileManager.class).getName());
     }
 
     /**
      * WARNING: this method will overwrite any data stored in the pluginData.json file!<br>
      * If you want to append data use appendPluginData().
      * @param pluginData Plugin data to write to the file.
+     * @throws IOException If the plugin data can't be written to the pluginData file.
      */
-    public static void writePluginData(ArrayList<PluginData> pluginData) {
-        File plugins = new File(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + "pluginStore" + File.separator + "pluginData.json");
-        try {
+    public static void writePluginData(ArrayList<PluginData> pluginData) throws IOException {
+        File plugins = new File(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + ".pluginStore" + File.separator + "pluginData.json");
             GsonBuilder gson = new GsonBuilder();
             gson.setPrettyPrinting();
             FileWriter fileWriter = new FileWriter((plugins));
             gson.create().toJson(pluginData, fileWriter);
             fileWriter.close();
-        } catch (IOException e) {
-            log(null, Level.SEVERE, "Error appending data to \""+JavaPlugin.getPlugin(FileManager.class).getDataFolder().getName() + File.separator + "pluginStore" + File.separator + "pluginData.json\".");
-            log(e, Level.SEVERE, "Parts of the plugin WILL break unpredictably.");
-        }
+//            log(null, Level.SEVERE, "Error appending data to \""+JavaPlugin.getPlugin(FileManager.class).getDataFolder().getName() + File.separator + ".pluginStore" + File.separator + "pluginData.json\".");
+//            log(e, Level.SEVERE, "Parts of the plugin WILL break unpredictably.");
     }
 
     /**

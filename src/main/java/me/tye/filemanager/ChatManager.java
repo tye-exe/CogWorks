@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import me.tye.filemanager.util.PathHolder;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
+import me.tye.filemanager.util.exceptions.NoSuchPluginException;
 import me.tye.filemanager.util.exceptions.PluginExistsException;
 import me.tye.filemanager.util.exceptions.PluginInstallException;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -79,7 +80,7 @@ public class ChatManager implements Listener {
                     try {
                         deletePlugin((String) param.get(1), deleteConfigs);
                         sender.sendMessage(ChatColor.GREEN+(String) param.get(1)+" deleted.\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
-                    } catch (NoSuchFileException e) {
+                    } catch (NoSuchPluginException e) {
                         log(e, sender, Level.WARNING, "No plugin with this name could be found on your system.");
                     } catch (IOException e) {
                         log(e, sender, Level.WARNING, param.get(1) + " could not be deleted.");
@@ -208,6 +209,8 @@ public class ChatManager implements Listener {
                             log(e, sender, Level.WARNING, "The Plugin is already installed: Skipping");
                         } catch (PluginInstallException e) {
                             log(e, sender, Level.WARNING, e.getMessage());
+                        } catch (IOException e) {
+                            log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + file.get("filename").getAsString() + "\". \"" + file.get("filename").getAsString() + "\" won't work for many features of this plugin.");
                         }
                     }
                     sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
@@ -298,6 +301,8 @@ public class ChatManager implements Listener {
                         log(e, sender, Level.WARNING, "The Plugin is already installed: Skipping");
                     } catch (PluginInstallException e) {
                         log(e, sender, Level.WARNING, e.getMessage());
+                    } catch (IOException e) {
+                        log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + file.get("filename").getAsString() + "\". \"" + file.get("filename").getAsString() + "\" won't work for many features of this plugin.");
                     }
                 }
                 sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
@@ -442,6 +447,8 @@ public class ChatManager implements Listener {
                     log(e, sender, Level.WARNING, "The Plugin is already installed: Skipping");
                 } catch (PluginInstallException e) {
                     log(e, sender, Level.WARNING, e.getMessage());
+                } catch (IOException e) {
+                    log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + file.get("filename").getAsString() + "\". \"" + file.get("filename").getAsString() + "\" won't work for many features of this plugin.");
                 }
             }
         }

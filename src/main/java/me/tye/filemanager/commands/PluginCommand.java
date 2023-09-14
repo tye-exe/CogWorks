@@ -8,6 +8,7 @@ import com.google.gson.JsonParser;
 import me.tye.filemanager.FileManager;
 import me.tye.filemanager.util.ModrinthSearch;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
+import me.tye.filemanager.util.exceptions.NoSuchPluginException;
 import me.tye.filemanager.util.exceptions.PluginExistsException;
 import me.tye.filemanager.util.exceptions.PluginInstallException;
 import me.tye.filemanager.util.yamlClasses.PluginData;
@@ -71,6 +72,9 @@ public class PluginCommand implements CommandExecutor {
                         } catch (PluginInstallException e) {
                             log(e, sender, Level.WARNING, e.getMessage());
                             return true;
+                        } catch (IOException e) {
+                            log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + fileName + "\". \"" + fileName + "\" won't work for many features of this plugin.");
+                            return true;
                         }
                         sender.sendMessage(ChatColor.GREEN + "Reload or restart for the plugin to activate.");
 
@@ -115,8 +119,10 @@ public class PluginCommand implements CommandExecutor {
                     try {
                         PluginData data = readPluginData(args[1]);
                         if (!new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getName()).exists()) deleteConfigs = false;
-                    } catch (NoSuchFileException e) {
+                    } catch (NoSuchPluginException e) {
                         log(e, sender, Level.WARNING, "No plugin with this name could be found on your system.");
+                    } catch (IOException e) {
+                        log(e, sender, Level.WARNING, "There was an error reading from the pluginData file.");
                     }
 
                     //modifier checks
@@ -135,7 +141,7 @@ public class PluginCommand implements CommandExecutor {
                             sender.sendMessage(ChatColor.GREEN+args[1]+" deleted."+ChatColor.WHITE+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
                             return true;
                         }
-                    } catch (NoSuchFileException e) {
+                    } catch (NoSuchPluginException e) {
                         log(e, sender, Level.WARNING, "No plugin with this name could be found on your system.");
                     } catch (IOException e) {
                         log(e, sender, Level.WARNING, args[1] + " could not be deleted.");
@@ -163,8 +169,9 @@ public class PluginCommand implements CommandExecutor {
      * @param addFileHash If downloading from a non api source the file hash can be added to the end of the file, as many downloads have generic names such as "download".
      * @throws PluginExistsException If the plugin you're trying to install is already installed.
      * @throws PluginInstallException If there is an error when installing the plugin.
+     * @throws IOException If there was an error appending the data to the pluginData file.
      */
-    public static void installPluginURL(URL downloadURL, String fileName, Boolean addFileHash) throws PluginExistsException, PluginInstallException {
+    public static void installPluginURL(URL downloadURL, String fileName, Boolean addFileHash) throws PluginExistsException, PluginInstallException, IOException {
 
         File file = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+fileName);
         if (file.exists()) {
@@ -217,10 +224,10 @@ public class PluginCommand implements CommandExecutor {
      * Deletes the given plugin from the plugins folder & its configs if requested.
      * @param pluginName Name of the plugin to delete. (The name specified in the plugin.yml file).
      * @param deleteConfig Whether to delete the plugins configs alongside the jar.
-     * @throws NoSuchFileException If the plugin can't be found.
+     * @throws NoSuchPluginException If the plugin can't be found in the pluginData file.
      * @throws IOException If the plugin can't be deleted.
      */
-    public static void deletePlugin(String pluginName, boolean deleteConfig) throws NoSuchFileException, IOException {
+    public static void deletePlugin(String pluginName, boolean deleteConfig) throws NoSuchPluginException, IOException {
         //TODO: allow to delete multiple plugins at once - separate by ","?
 
         //gets plugin that will be deleted
