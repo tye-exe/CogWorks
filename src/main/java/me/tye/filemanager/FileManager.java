@@ -9,7 +9,6 @@ import me.tye.filemanager.commands.TabComplete;
 import me.tye.filemanager.util.ModrinthSearch;
 import me.tye.filemanager.util.UrlFilename;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
-import me.tye.filemanager.util.exceptions.PluginExistsException;
 import me.tye.filemanager.util.yamlClasses.DependencyInfo;
 import me.tye.filemanager.util.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
@@ -28,6 +27,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -42,7 +42,11 @@ import static me.tye.filemanager.FileGui.position;
 import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
 
 public final class FileManager extends JavaPlugin {
-    //TODO: add central lang file to allow for translation
+    //TODO: add central lang file to allow for translation.
+    //TODO: proper errors for pluginData methods
+    //TODO: check that plugins listed in pluginData are still installed on start up
+    //TODO: add advise on how to fix errors in the error message.
+    //TODO: figure out how to delete file from automatic dependency resolution without requiring restart - context: when a dependency is automaticcly resolved the plugin will attempt to delete all other files for the attemtped resolution, but if sucessful the one coppied won't be delteted until the servers restarts.
 
     public static HashMap<String, Object> configs = new HashMap<>();
     @Override
@@ -300,7 +304,7 @@ public final class FileManager extends JavaPlugin {
                         if (dependency != null) FileUtils.copyFile(dependency, new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
 
                         //continuously attempts to delete file until it has finished copying.
-                        //TODO: check if the file actually becomes deletable after copying.
+                        //TODO: see top
                         new Thread((new Runnable() {
                             File pluginStore;
 
@@ -340,42 +344,91 @@ public final class FileManager extends JavaPlugin {
         }
     }
 
+    /**
+     * Filters out character that are invalid in an url & replaces " " chars with %22.
+     * @return Filtered output
+     */
     public static String makeValidForUrl(String text) {
         return text.replaceAll("[^A-z0-9s-]", "").replaceAll(" ", "%20");
     }
-    public static ItemStack itemProperties(ItemStack item, String displayName, List<String> lore) {
+
+    /**
+     * Easy method for setting some basic item properties.
+     * @param item The item to apply the properties to.
+     * @param displayName The desired item name.
+     * @param lore The desired item lore.
+     * @return The modified item.
+     */
+    public static ItemStack itemProperties(ItemStack item, @Nullable String displayName, @Nullable List<String> lore) {
         ItemMeta itemMeta = item.getItemMeta();
         if (itemMeta == null) return item;
-        itemMeta.setDisplayName(displayName);
+        if (displayName != null) itemMeta.setDisplayName(displayName);
         if (lore != null) itemMeta.setLore(lore);
         item.setItemMeta(itemMeta);
         return item;
     }
 
-    public static void appendPluginData(ArrayList<String> fileNames, ArrayList<Map<String, Object>> pluginData) {
-        File plugins = new File(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + "pluginStore" + File.separator + "pluginData.json");
-        try {
-            //appends data to file then writes it
-            ArrayList<PluginData> identifiers = readPluginData();
-            GsonBuilder gson = new GsonBuilder();
-            gson.setPrettyPrinting();
-            FileWriter fileWriter = new FileWriter((plugins));
+    /**
+     * Removes a plugin from plugin data.
+     * @param pluginName The name of the plugin to remove.
+     * @exception NoSuchFileException Thrown if the plugin cannot be found in the plugin data.
+     */
+    public static void removePluginData(String pluginName) throws NoSuchFileException {
+        ArrayList<PluginData> pluginData = readPluginData();
+        PluginData pluginToRemove = null;
 
-            dataLoop:
-            for (int i = 0; i < pluginData.size(); i++) {
-                for (PluginData data : identifiers) {
-                    if (pluginData.get(i).get("name").equals(data.getName())) continue dataLoop;
-                }
-                identifiers.add(new PluginData(fileNames.get(i), pluginData.get(i)));
-            }
-            gson.create().toJson(identifiers, fileWriter);
-            fileWriter.close();
-
-        } catch (IOException e) {
-            log(null, Level.SEVERE, "Error appending data to \""+JavaPlugin.getPlugin(FileManager.class).getDataFolder().getName() + File.separator + "pluginStore" + File.separator + "pluginData.json\".");
-            log(e, Level.SEVERE, "Parts of the plugin WILL break unpredictably.");
+        for (PluginData data : pluginData) {
+            if (data.getName().equals(pluginName)) pluginToRemove = data;
         }
+
+        if (pluginToRemove == null) {
+            throw new NoSuchFileException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(FileManager.class).getName());
+        }
+
+        pluginData.remove(pluginToRemove);
+        writePluginData(pluginData);
     }
+
+    /**
+     * Adds a plugin to pluginData.
+     * @param newPlugin The new plugin file to be added.
+     */
+    public static void appendPluginData(File newPlugin) {
+        ArrayList<PluginData> identifiers = readPluginData();
+
+        //reads data from new plugin
+        try {
+            ZipFile zip = new ZipFile(newPlugin);
+            for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
+                ZipEntry entry = e.nextElement();
+                if (!entry.getName().equals("plugin.yml")) continue;
+
+                StringBuilder out = new StringBuilder();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
+                String line;
+                while ((line = reader.readLine()) != null) out.append(line).append("\n");
+                reader.close();
+
+                Yaml yaml = new Yaml();
+                PluginData newPluginData = new PluginData(newPlugin.getName(), yaml.load(out.toString()));
+                if (!identifiers.contains(newPluginData)) identifiers.add(newPluginData);
+                else {
+                    zip.close();
+                    return;
+                }
+            }
+            zip.close();
+        } catch (Exception e) {
+            log(e, Level.WARNING, "Unable to access plugin.yml file for \"" + newPlugin.getName() + "\". \"" + newPlugin.getName() + "\" won't work for many features of this plugin.");
+        }
+
+        writePluginData(identifiers);
+    }
+
+    /**
+     * Reads the data from the pluginData.json file
+     * @return The data of all the plugins in the pluginData.json file.
+     */
     public static ArrayList<PluginData> readPluginData() {
         ArrayList<PluginData> pluginData = new ArrayList<>();
         try {
@@ -395,13 +448,42 @@ public final class FileManager extends JavaPlugin {
         }
         return pluginData;
     }
-    public static PluginData readPluginData(String pluginName) throws PluginExistsException {;
+
+    /**
+     * Gets the data of a specified plugin.
+     * @param pluginName Name of the plugin to get data for.
+     * @return Data of the plugin.
+     * @throws NoSuchFileException Thrown if the plugin couldn't be found in the pluginData file.
+     */
+    public static PluginData readPluginData(String pluginName) throws NoSuchFileException {;
         for (PluginData data : readPluginData()) {
             if (data.getName().equals(pluginName)) return data;
         }
-        throw new PluginExistsException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(FileManager.class).getName());
+        throw new NoSuchFileException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(FileManager.class).getName());
     }
 
+    /**
+     * WARNING: this method will overwrite any data stored in the pluginData.json file!<br>
+     * If you want to append data use appendPluginData().
+     * @param pluginData Plugin data to write to the file.
+     */
+    public static void writePluginData(ArrayList<PluginData> pluginData) {
+        File plugins = new File(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + "pluginStore" + File.separator + "pluginData.json");
+        try {
+            GsonBuilder gson = new GsonBuilder();
+            gson.setPrettyPrinting();
+            FileWriter fileWriter = new FileWriter((plugins));
+            gson.create().toJson(pluginData, fileWriter);
+            fileWriter.close();
+        } catch (IOException e) {
+            log(null, Level.SEVERE, "Error appending data to \""+JavaPlugin.getPlugin(FileManager.class).getDataFolder().getName() + File.separator + "pluginStore" + File.separator + "pluginData.json\".");
+            log(e, Level.SEVERE, "Parts of the plugin WILL break unpredictably.");
+        }
+    }
+
+    /**
+     * Sends log message to console and all online op players.
+     */
     public static void log(@Nullable Exception e, Level level, String message) {
         if ((Boolean) configs.get("showErrors")) {
             ChatColor colour;
@@ -418,6 +500,9 @@ public final class FileManager extends JavaPlugin {
         }
         if ((Boolean) configs.get("showErrorTrace") && e != null) e.printStackTrace();
     }
+    /**
+     * Sends log message to specified Player.
+     */
     public static void log(@Nullable Exception e, Player player, Level level, String message) {
         ChatColor colour;
         if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
@@ -432,6 +517,9 @@ public final class FileManager extends JavaPlugin {
             e.printStackTrace();
         }
     }
+    /**
+     * Sends log message to specified CommandSender.
+     */
     public static void log(@Nullable Exception e, CommandSender sender, Level level, String message) {
         ChatColor colour;
         if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;

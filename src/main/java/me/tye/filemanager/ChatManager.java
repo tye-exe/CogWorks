@@ -21,9 +21,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -75,9 +77,12 @@ public class ChatManager implements Listener {
                     responses.remove(name);
                     params.remove(name);
                     try {
-                        deletePlugin(sender, (String) param.get(1), deleteConfigs);
-                    } catch (PluginExistsException e) {
-                        throw new RuntimeException(e);
+                        deletePlugin((String) param.get(1), deleteConfigs);
+                        sender.sendMessage(ChatColor.GREEN+(String) param.get(1)+" deleted.\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
+                    } catch (NoSuchFileException e) {
+                        log(e, sender, Level.WARNING, "No plugin with this name could be found on your system.");
+                    } catch (IOException e) {
+                        log(e, sender, Level.WARNING, param.get(1) + " could not be deleted.");
                     }
                 }
                 if (modifier.equals("PluginSelect")) {
@@ -195,7 +200,8 @@ public class ChatManager implements Listener {
                     for (JsonElement je : files) {
                         JsonObject file = je.getAsJsonObject();
                         try {
-                            if (installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false)) sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
+                            installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false);
+                            sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
                         } catch (MalformedURLException e) {
                             log(e, sender, Level.WARNING, "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
                         } catch (PluginExistsException e) {
@@ -284,7 +290,8 @@ public class ChatManager implements Listener {
                 for (JsonElement je : files) {
                     JsonObject file = je.getAsJsonObject();
                     try {
-                        if (installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false)) sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
+                        installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false);
+                        sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
                     } catch (MalformedURLException e) {
                         log(e, sender, Level.WARNING, "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
                     } catch (PluginExistsException e) {
@@ -427,7 +434,8 @@ public class ChatManager implements Listener {
             for (JsonElement je : dependencyFiles) {
                 JsonObject file = je.getAsJsonObject();
                 try {
-                    if (installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false)) sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
+                    installPluginURL(new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false);
+                    sender.sendMessage(ChatColor.GREEN + file.get("filename").getAsString() + " installed successfully.");
                 } catch (MalformedURLException e) {
                     log(e, sender, Level.WARNING, "Skipping " + file.get("filename").getAsString() + ": Invalid download ulr");
                 } catch (PluginExistsException e) {

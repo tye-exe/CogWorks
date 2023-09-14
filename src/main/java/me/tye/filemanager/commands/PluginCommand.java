@@ -22,7 +22,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -31,14 +30,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.logging.Level;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import static me.tye.filemanager.ChatManager.params;
 import static me.tye.filemanager.ChatManager.responses;
@@ -50,8 +48,8 @@ public class PluginCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0 || (args.length == 1 && args[0].equals("help")))
             sender.sendMessage(ChatColor.GREEN+"/plugin help - Shows this message.\n" +
-                "/plugin install <Plugin Name | URL> - If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download.\n"+
-                "/plugin remove <Plugin Name> - Disables and uninstalls the given plugin. If the plugin did not load it cannot be uninstalled.");
+                    "/plugin install <Plugin Name | URL> - If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download.\n"+
+                    "/plugin remove <Plugin Name> - Disables and uninstalls the given plugin. If the plugin did not load it cannot be uninstalled.");
         if (args.length >= 1) {
             if (args[0].equals("install")) {
                 //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
@@ -78,119 +76,19 @@ public class PluginCommand implements CommandExecutor {
 
                     } catch (MalformedURLException ignore) {
                         try {
-                            String mcVersion = Bukkit.getVersion().split(": ")[1];
-                            mcVersion = mcVersion.substring(0, mcVersion.length()-1);
-                            String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
-
-                            JsonElement relevantPlugins = modrinthAPI(new URL("https://api.modrinth.com/v2/search?query="+makeValidForUrl(args[1])+"&facets=[[%22versions:"+mcVersion+"%22],[%22categories:"+serverSoftware+"%22]]"), "GET");
-                            if (relevantPlugins == null) return true;
-                            JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
-
-                            if (hits.size() == 0) {
-                                sender.sendMessage(ChatColor.YELLOW+"No plugins matching that name could be found on Modrinth.");
-                                return true;
-                            }
-
-                            //gets the projects
-                            StringBuilder projectUrl = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
-                            for (JsonElement je :hits) {
-                                projectUrl.append("%22").append(je.getAsJsonObject().get("slug").getAsString()).append("%22").append(",");
-                            }
-                            JsonElement pluginProjects = modrinthAPI(new URL(projectUrl.substring(0, projectUrl.length()-1)+"]"), "GET");
-
-                            //gets the versions from the projects
-                            if (pluginProjects == null) {
-                                sender.sendMessage(ChatColor.RED+"Error getting supported plugins from Modrinth.");
-                                return true;
-                            }
-
-                            //gets the information for all the versions
-                            StringBuilder versionsUrl = new StringBuilder("https://api.modrinth.com/v2/versions?ids=[");
-                            for (JsonElement je : pluginProjects.getAsJsonArray()) {
-                                for (JsonElement jel : je.getAsJsonObject().get("versions").getAsJsonArray()) {
-                                    versionsUrl.append("%22").append(jel.getAsString()).append("%22").append(",");
-                                }
-                            }
-
-                            JsonElement pluginVersions = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length()-1)+"]"), "GET");
-                            if (pluginVersions == null) {
-                                sender.sendMessage(ChatColor.RED+"Error getting supported plugins from Modrinth.");
-                                return true;
-                            }
-
-                            //filters out incompatible versions/plugins
-                            HashMap<String, JsonArray> compatibleFiles = new HashMap<>();
-                            for (JsonElement je : pluginVersions.getAsJsonArray()) {
-                                JsonObject jo = je.getAsJsonObject();
-                                boolean supportsVersion = false;
-                                boolean supportsServer = false;
-
-                                for (JsonElement supportedVersions : jo.get("game_versions").getAsJsonArray()) {
-                                    if (supportedVersions.getAsString().equals(mcVersion)) supportsVersion = true;
-                                }
-                                for (JsonElement supportedLoaders : jo.get("loaders").getAsJsonArray()) {
-                                    if (supportedLoaders.getAsString().equals(serverSoftware)) supportsServer = true;
-                                }
-
-                                if (!(supportsVersion && supportsServer)) continue;
-
-                                String projectID = jo.get("project_id").getAsString();
-
-                                JsonArray array;
-                                if (compatibleFiles.containsKey(projectID)) array = compatibleFiles.get(projectID);
-                                else array = new JsonArray();
-                                array.add(jo);
-                                compatibleFiles.put(projectID, array);
-                            }
-
-                            if (compatibleFiles.isEmpty()) {
-                                sender.sendMessage(ChatColor.YELLOW+"No compatible plugins with this name were found on Modrinth.");
-                                return true;
-                            }
-
-                            //hashmap of all valid plugins and there compatible versions
-                            HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
-                            for (JsonElement je : hits) {
-                                JsonObject jo = je.getAsJsonObject();
-                                String projectID = jo.get("project_id").getAsString();
-                                if (!compatibleFiles.containsKey(projectID)) continue;
-
-                                JsonArray array;
-                                if (validPlugins.containsKey(jo)) array = validPlugins.get(jo);
-                                else array = new JsonArray();
-                                array.add(compatibleFiles.get(projectID));
-                                validPlugins.put(jo, array);
-                            }
-
-                            //adds them to the list in the order they were returned by Modrinth
-                            ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
-                            for (JsonElement je : hits) if (validPlugins.containsKey(je.getAsJsonObject())) validPluginKeys.add(je.getAsJsonObject());
-
-                            if (validPluginKeys.size() == 0) {
-                                sender.sendMessage(ChatColor.YELLOW+"No compatible plugins with this name were found on Modrinth.");
-                                return true;
-                            }
+                            ModrinthSearch search = modrinthSearch(args[1]);
+                            HashMap<JsonObject, JsonArray> validPlugins = search.getValidPlugins();
+                            ArrayList<JsonObject> validPluginKeys = search.getValidPluginKeys();
 
                             sender.sendMessage(ChatColor.GREEN+"Send the number corresponding to the plugin to install it in chat, or send q to quit.");
-
-                            int page = 1;
-                            int i = 0;
-                            int offset = 1;
-                            if (page != 1) {
-                                offset++;
-                                sender.sendMessage(ChatColor.GREEN+"1: \u2191");
-                            }
-                            for (i = 0; 10 > i; i++) {
+                            for (int i = 0; 10 > i; i++) {
                                 if (validPluginKeys.size() <= i) break;
-                                JsonObject project = validPluginKeys.get(i*page);
-                                TextComponent projectName = new TextComponent(i+offset+": "+project.get("title").getAsString());
+                                JsonObject project = validPluginKeys.get(i);
+                                TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
                                 projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
                                 projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
                                 projectName.setUnderlined(true);
                                 sender.spigot().sendMessage(projectName);
-                            }
-                            if (validPlugins.size() > i*page) {
-                                //sender.sendMessage(ChatColor.GREEN+String.valueOf(i+offset)+": \u2193");
                             }
 
                             if (sender instanceof Player) responses.put(sender.getName(), "PluginSelect");
@@ -211,24 +109,36 @@ public class PluginCommand implements CommandExecutor {
             }
             if (args[0].equals("remove")) {
                 if (args.length >= 2) {
+                    Boolean deleteConfigs = null;
+
+                    //checks if the plugin exists
+                    try {
+                        PluginData data = readPluginData(args[1]);
+                        if (!new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getName()).exists()) deleteConfigs = false;
+                    } catch (NoSuchFileException e) {
+                        log(e, sender, Level.WARNING, "No plugin with this name could be found on your system.");
+                    }
 
                     //modifier checks
-                    Boolean deleteConfigs = null;
                     for (String arg : args) {
                         if (!arg.startsWith("-")) continue;
                         String modifiers = arg.substring(1);
                         for (char letter : modifiers.toCharArray()) {
-                            try {
-                                if (letter == 'y') deleteConfigs = true;
-                                if (letter == 'n') deleteConfigs = false;
-                                if (deleteConfigs != null) {
-                                    deletePlugin(sender, args[1], deleteConfigs);
-                                    return true;
-                                }
-                            } catch (PluginExistsException e) {
-                                //TODO: finish this
-                            }
+                            if (letter == 'y') deleteConfigs = true;
+                            if (letter == 'n') deleteConfigs = false;
                         }
+                    }
+
+                    try {
+                        if (deleteConfigs != null) {
+                            deletePlugin(args[1], deleteConfigs);
+                            sender.sendMessage(ChatColor.GREEN+args[1]+" deleted."+ChatColor.WHITE+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
+                            return true;
+                        }
+                    } catch (NoSuchFileException e) {
+                        log(e, sender, Level.WARNING, "No plugin with this name could be found on your system.");
+                    } catch (IOException e) {
+                        log(e, sender, Level.WARNING, args[1] + " could not be deleted.");
                     }
 
                     //prompt to delete config files
@@ -239,16 +149,22 @@ public class PluginCommand implements CommandExecutor {
                     }
 
                 } else {
-                    sender.sendMessage(ChatColor.RED + "Please provide a running plugin name!");
+                    sender.sendMessage(ChatColor.RED + "Please provide a plugin name!");
                 }
             }
         }
-
         return true;
     }
 
-    //TODO: change methods to return strings with logging info?
-    public static boolean installPluginURL(URL downloadURL, String fileName, Boolean addFileHash) throws PluginExistsException, PluginInstallException {
+    /**
+     * Installs a plugin from a given url. There are NO restriction on the url used, however ".jar" will always be appended.
+     * @param downloadURL Url to download file from.
+     * @param fileName Name of the file to download. Sometimes the file is stored under a name different to the desired file name.
+     * @param addFileHash If downloading from a non api source the file hash can be added to the end of the file, as many downloads have generic names such as "download".
+     * @throws PluginExistsException If the plugin you're trying to install is already installed.
+     * @throws PluginInstallException If there is an error when installing the plugin.
+     */
+    public static void installPluginURL(URL downloadURL, String fileName, Boolean addFileHash) throws PluginExistsException, PluginInstallException {
 
         File file = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+fileName);
         if (file.exists()) {
@@ -285,52 +201,30 @@ public class PluginCommand implements CommandExecutor {
             }
         }
 
-
-//        File destinationFolder = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString());
-//        List<File> preMove = Arrays.stream(destinationFolder.listFiles()).toList();
-
         //moves the file to plugin folder
+        File destination = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
+        File downloadedFile = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString()+File.separator+fileName);
         try {
-            File destination = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
-            File downloadedFile = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString()+File.separator+fileName);
             Files.move(downloadedFile, destination);
         } catch (IOException ioException) {
             throw new PluginExistsException("Error moving the plugin into the \""+File.separator+"plugins\" folder.", ioException.getCause());
         }
 
-        return true;
-//        List<File> postMove = new ArrayList<>(Arrays.stream(destinationFolder.listFiles()).toList());
-//        postMove.removeAll(preMove);
-//
-//        try {
-//            ArrayList<String> classNames = new ArrayList<>();
-//            try (JarFile jarFile = new JarFile(postMove.get(0))) {
-//                Enumeration<JarEntry> e = jarFile.entries();
-//                while (e.hasMoreElements()) {
-//                    JarEntry jarEntry = e.nextElement();
-//                    if (jarEntry.getName().endsWith(".class")) {
-//                        String className = jarEntry.getName()
-//                                .replace("/", ".")
-//                                .replace(".class", "");
-//                        classNames.add(className);
-//                    }
-//                }
-//            }
-//            Bukkit.getPluginManager().enablePlugin(JavaPlugin.getPlugin(Class.forName(classNames.get(0))));
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+        appendPluginData(destination);
     }
 
-    public static String deletePlugin(CommandSender sender, String pluginName, boolean deleteConfig) throws PluginExistsException {
-        //TODO: change to not use sender.
-        //TODO: change to use pluginData.json
+    /**
+     * Deletes the given plugin from the plugins folder & its configs if requested.
+     * @param pluginName Name of the plugin to delete. (The name specified in the plugin.yml file).
+     * @param deleteConfig Whether to delete the plugins configs alongside the jar.
+     * @throws NoSuchFileException If the plugin can't be found.
+     * @throws IOException If the plugin can't be deleted.
+     */
+    public static void deletePlugin(String pluginName, boolean deleteConfig) throws NoSuchFileException, IOException {
         //TODO: allow to delete multiple plugins at once - separate by ","?
-        //TODO: put prompt to delete configs into chat manager
 
         //gets plugin that will be deleted
         PluginData data = readPluginData(pluginName);
-        String name = data.getName();
         File pluginDataFolder = new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getName());
 
         //disables the plugin so that the file can be deleted
@@ -345,19 +239,15 @@ public class PluginCommand implements CommandExecutor {
                 try {
                     FileUtils.deleteDirectory(pluginDataFolder);
                 } catch (IOException e) {
+                    //marks configs for deletion on server stop, as another process is using the files
                     pluginDataFolder.deleteOnExit();
-                    sender.sendMessage(ChatColor.YELLOW + "Marking "+name+" configs for deletion on server stop, as another process is using the files.");
                 }
             }
         }
 
-        try {
-            FileUtils.delete(new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getFileName()));
-            return ChatColor.GREEN+name+" deleted.\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.";
-        } catch (IOException ex) {
-            sender.sendMessage(ChatColor.RED+"Error deleting "+name+"! Please report the error in the console.");
-            throw new RuntimeException(ex);
-        }
+
+        FileUtils.delete(new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getFileName()));
+        removePluginData(pluginName);
     }
 
     public static JsonElement modrinthAPI(URL url, String requestMethod) throws ModrinthAPIException {
@@ -391,6 +281,13 @@ public class PluginCommand implements CommandExecutor {
     }
 
 
+    /**
+     * Finds compatible plugins on modrinth for your server.
+     * @param searchQuery the name of the plugin to search Modrinth for.
+     * @return A ModrinthSearch object.
+     * @throws MalformedURLException If the request urls to teh modrinth api are invalid.
+     * @throws ModrinthAPIException if there is an error using the Modrinth API.
+     */
     public static ModrinthSearch modrinthSearch(String searchQuery) throws MalformedURLException, ModrinthAPIException {
         ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
         HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
