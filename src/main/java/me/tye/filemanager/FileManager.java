@@ -53,6 +53,10 @@ public final class FileManager extends JavaPlugin {
     //TODO: add advise on how to fix errors in the error message.
     //TODO: add central lang file to allow for translation.
 
+    //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
+    //TODO: allow to delete multiple plugins at once - separate by ","?
+    //TODO: allow to install multiple plugins at once when using a url.
+
     public static HashMap<String, Object> configs = new HashMap<>();
     @Override
     public void onEnable() {

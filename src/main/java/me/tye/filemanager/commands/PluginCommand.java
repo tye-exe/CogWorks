@@ -49,7 +49,6 @@ public class PluginCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length >= 1) {
             if (args[0].equals("install")) {
-                //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
                 if (args.length >= 2) {
                     try {
                         URL url = new URL(args[1]);
@@ -231,7 +230,6 @@ public class PluginCommand implements CommandExecutor {
      * @throws IOException If the plugin can't be deleted.
      */
     public static void deletePlugin(String pluginName, boolean deleteConfig) throws NoSuchPluginException, IOException {
-        //TODO: allow to delete multiple plugins at once - separate by ","?
 
         //gets plugin that will be deleted
         PluginData data = readPluginData(pluginName);
