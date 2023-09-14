@@ -1,16 +1,19 @@
 package me.tye.filemanager.commands;
 
 import me.tye.filemanager.FileManager;
+import me.tye.filemanager.util.yamlClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.StringUtil;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+
+import static me.tye.filemanager.FileManager.log;
 
 public class TabComplete implements TabCompleter {
     @Override
@@ -26,8 +29,11 @@ public class TabComplete implements TabCompleter {
             if (args.length == 2 && args[0].equals("remove")) {
                 ArrayList<String> plugins = new ArrayList<>();
 
-                for (Plugin plugin : JavaPlugin.getPlugin(FileManager.class).getServer().getPluginManager().getPlugins()) {
-                    plugins.add(plugin.getName());
+                try {
+                    for (PluginData data : FileManager.readPluginData())
+                        plugins.add(data.getName());
+                } catch (IOException e) {
+                    log(e, sender, Level.WARNING, "There was an error reading the plugin names from the pluginData file.");
                 }
 
                 StringUtil.copyPartialMatches(args[1], plugins, completions);

@@ -4,6 +4,7 @@ import me.tye.filemanager.util.FileData;
 import me.tye.filemanager.util.PathHolder;
 import net.wesjd.anvilgui.AnvilGUI;
 import org.bukkit.*;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,13 +22,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.logging.Level;
 
 import static me.tye.filemanager.FileManager.itemProperties;
+import static me.tye.filemanager.FileManager.log;
 import static org.bukkit.plugin.java.JavaPlugin.getPlugin;
 
 public class FileGui implements Listener {
-
-    //TODO: fix scroll and search not going to the correct lines.
     public static HashMap<UUID, FileData> fileData = new HashMap<>();
     public static HashMap<String, PathHolder> position = new HashMap<>();
 
@@ -37,8 +38,7 @@ public class FileGui implements Listener {
         try {
             paths = Files.list(Path.of(position.get(player.getName()).getCurrentPath())).toList();
         } catch (Exception e) {
-            player.sendMessage(ChatColor.RED+"There was an error trying to get the files in that folder.\nPlease see the console for error message and report this.");
-            e.printStackTrace();
+            log(e, player, Level.SEVERE, "There was an error trying to get the files in that folder.");
             return;
         }
 
@@ -47,11 +47,17 @@ public class FileGui implements Listener {
         ArrayList<ItemStack> folders = new ArrayList<>();
         for (Path path : paths) {
             if (Files.isDirectory(path)) {
-                ItemStack item = itemProperties(new ItemStack(Material.YELLOW_WOOL), path.getFileName().toString(), List.of("Folder"));
+                ItemStack item = itemProperties(new ItemStack(Material.YELLOW_WOOL), ChatColor.YELLOW + path.getFileName().toString(), List.of("Folder"));
+                ItemMeta meta = item.getItemMeta();
+                meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING, path.getFileName().toString());
+                item.setItemMeta(meta);
                 folders.add(item);
             }
             else {
                 ItemStack item = itemProperties(new ItemStack(Material.WHITE_WOOL), path.getFileName().toString(), List.of("File"));
+                ItemMeta meta = item.getItemMeta();
+                meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING, path.getFileName().toString());
+                item.setItemMeta(meta);
                 files.add(item);
             }
         }
@@ -93,8 +99,7 @@ public class FileGui implements Listener {
                 lines.add(text);
 
         } catch (IOException e) {
-            player.sendMessage(ChatColor.RED+"There was an error trying to open that file.\nPlease see the console for error message and report this.");
-            e.printStackTrace();
+            log(e, player, Level.WARNING, "There was an error trying to read \""+position.get(player.getName()).getRelativePath()+"\".");
             return;
         }
 
@@ -207,15 +212,24 @@ public class FileGui implements Listener {
             };
             br.close();
             Files.writeString(Path.of(pathHolder.getCurrentPath()), content.toString());
-        } catch (Exception ex) {
-            player.sendMessage(ChatColor.RED+"There was an error trying to edit that file.\nPlease see the console for error message and report this.");
-            ex.printStackTrace();
+        } catch (IOException e) {
+            log(e, player, Level.WARNING, "There was an error reading/writing to \""+position.get(player.getName()).getRelativePath()+"\".");
         }
     }
 
     @EventHandler
     public void stopStealing(InventoryClickEvent e) {
-        if (position.containsKey(e.getWhoClicked().getName())) e.setCancelled(true);
+        HumanEntity player = e.getWhoClicked();
+        String inventoryTitle = player.getOpenInventory().getTitle();
+        if (!position.containsKey(player.getName())) return;
+        if (inventoryTitle.equals(ChatColor.BLUE+"~"+position.get(player.getName()).getRelativePath().substring(0, position.get(player.getName()).getRelativePath().length()-1)+ChatColor.GOLD+" $")
+                || inventoryTitle.equals(ChatColor.BLUE+"~"+position.get(player.getName()).getRelativePath()+ChatColor.GOLD+" $")
+                || inventoryTitle.startsWith("Min: 1, Max:") || inventoryTitle.startsWith("Search:") || inventoryTitle.startsWith("File editor:"))
+            e.setCancelled(true);
+        else {
+            position.remove(player.getName());
+            fileData.remove(player.getUniqueId());
+        }
     }
 
     @EventHandler
@@ -234,7 +248,7 @@ public class FileGui implements Listener {
             if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || e.getCurrentItem().getItemMeta().getLore() == null || !position.containsKey(player.getName())) return;
             if (e.getCurrentItem().getItemMeta().getLore().get(0).equals("Folder")) {
                 PathHolder pathHolder = position.get(player.getName());
-                pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getDisplayName());
+                pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING));
                 openFolder(player);
             }
         }
@@ -244,7 +258,8 @@ public class FileGui implements Listener {
     public void upFolder(InventoryClickEvent e) {
         if (e.getWhoClicked() instanceof Player player) {
             if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || e.getCurrentItem().getType() != Material.ARROW || !position.containsKey(player.getName())) return;
-            if (!e.getCurrentItem().getItemMeta().getDisplayName().equals("Back") && !e.getCurrentItem().getItemMeta().getDisplayName().equals("Up")) return;
+            String identifier = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING);
+            if (identifier != null) return;
             PathHolder pathHolder = position.get(player.getName());
             pathHolder.setCurrentPath(Path.of(pathHolder.getCurrentPath()).getParent().toString());
             openFolder(player);
@@ -257,7 +272,7 @@ public class FileGui implements Listener {
             if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || e.getCurrentItem().getItemMeta().getLore() == null || !position.containsKey(player.getName())) return;
             if (e.getCurrentItem().getItemMeta().getLore().get(0).equals("File")) {
                 PathHolder pathHolder = position.get(player.getName());
-                pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getDisplayName());
+                pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING));
                 fileData.put(player.getUniqueId(), fileData.get(player.getUniqueId()).setCurrentLine(1));
                 openFile(player);
             }
@@ -395,8 +410,7 @@ public class FileGui implements Listener {
                     openFile(player);
 
                 } catch (IOException ex) {
-                    player.sendMessage(ChatColor.RED + "There was an error trying to open that file.\nPlease see the console for error message and report this.");
-                    ex.printStackTrace();
+                    log(ex, player, Level.WARNING, "There was an error reading \""+position.get(player.getName()).getRelativePath()+"\" while trying to search.");
                 }
             }
 
