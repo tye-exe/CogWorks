@@ -152,6 +152,8 @@ public class PluginCommand implements CommandExecutor {
                 } else {
                     sender.sendMessage(ChatColor.RED + "Please provide a plugin name!");
                 }
+            } else if (args[0].equals("browse")) {
+                sender.sendMessage("whoooooooooooooooooooooooooooooo");
             } else {
                 sender.sendMessage(ChatColor.GREEN+"/plugin help - Shows this message."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
                         "/plugin install <Plugin Name | URL> - If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download."+ChatColor.GRAY+"\n" + ChatColor.GREEN +

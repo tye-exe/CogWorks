@@ -21,7 +21,7 @@ public class TabComplete implements TabCompleter {
         ArrayList<String> completions = new ArrayList<>();
         if (label.equals("plugin")) {
             if (args.length == 1) {
-                StringUtil.copyPartialMatches(args[0], Arrays.asList("help", "install", "remove"), completions);
+                StringUtil.copyPartialMatches(args[0], Arrays.asList("help", "install", "remove", "browse"), completions);
             }
             if (args.length == 2 && args[0].equals("install") && args[1].isEmpty()) {
                 return List.of("<pluginName | URL>");
