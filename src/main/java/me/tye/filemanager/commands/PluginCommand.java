@@ -153,7 +153,17 @@ public class PluginCommand implements CommandExecutor {
                     sender.sendMessage(ChatColor.RED + "Please provide a plugin name!");
                 }
             } else if (args[0].equals("browse")) {
-                sender.sendMessage("whoooooooooooooooooooooooooooooo");
+                try {
+                    ModrinthSearch search = modrinthSearch("");
+                    for (JsonElement je : search.getValidPluginKeys()) {
+                        System.out.println(je.getAsJsonObject().get("title").getAsString());
+                    }
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                } catch (ModrinthAPIException e) {
+                    throw new RuntimeException(e);
+                }
+
             } else {
                 sender.sendMessage(ChatColor.GREEN+"/plugin help - Shows this message."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
                         "/plugin install <Plugin Name | URL> - If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
@@ -261,7 +271,10 @@ public class PluginCommand implements CommandExecutor {
         removePluginData(pluginName);
     }
 
-    public static JsonElement modrinthAPI(URL url, String requestMethod) throws ModrinthAPIException {
+    public static JsonElement modrinthAPI(String stringURL, String requestMethod) throws MalformedURLException, ModrinthAPIException {
+        //TODO: split into multiple threads for each url if it's too big
+        if (stringURL.length() >=  24045) throw new ModrinthAPIException("Url too long!");;
+        URL url = new URL(stringURL);
         try {
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod(requestMethod);
@@ -307,7 +320,7 @@ public class PluginCommand implements CommandExecutor {
         mcVersion = mcVersion.substring(0, mcVersion.length() - 1);
         String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
 
-        JsonElement relevantPlugins = modrinthAPI(new URL("https://api.modrinth.com/v2/search?query=" + makeValidForUrl(searchQuery) + "&facets=[[%22versions:" + mcVersion + "%22],[%22categories:" + serverSoftware + "%22]]"), "GET");
+        JsonElement relevantPlugins = modrinthAPI("https://api.modrinth.com/v2/search?query=" + makeValidForUrl(searchQuery) + "&facets=[[%22versions:" + mcVersion + "%22],[%22categories:" + serverSoftware + "%22]]", "GET");
         if (relevantPlugins == null) throw new ModrinthAPIException("Error getting relevant plugins from Modrinth.");
         JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
         if (hits.isEmpty()) return new ModrinthSearch(null, null);
@@ -317,7 +330,7 @@ public class PluginCommand implements CommandExecutor {
         for (JsonElement je : hits) {
             projectUrl.append("%22").append(je.getAsJsonObject().get("slug").getAsString()).append("%22").append(",");
         }
-        JsonElement pluginProjects = modrinthAPI(new URL(projectUrl.substring(0, projectUrl.length() - 1) + "]"), "GET");
+        JsonElement pluginProjects = modrinthAPI(projectUrl.substring(0, projectUrl.length() - 1) + "]", "GET");
 
         //gets the versions from the projects
         if (pluginProjects == null) throw new ModrinthAPIException("Error getting supported plugins from Modrinth.");
@@ -330,7 +343,7 @@ public class PluginCommand implements CommandExecutor {
             }
         }
 
-        JsonElement pluginVersions = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length() - 1) + "]"), "GET");
+        JsonElement pluginVersions = modrinthAPI(versionsUrl.substring(0, versionsUrl.length() - 1) + "]", "GET");
         if (pluginVersions == null) throw new ModrinthAPIException("Error getting supported versions from Modrinth.");
 
         //filters out incompatible versions/plugins

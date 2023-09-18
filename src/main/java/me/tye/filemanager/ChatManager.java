@@ -327,7 +327,7 @@ public class ChatManager implements Listener {
             for (String projectID : projects) projectUrl.append("%22").append(projectID).append("%22").append(",");
 
             try {
-                JsonElement pluginProjects = modrinthAPI(new URL(projectUrl.substring(0, projectUrl.length() - 1) + "]"), "GET");
+                JsonElement pluginProjects = modrinthAPI(projectUrl.substring(0, projectUrl.length() - 1) + "]", "GET");
                 if (pluginProjects == null) {
                     sender.sendMessage(ChatColor.RED + "Error getting dependency plugins from Modrinth.");
                     return;
@@ -353,7 +353,7 @@ public class ChatManager implements Listener {
             versionsUrl.append("%22").append(versionID).append("%22").append(",");
         }
         try {
-            pluginVersions = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length() - 1) + "]"), "GET");
+            pluginVersions = modrinthAPI(versionsUrl.substring(0, versionsUrl.length() - 1) + "]", "GET");
             if (pluginVersions == null) {
                 sender.sendMessage(ChatColor.RED + "Error getting dependency versions from Modrinth.");
                 return;
@@ -408,7 +408,7 @@ public class ChatManager implements Listener {
             allProjectIDs.removeAll(compatibleProjectIDs);
 
             try {
-                JsonElement incompatiblePlugins = modrinthAPI(new URL(versionsUrl.substring(0, versionsUrl.length() - 1) + "]"), "GET");
+                JsonElement incompatiblePlugins = modrinthAPI(versionsUrl.substring(0, versionsUrl.length() - 1) + "]", "GET");
                 StringBuilder incompatibleTitles = new StringBuilder();
                 for (JsonElement je : incompatiblePlugins.getAsJsonArray()) {
                     incompatibleTitles.append(je.getAsJsonObject().get("title").getAsString()).append(", ");
