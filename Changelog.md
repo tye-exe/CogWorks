@@ -1,3 +1,4 @@
+# 0.2.1:
 - Fixed capital letters getting deleted from query when using "/plugin" install.
 - General improvements to "/file" command.
 - Fixed broken url for plugin main page when using /plugin" install.
@@ -14,3 +15,5 @@
 - Added java docs for internal methods.
 - Fixed bug in dependency resolve where if a matching plugin was found it wouldn't be deleted.
 - A message is sent to ops on log on if there has been a severe error since last restart.
+
+# 0.3:
