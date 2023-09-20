@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.tye.filemanager.FileManager;
 import me.tye.filemanager.util.ModrinthSearch;
+import me.tye.filemanager.util.VersionGetThread;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
 import me.tye.filemanager.util.exceptions.NoSuchPluginException;
 import me.tye.filemanager.util.exceptions.PluginExistsException;
@@ -38,6 +39,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 
 import static me.tye.filemanager.ChatManager.params;
@@ -153,17 +158,50 @@ public class PluginCommand implements CommandExecutor {
                     sender.sendMessage(ChatColor.RED + "Please provide a plugin name!");
                 }
             } else if (args[0].equals("browse")) {
-                try {
-                    ModrinthSearch search = modrinthSearch("");
-                    for (JsonElement je : search.getValidPluginKeys()) {
-                        System.out.println(je.getAsJsonObject().get("title").getAsString());
-                    }
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
-                } catch (ModrinthAPIException e) {
-                    throw new RuntimeException(e);
-                }
+                new Thread(new Runnable() {
 
+                    private CommandSender sender;
+                    private int offset;
+
+                    public Runnable init(CommandSender sender, int offset) {
+                        this.sender = sender;
+                        this.offset = offset;
+                        return this;
+                    }
+                    @Override
+                    public void run(){
+                        try {
+                            ModrinthSearch modrinthSearch = modrinthBrowse(offset);
+                            ArrayList<JsonObject> validPluginKeys = modrinthSearch.getValidPluginKeys();
+                            HashMap<JsonObject, JsonArray> validPlugins = modrinthSearch.getValidPlugins();
+
+                            sender.sendMessage(ChatColor.GREEN+"Send the number corresponding to the plugin to install it in chat, or send q to quit.");
+                            int i = 0;
+
+                            if (offset >= 1) {
+                                sender.sendMessage(ChatColor.GREEN+String.valueOf(i)+": \u2191");
+                                i++;
+                            }
+
+                            while (validPluginKeys.size() > i) {
+                                JsonObject project = validPluginKeys.get(i);
+                                TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
+                                projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
+                                projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
+                                projectName.setUnderlined(true);
+                                sender.spigot().sendMessage(projectName);
+                                i++;
+                            }
+
+                            sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": \u2193");
+
+                        } catch (MalformedURLException e) {
+                            throw new RuntimeException(e);
+                        } catch (ModrinthAPIException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }.init(sender, 0)).start();
             } else {
                 sender.sendMessage(ChatColor.GREEN+"/plugin help - Shows this message."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
                         "/plugin install <Plugin Name | URL> - If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
@@ -271,10 +309,8 @@ public class PluginCommand implements CommandExecutor {
         removePluginData(pluginName);
     }
 
-    public static JsonElement modrinthAPI(String stringURL, String requestMethod) throws MalformedURLException, ModrinthAPIException {
-        //TODO: split into multiple threads for each url if it's too big
-        if (stringURL.length() >=  24045) throw new ModrinthAPIException("Url too long!");;
-        URL url = new URL(stringURL);
+    public static JsonElement modrinthAPI(String URL, String requestMethod) throws MalformedURLException, ModrinthAPIException {
+        URL url = new URL(URL);
         try {
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod(requestMethod);
@@ -285,8 +321,11 @@ public class PluginCommand implements CommandExecutor {
             if (status == 410) {
                 throw new ModrinthAPIException("The FileManager plugin is using an outdated version of the Modrinth api. Please update your version of the plugin!");
             }
+            if (status == 429) {
+                throw new ModrinthAPIException("You've exceeded the Modrinth API rate limit. Please slow down.");
+            }
             if (status != 200) {
-                throw new ModrinthAPIException("There was a problem using the Modrinth API.", new Throwable("URL: "+url.toExternalForm()+"\n request method: "+requestMethod + "\n response message:" + con.getResponseMessage()));
+                throw new ModrinthAPIException("There was a problem using the Modrinth API.", new Throwable("URL: " + url.toExternalForm() + "\n request method: " + requestMethod + "\n response message:" + con.getResponseMessage()));
             }
 
             BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
@@ -300,16 +339,17 @@ public class PluginCommand implements CommandExecutor {
 
             return JsonParser.parseString(content.toString());
         } catch (IOException e) {
-            throw new ModrinthAPIException("There was a problem accessing the modrinth api website.", e.getCause());
+            throw new ModrinthAPIException("There was a problem accessing the modrinth api.", e.getCause());
         }
-    }
+    //}
+}
 
 
     /**
      * Finds compatible plugins on modrinth for your server.
      * @param searchQuery the name of the plugin to search Modrinth for.
      * @return A ModrinthSearch object.
-     * @throws MalformedURLException If the request urls to teh modrinth api are invalid.
+     * @throws MalformedURLException If the request urls to the modrinth api are invalid.
      * @throws ModrinthAPIException if there is an error using the Modrinth API.
      */
     public static ModrinthSearch modrinthSearch(String searchQuery) throws MalformedURLException, ModrinthAPIException {
@@ -336,15 +376,22 @@ public class PluginCommand implements CommandExecutor {
         if (pluginProjects == null) throw new ModrinthAPIException("Error getting supported plugins from Modrinth.");
 
         //gets the information for all the versions
-        StringBuilder versionsUrl = new StringBuilder("https://api.modrinth.com/v2/versions?ids=[");
+        String baseUrl = "https://api.modrinth.com/v2/versions?ids=[";
+        JsonArray pluginVersions = new JsonArray();
+
+        StringBuilder versionsUrl = new StringBuilder(baseUrl);
         for (JsonElement je : pluginProjects.getAsJsonArray()) {
             for (JsonElement jel : je.getAsJsonObject().get("versions").getAsJsonArray()) {
+                if (versionsUrl.length() > 20000) {
+                    pluginVersions.addAll(modrinthAPI(versionsUrl.substring(0, versionsUrl.length() - 1) + "]", "GET").getAsJsonArray());
+                    versionsUrl.delete(baseUrl.length(), versionsUrl.length());
+                }
                 versionsUrl.append("%22").append(jel.getAsString()).append("%22").append(",");
             }
         }
 
-        JsonElement pluginVersions = modrinthAPI(versionsUrl.substring(0, versionsUrl.length() - 1) + "]", "GET");
-        if (pluginVersions == null) throw new ModrinthAPIException("Error getting supported versions from Modrinth.");
+        pluginVersions.addAll(modrinthAPI(versionsUrl.substring(0, versionsUrl.length() - 1) + "]", "GET").getAsJsonArray());
+        if (pluginVersions.isEmpty()) throw new ModrinthAPIException("Error getting supported versions from Modrinth.");
 
         //filters out incompatible versions/plugins
         HashMap<String, JsonArray> compatibleFiles = new HashMap<>();
@@ -391,6 +438,58 @@ public class PluginCommand implements CommandExecutor {
             if (validPlugins.containsKey(je.getAsJsonObject())) validPluginKeys.add(je.getAsJsonObject());
 
         if (validPluginKeys.isEmpty()) return new ModrinthSearch(null, null);
+        return new ModrinthSearch(validPluginKeys, validPlugins);
+    }
+    
+    public static ModrinthSearch modrinthBrowse(int offset) throws MalformedURLException, ModrinthAPIException {
+        ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
+        HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
+
+        String mcVersion = Bukkit.getVersion().split(": ")[1];
+        mcVersion = mcVersion.substring(0, mcVersion.length() - 1);
+        String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
+
+        JsonElement relevantPlugins = modrinthAPI("https://api.modrinth.com/v2/search?query=&facets=[[%22versions:" + mcVersion + "%22],[%22categories:" + serverSoftware + "%22]]&offset="+offset, "GET");
+        if (relevantPlugins == null) throw new ModrinthAPIException("Error getting relevant plugins from Modrinth.");
+        JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
+        if (hits.isEmpty()) throw new ModrinthAPIException("Error getting plugins from Modrinth.");
+
+        //gets the projects & compatible versions
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        ArrayList<Future<JsonElement>> futures = new ArrayList<>();
+
+        StringBuilder projectUrl = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
+
+        for (JsonElement je : hits) {
+            String slug = je.getAsJsonObject().get("slug").getAsString();
+            projectUrl.append("%22").append(slug).append("%22").append(",");
+            futures.add(executorService.submit(new VersionGetThread(slug)));
+        }
+        JsonElement pluginProjects = modrinthAPI(projectUrl.substring(0, projectUrl.length() - 1) + "]", "GET");
+        if (pluginProjects == null) throw new ModrinthAPIException("Error getting supported plugins from Modrinth.");
+
+        for (JsonElement je : pluginProjects.getAsJsonArray()) {
+            validPluginKeys.add(je.getAsJsonObject());
+        }
+
+        for (Future<JsonElement> future : futures) {
+            try {
+                JsonArray validVersions = future.get().getAsJsonArray();
+                if (validVersions.isEmpty()) continue;
+                //puts the correct JsonObject into the hashmap
+                for (JsonElement je : pluginProjects.getAsJsonArray()) {
+                    if (je.getAsJsonObject().get("id").getAsString().equals(validVersions.get(0).getAsJsonObject().get("project_id").getAsString())) validPlugins.put(je.getAsJsonObject(), validVersions);
+                }
+            } catch (ExecutionException | InterruptedException e) {
+                throw new ModrinthAPIException("There was an error getting the compatible versions of a plugin from modrinth", e.getCause());
+            }
+        }
+
+        //removes invalid plugins
+        for (JsonElement je : pluginProjects.getAsJsonArray()) {
+            if (!validPlugins.containsKey(je.getAsJsonObject())) validPluginKeys.remove(je.getAsJsonObject());
+        }
+
         return new ModrinthSearch(validPluginKeys, validPlugins);
     }
 }

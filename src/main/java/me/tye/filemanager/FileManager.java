@@ -48,6 +48,7 @@ public final class FileManager extends JavaPlugin {
     //TODO: /plugin brows
     //TODO: editing files in /file by adding toggle to separate mode - new permission : add check before deleting or creating anything
 
+    //TODO: convert all commands that interact externally to use a separate thread if possible.
     //TODO: convert install modrinth dependencies to use errors, not sender
     //TODO: run install dependencies on plugins installed from auto dependency resolve
     //TODO: add advise on how to fix errors in the error message.
