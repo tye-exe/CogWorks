@@ -196,7 +196,7 @@ public class PluginCommand implements CommandExecutor {
                             int i = 0;
 
                             if (offset >= 1) {
-                                sender.sendMessage(ChatColor.GREEN+String.valueOf(i)+": \u2191");
+                                sender.sendMessage(ChatColor.GREEN+String.valueOf(i)+": ^");
                                 i++;
                             }
 
@@ -210,16 +210,16 @@ public class PluginCommand implements CommandExecutor {
                                 i++;
                             }
 
-                            sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": \u2193");
+                            sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": v");
 
                             ChatParams newParams = new ChatParams(sender, "PluginBrowse").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys).setOffset(offset);
                             if (sender instanceof Player) response.put(sender.getName(), newParams);
                             else response.put("~", newParams);
 
                         } catch (MalformedURLException e) {
-                            throw new RuntimeException(e);
+                            log(e, sender, Level.WARNING, "Error creating url to send api request to Modrinth.");
                         } catch (ModrinthAPIException e) {
-                            throw new RuntimeException(e);
+                            log(e, sender, Level.WARNING, e.getMessage());
                         }
                     }
                 }.init(sender, 0)).start();
@@ -358,8 +358,8 @@ public class PluginCommand implements CommandExecutor {
         } catch (IOException e) {
             throw new ModrinthAPIException("There was a problem accessing the modrinth api.", e.getCause());
         }
-    //}
-}
+        //}
+    }
 
 
     /**
@@ -443,10 +443,12 @@ public class PluginCommand implements CommandExecutor {
             String projectID = jo.get("project_id").getAsString();
             if (!compatibleFiles.containsKey(projectID)) continue;
 
-            JsonArray array;
-            if (validPlugins.containsKey(jo)) array = validPlugins.get(jo);
-            else array = new JsonArray();
-            array.add(compatibleFiles.get(projectID));
+            JsonArray array = validPlugins.get(jo);
+            if (array == null) array = new JsonArray();
+            for (JsonElement jel : compatibleFiles.get(projectID).getAsJsonArray()) {
+                array.add(jel);
+            }
+
             validPlugins.put(jo, array);
         }
 
@@ -456,11 +458,9 @@ public class PluginCommand implements CommandExecutor {
 
         if (validPluginKeys.isEmpty()) return new ModrinthSearch(null, null);
 
-        System.out.println(validPlugins);
-
         return new ModrinthSearch(validPluginKeys, validPlugins);
     }
-    
+
     public static ModrinthSearch modrinthBrowse(int offset) throws MalformedURLException, ModrinthAPIException {
         ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
         HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
@@ -474,57 +474,42 @@ public class PluginCommand implements CommandExecutor {
         JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
         if (hits.isEmpty()) throw new ModrinthAPIException("Error getting plugins from Modrinth.");
 
-        //gets the projects & compatible versions
+        StringBuilder projectUrl = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
+        for (JsonElement je : hits) {
+            JsonObject hit = je.getAsJsonObject();
+            projectUrl.append("%22").append(hit.get("project_id").getAsString()).append("%22,");
+        }
+
+        JsonArray pluginProjects = modrinthAPI(projectUrl.substring(0, projectUrl.length() - 1) + "]", "GET").getAsJsonArray();
         ExecutorService executorService = Executors.newCachedThreadPool();
         ArrayList<Future<JsonElement>> futures = new ArrayList<>();
 
-        StringBuilder projectUrl = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
-
-        for (JsonElement je : hits) {
-            String slug = je.getAsJsonObject().get("slug").getAsString();
-            projectUrl.append("%22").append(slug).append("%22").append(",");
-            futures.add(executorService.submit(new VersionGetThread(slug)));
-        }
-        JsonElement pluginProjects = modrinthAPI(projectUrl.substring(0, projectUrl.length() - 1) + "]", "GET");
-        if (pluginProjects == null) throw new ModrinthAPIException("Error getting supported plugins from Modrinth.");
-
-        for (JsonElement je : pluginProjects.getAsJsonArray()) {
-            validPluginKeys.add(je.getAsJsonObject());
+        for (JsonElement je : pluginProjects) {
+            futures.add(executorService.submit(new VersionGetThread(je.getAsJsonObject().get("id").getAsString())));
         }
 
         for (Future<JsonElement> future : futures) {
             try {
                 JsonArray validVersions = future.get().getAsJsonArray();
                 if (validVersions.isEmpty()) continue;
-                //puts the valid JsonObject into the hashmap
-                for (JsonElement je : pluginProjects.getAsJsonArray()) {
-                    JsonObject jo = je.getAsJsonObject();
-                    if (jo.get("id").getAsString().equals(validVersions.get(0).getAsJsonObject().get("project_id").getAsString())) {
-//                        JsonArray array = validPlugins.get(jo);
-                        validPlugins.put(jo, new JsonArray());
+
+                for (JsonElement projectElement : pluginProjects) {
+                    JsonObject project = projectElement.getAsJsonObject();
+                    if (project.get("id").equals(validVersions.get(0).getAsJsonObject().get("project_id"))) {
+                        validPluginKeys.add(project);
+
+                        for (JsonElement jel : validVersions) {
+                            JsonArray array = validPlugins.get(project);
+                            if (array == null) array = new JsonArray();
+                            array.add(jel.getAsJsonObject());
+                            validPlugins.put(project, array);
+                        }
                     }
                 }
-                //
             } catch (ExecutionException | InterruptedException e) {
                 throw new ModrinthAPIException("There was an error getting the compatible versions of a plugin from modrinth", e.getCause());
             }
         }
-
-        //removes invalid plugins
-        for (JsonElement je : pluginProjects.getAsJsonArray()) {
-            if (!validPlugins.containsKey(je.getAsJsonObject())) validPluginKeys.remove(je.getAsJsonObject());
-        }
-
-        try {
-            FileWriter fw = new FileWriter("a");
-            for (JsonObject jo : validPlugins.keySet()) {
-                fw.write(jo.toString());
-            }
-            fw.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
         return new ModrinthSearch(validPluginKeys, validPlugins);
     }
 }

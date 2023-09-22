@@ -112,7 +112,7 @@ public class ChatManager implements Listener {
                         return;
                     }
 
-                    JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosenPlugin-1)).get(0).getAsJsonArray();
+                    JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosenPlugin-1));
                     ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
                     if (compatibleFiles.size() == 0) {
                         sender.sendMessage(ChatColor.YELLOW+"Failed to find compatible file to download.");
@@ -250,7 +250,7 @@ public class ChatManager implements Listener {
                             int i = 0;
 
                             if (nextOffset >= 1) {
-                                sender.sendMessage(ChatColor.GREEN+String.valueOf(i)+": \u2191");
+                                sender.sendMessage(ChatColor.GREEN+String.valueOf(i)+": ^");
                             }
 
                             while (newValidPluginKeys.size() > i) {
@@ -263,20 +263,20 @@ public class ChatManager implements Listener {
                                 i++;
                             }
 
-                            sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": \u2193");
+                            sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": v");
 
                             ChatParams newParams = new ChatParams(sender, "PluginBrowse").setValidPlugins(newValidPlugins).setValidPluginKeys(newValidPluginKeys).setOffset(nextOffset);
                             if (sender instanceof Player) response.put(sender.getName(), newParams);
                             else response.put("~", newParams);
 
                         } catch (MalformedURLException e) {
-                            throw new RuntimeException(e);
+                            log(e, sender, Level.WARNING, "Error creating url to send api request to Modrinth.");
                         } catch (ModrinthAPIException e) {
-                            throw new RuntimeException(e);
+                            log(e, sender, Level.WARNING, e.getMessage());
                         }
 
                     } else {
-                        JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosen-1)).get(0).getAsJsonArray();
+                        JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosen-1));
                         ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
                         if (compatibleFiles.size() == 0) {
                             sender.sendMessage(ChatColor.YELLOW+"Failed to find compatible file to download.");

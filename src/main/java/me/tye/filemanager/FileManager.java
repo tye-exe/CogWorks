@@ -45,7 +45,6 @@ import static me.tye.filemanager.FileGui.position;
 import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
 
 public final class FileManager extends JavaPlugin {
-    //TODO: /plugin brows
     //TODO: editing files in /file by adding toggle to separate mode - new permission : add check before deleting or creating anything
 
     //TODO: check if dependencies are already met before trying to install them?
@@ -316,12 +315,12 @@ public final class FileManager extends JavaPlugin {
                         }
                     }
 
-                    //if one of the dependencies matched teh required one it moves it to the ./plugins folder and deletes the rest of the plugins
+                    //if one of the dependencies matched the required one it moves it to the ./plugins folder and deletes the rest of the plugins
                     try {
                         if (dependency != null) FileUtils.moveFile(dependency, new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
                         FileUtils.deleteDirectory(pluginStore);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        log(e, Level.WARNING, "Error trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder "+pluginStore.getAbsolutePath()+ " at your earliest convince.");
                     }
 
                     if (dependency == null) log(null, Level.WARNING, "Unmet dependency for \""+unmetDependencies.get(unmetDepInfo).getName()+"\" could not be automatically resolved.");
