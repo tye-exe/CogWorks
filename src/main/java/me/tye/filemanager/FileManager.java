@@ -48,11 +48,12 @@ public final class FileManager extends JavaPlugin {
     //TODO: /plugin brows
     //TODO: editing files in /file by adding toggle to separate mode - new permission : add check before deleting or creating anything
 
-    //TODO: convert all commands that interact externally to use a separate thread if possible.
+    //TODO: check if dependencies are already met before trying to install them?
     //TODO: convert install modrinth dependencies to use errors, not sender
     //TODO: run install dependencies on plugins installed from auto dependency resolve
     //TODO: add advise on how to fix errors in the error message.
     //TODO: add central lang file to allow for translation.
+    //TODO: when uninstalling plugins check if any other plugins depend on them.
 
     //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
     //TODO: allow to delete multiple plugins at once - separate by ","?
@@ -281,8 +282,7 @@ public final class FileManager extends JavaPlugin {
                     try {
                         executorService.awaitTermination(1, TimeUnit.MINUTES);
                     } catch (InterruptedException e) {
-                        log(null, Level.WARNING, "Threads attempting to download plugins for longer than 60 seconds.");
-                        log(e, Level.WARNING, "Skipping automatic dependency resolution for \""+unmetDepName+"\".");
+                        log(e, Level.WARNING, "Threads attempting to download plugins for longer than 60 seconds. Skipping automatic dependency resolution for \""+unmetDepName+"\".");
                     }
 
                     File dependency = null;
@@ -518,6 +518,7 @@ public final class FileManager extends JavaPlugin {
             if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
             player.sendMessage(formattedMessage);
         }
+        if ((Boolean) configs.get("showErrorTrace") && e != null) e.printStackTrace();
     }
     /**
      * Sends log message to specified CommandSender.
@@ -533,5 +534,7 @@ public final class FileManager extends JavaPlugin {
             if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
             sender.sendMessage(formattedMessage);
         }
+
+        if ((Boolean) configs.get("showErrorTrace") && e != null) e.printStackTrace();
     }
 }

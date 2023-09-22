@@ -2,6 +2,7 @@ package me.tye.filemanager.commands;
 
 import me.tye.filemanager.FileGui;
 import me.tye.filemanager.FileManager;
+import me.tye.filemanager.util.ChatParams;
 import me.tye.filemanager.util.FileData;
 import me.tye.filemanager.util.PathHolder;
 import org.bukkit.ChatColor;
@@ -12,11 +13,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.logging.Level;
 
-import static me.tye.filemanager.ChatManager.params;
-import static me.tye.filemanager.ChatManager.responses;
+import static me.tye.filemanager.ChatManager.response;
 import static me.tye.filemanager.FileGui.fileData;
 import static me.tye.filemanager.FileGui.openFolder;
 import static me.tye.filemanager.FileManager.log;
@@ -30,10 +29,10 @@ public class FileCommand implements CommandExecutor {
             String serverFolder = Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
             if (sender instanceof Player) FileGui.position.put(sender.getName(), new PathHolder(serverFolder, serverFolder));
             else FileGui.position.put("~", new PathHolder(serverFolder, serverFolder));
-            if (sender instanceof Player) responses.put(sender.getName(), "Terminal");
-            else responses.put("~", "Terminal");
-            if (sender instanceof Player) params.put(sender.getName(), List.of(sender));
-            else params.put("~", List.of(sender));
+
+            ChatParams newParams = new ChatParams(sender, "Terminal");
+            if (sender instanceof Player) response.put(sender.getName(), newParams);
+            else response.put("~", newParams);
 
             sender.sendMessage(ChatColor.GREEN+"You've entered the file manager terminal.\nType \"help\" in chat for help or \"exit\" to leave the terminal.\n");
             sender.sendMessage(ChatColor.RED + "WARNING: THIS A VERY MUCH A WIP AND NOT YET IMPLEMENTED");

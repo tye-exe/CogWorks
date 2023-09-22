@@ -3,6 +3,8 @@ package me.tye.filemanager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import me.tye.filemanager.util.ChatParams;
+import me.tye.filemanager.util.ModrinthSearch;
 import me.tye.filemanager.util.PathHolder;
 import me.tye.filemanager.util.exceptions.ModrinthAPIException;
 import me.tye.filemanager.util.exceptions.NoSuchPluginException;
@@ -18,8 +20,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.server.ServerCommandEvent;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,33 +38,41 @@ import static me.tye.filemanager.commands.PluginCommand.*;
 
 public class ChatManager implements Listener {
 
-    public static HashMap<String, String> responses = new HashMap<>();
-    public static HashMap<String, List<Object>> params = new HashMap<>();
+    public static HashMap<String, ChatParams> response = new HashMap<>();
 
     @EventHandler
     public void onPlayerMessage(AsyncPlayerChatEvent e) {
-        if (responses.containsKey(e.getPlayer().getName())) e.setCancelled(true);
+        if (response.containsKey(e.getPlayer().getName())) e.setCancelled(true);
         checks(e.getPlayer().getName(), e.getMessage());
-        if (responses.containsKey(e.getPlayer().getName())) e.setCancelled(true);
+        if (response.containsKey(e.getPlayer().getName())) e.setCancelled(true);
     }
 
     @EventHandler
     public void onConsoleMessage(ServerCommandEvent e) {
-        if (responses.containsKey("~")) e.setCancelled(true);
+        if (response.containsKey("~")) e.setCancelled(true);
         checks("~", e.getCommand());
-        if (responses.containsKey("~")) e.setCancelled(true);
+        if (response.containsKey("~")) e.setCancelled(true);
     }
 
     public static void checks(String name, String message) {
-        new BukkitRunnable(){
+        new Thread(new Runnable() {
+
+            private String name;
+            private String message;
+
+            public Runnable init(String name, String message) {
+                this.name = name;
+                this.message = message;
+                return this;
+            }
             @Override
-            public void run() {
-                if (!responses.containsKey(name)) return;
-                String modifier = responses.get(name);
+            public void run(){
+                if (!response.containsKey(name)) return;
+                ChatParams params = response.get(name);
+                String modifier = params.getModifier();
                 if (message.startsWith("plugin")) return;
                 if (modifier.equals("DeletePluginConfigs")) {
-                    List<Object> param = params.get(name);
-                    CommandSender sender = (CommandSender) param.get(0);
+                    CommandSender sender = params.getSender();
 
                     boolean deleteConfigs;
                     if (message.equals("y")) deleteConfigs = true;
@@ -73,25 +81,22 @@ public class ChatManager implements Listener {
                         sender.sendMessage(ChatColor.YELLOW + "Please enter either \"y\" or \"n\".");
                         return;
                     }
-                    responses.remove(name);
-                    params.remove(name);
+                    response.remove(name);
                     try {
-                        deletePlugin((String) param.get(1), deleteConfigs);
-                        sender.sendMessage(ChatColor.GREEN+(String) param.get(1)+" deleted."+ChatColor.GRAY+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
+                        deletePlugin(params.getPluginName(), deleteConfigs);
+                        sender.sendMessage(ChatColor.GREEN+params.getPluginName()+" deleted."+ChatColor.GRAY+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
                     } catch (NoSuchPluginException e) {
                         log(e, sender, Level.WARNING, "No plugin with this name could be found on your system.");
                     } catch (IOException e) {
-                        log(e, sender, Level.WARNING, param.get(1) + " could not be deleted.");
+                        log(e, sender, Level.WARNING, params.getPluginName() + " could not be deleted.");
                     }
                 }
                 if (modifier.equals("PluginSelect")) {
-                    List<Object> param = params.get(name);
-                    @SuppressWarnings("unchecked") HashMap<JsonObject, JsonArray> validPlugins = (HashMap<JsonObject, JsonArray>) param.get(0);
-                    @SuppressWarnings("unchecked") ArrayList<JsonObject> validPluginKeys = (ArrayList<JsonObject>) param.get(1);
-                    CommandSender sender = (CommandSender) param.get(2);
+                    HashMap<JsonObject, JsonArray> validPlugins = params.getValidPlugins();
+                    ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
+                    CommandSender sender = params.getSender();
                     if (message.equals("q")) {
-                        responses.remove(name);
-                        params.remove(name);
+                        response.remove(name);
                         sender.sendMessage(ChatColor.YELLOW+"Quitting.");
                         return;
                     }
@@ -129,23 +134,18 @@ public class ChatManager implements Listener {
                             sender.spigot().sendMessage(projectName);
                             i++;
                         }
-                        if (sender instanceof Player) responses.put(sender.getName(), "PluginFileSelect");
-                        else responses.put("~", "PluginFileSelect");
-
-                        if (sender instanceof Player) params.put(sender.getName(), List.of(chooseableFiles, sender));
-                        else params.put("~", List.of(chooseableFiles, sender));
+                        ChatParams newParams = new ChatParams(sender, "PluginFileSelect").setChooseableFiles(chooseableFiles);
+                        if (sender instanceof Player) response.put(sender.getName(), newParams);
+                        else response.put("~", newParams);
                         return;
                     }
-                    responses.remove(name);
-                    params.remove(name);
+                    response.remove(name);
                 }
                 if (modifier.equals("PluginFileSelect")) {
-                    List<Object> param = params.get(name);
-                    @SuppressWarnings("unchecked") ArrayList<JsonObject> chooseableFiles = (ArrayList<JsonObject>) param.get(0);
-                    CommandSender sender = (CommandSender) param.get(1);
+                    ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
+                    CommandSender sender = params.getSender();
                     if (message.equals("q")) {
-                        responses.remove(name);
-                        params.remove(name);
+                        response.remove(name);
                         sender.sendMessage(ChatColor.YELLOW+"Quitting.");
                         return;
                     }
@@ -168,13 +168,11 @@ public class ChatManager implements Listener {
                     return;
                 }
                 if (modifier.equals("ConfirmDependencies")) {
-                    List<Object> param = params.get(name);
-                    JsonArray dependencies = (JsonArray) param.get(0);
-                    JsonArray files = (JsonArray) param.get(1);
-                    CommandSender sender = (CommandSender) param.get(2);
+                    JsonArray dependencies = params.getDependencies();
+                    JsonArray files = params.getFiles();
+                    CommandSender sender = params.getSender();
                     if (message.equals("q")) {
-                        responses.remove(name);
-                        params.remove(name);
+                        response.remove(name);
                         sender.sendMessage(ChatColor.YELLOW + "Quitting.");
                         return;
                     }
@@ -214,11 +212,104 @@ public class ChatManager implements Listener {
                     }
                     sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
 
-                    responses.remove(name);
-                    params.remove(name);
+                    response.remove(name);
                 }
+                if (modifier.equals("PluginBrowse")) {
+                    CommandSender sender = params.getSender();
+                    HashMap<JsonObject, JsonArray> validPlugins = params.getValidPlugins();
+                    ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
+                    int offset = params.getOffset();
+                    if (message.equals("q")) {
+                        response.remove(name);
+                        sender.sendMessage(ChatColor.YELLOW+"Quitting.");
+                        return;
+                    }
+                    int chosen;
+                    try {
+                        chosen = Integer.parseInt(message);
+                    } catch (NumberFormatException e) {
+                        log(e, sender, Level.WARNING, "Please enter a listed number!");
+                        return;
+                    }
+                    if (chosen > validPluginKeys.size()+1 || (offset <= 0 && chosen < 1) || (offset > 0 && chosen < 0)) {
+                        log(null, sender, Level.WARNING, "Please enter a listed number!");
+                        return;
+                    }
+
+                    Integer nextOffset = null;
+                    if (chosen == 0) nextOffset = Math.max(offset-10, 0);
+                    if (chosen == validPluginKeys.size()+1) nextOffset = offset+10;
+
+                    if (nextOffset != null) {
+                        try {
+                            ModrinthSearch modrinthSearch = modrinthBrowse(nextOffset);
+                            ArrayList<JsonObject> newValidPluginKeys = modrinthSearch.getValidPluginKeys();
+                            HashMap<JsonObject, JsonArray> newValidPlugins = modrinthSearch.getValidPlugins();
+
+                            sender.sendMessage(ChatColor.GREEN+"Send the number corresponding to the plugin to install it in chat, or send q to quit.");
+                            int i = 0;
+
+                            if (nextOffset >= 1) {
+                                sender.sendMessage(ChatColor.GREEN+String.valueOf(i)+": \u2191");
+                            }
+
+                            while (newValidPluginKeys.size() > i) {
+                                JsonObject project = newValidPluginKeys.get(i);
+                                TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
+                                projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
+                                projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
+                                projectName.setUnderlined(true);
+                                sender.spigot().sendMessage(projectName);
+                                i++;
+                            }
+
+                            sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": \u2193");
+
+                            ChatParams newParams = new ChatParams(sender, "PluginBrowse").setValidPlugins(newValidPlugins).setValidPluginKeys(newValidPluginKeys).setOffset(nextOffset);
+                            if (sender instanceof Player) response.put(sender.getName(), newParams);
+                            else response.put("~", newParams);
+
+                        } catch (MalformedURLException e) {
+                            throw new RuntimeException(e);
+                        } catch (ModrinthAPIException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                    } else {
+                        JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosen-1)).get(0).getAsJsonArray();
+                        ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
+                        if (compatibleFiles.size() == 0) {
+                            sender.sendMessage(ChatColor.YELLOW+"Failed to find compatible file to download.");
+                        } else if (compatibleFiles.size() == 1) {
+                            JsonObject jo = compatibleFiles.get(0).getAsJsonObject();
+                            JsonArray files = jo.get("files").getAsJsonArray();
+                            installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), true, files, sender, false);
+                            return;
+                        } else {
+                            sender.sendMessage(ChatColor.GREEN+"Send the number corresponding to the plugin to install it in chat, or send q to quit.");
+                            int i = 1;
+                            for (JsonElement je : compatibleFiles) {
+                                JsonObject jo = je.getAsJsonObject();
+                                chooseableFiles.add(jo);
+                                TextComponent projectName = new TextComponent(i+": "+jo.get("name").getAsString()+" : "+jo.get("version_number").getAsString());
+                                projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+validPluginKeys.get(chosen-1).get("project_type").getAsString()+"/"+validPluginKeys.get(chosen-1).get("slug").getAsString()+"/version/"+jo.get("version_number").getAsString())));
+                                projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
+                                projectName.setUnderlined(true);
+                                sender.spigot().sendMessage(projectName);
+                                i++;
+                            }
+
+                            ChatParams newParams = new ChatParams(sender, "PluginFileSelect").setChooseableFiles(chooseableFiles);
+                            if (sender instanceof Player) response.put(sender.getName(), newParams);
+                            else response.put("~", newParams);
+                            return;
+                        }
+                        response.remove(name);
+                    }
+                }
+
                 if (modifier.equals("Terminal")) {
-                    CommandSender sender = (CommandSender) params.get(name).get(0);
+                    CommandSender sender = params.getSender();
                     sender.sendMessage(ChatColor.GOLD+"-----------------");
                     sender.sendMessage(ChatColor.BLUE+position.get(name).getRelativePath()+ChatColor.GOLD+" $");
                     if (message.equals("help")) {
@@ -230,8 +321,7 @@ public class ChatManager implements Listener {
                     }
                     if (message.equals("exit")) {
                         sender.sendMessage(ChatColor.YELLOW+"Exited terminal.");
-                        params.remove(name);
-                        responses.remove(name);
+                        response.remove(name);
                     }
                     if (message.startsWith("say")) {
                         if (sender instanceof Player player) {
@@ -259,7 +349,7 @@ public class ChatManager implements Listener {
                     }
                 }
             }
-        }.runTask(JavaPlugin.getPlugin(FileManager.class));
+        }.init(name, message)).start();
     }
 
 
@@ -294,9 +384,9 @@ public class ChatManager implements Listener {
                         installPluginURL(new URL(file.get("url").getAsString()), fileName, false);
                         sender.sendMessage(ChatColor.GREEN + fileName + " installed successfully.");
                     } catch (MalformedURLException e) {
-                        log(e, sender, Level.WARNING, "Skipping " + fileName + ": Invalid download ulr");
+                        log(e, sender, Level.WARNING, "Skipping " + fileName + ": Invalid download ulr.");
                     } catch (PluginExistsException e) {
-                        log(e, sender, Level.WARNING,  fileName+" is already installed: Skipping");
+                        log(e, sender, Level.WARNING,  fileName+" is already installed: Skipping.");
                     } catch (PluginInstallException e) {
                         log(e, sender, Level.WARNING, e.getMessage());
                     } catch (IOException e) {
@@ -304,19 +394,16 @@ public class ChatManager implements Listener {
                     }
                 }
                 sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
-                responses.clear();
-                params.clear();
+                if (sender instanceof Player) response.remove(sender.getName());
+                else response.remove("~");
             }
             return;
         }
 
         if (confirmDependencyInstallation) {
-            if (sender instanceof Player) responses.put(sender.getName(), "ConfirmDependencies");
-            else responses.put("~", "ConfirmDependencies");
-
-            if (sender instanceof Player) params.put(sender.getName(), List.of(dependencies, files, sender));
-            else params.put("~", List.of(dependencies, files, sender));
-
+            ChatParams newParams = new ChatParams(sender, "ConfirmDependencies").setDependencies(dependencies).setFiles(files);
+            if (sender instanceof Player) response.put(sender.getName(), newParams);
+            else response.put("~", newParams);
             sender.sendMessage(ChatColor.YELLOW + "Do you wish to install the required dependencies for this plugin?\nSend y or n in chat to choose.");
             return;
         }
