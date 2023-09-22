@@ -20,3 +20,4 @@
 - Converted commands and chat interacts to use separate threads due to networking.
 - Changed chat manager to use custom object, rather than unchecked casting.
 - Implemented "/plugin browse" - the command lets you browse though plugins in modrinth (might be built into "/plugin search" later).
+- Added README to GitHub.
