@@ -1,7 +1,7 @@
 ## 0.2.1:
 - Fixed capital letters getting deleted from query when using "/plugin" install.
 - General improvements to "/file" command.
-- Fixed broken url for plugin main page when using /plugin" install.
+- Fixed broken url for plugin main page when using "/plugin install".
 - Minor QOL changes.
 - Can now delete plugins that didn't load.
 - Reworked internal method handling for errors.
@@ -21,3 +21,4 @@
 - Changed chat manager to use custom object, rather than unchecked casting.
 - Implemented "/plugin browse" - the command lets you browse though plugins in modrinth (might be built into "/plugin search" later).
 - Added README to GitHub.
+- Play redirected to "/file chat" when trying to use the gui though a terminal.

@@ -11,20 +11,19 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.nio.file.Path;
-import java.util.logging.Level;
 
 import static me.tye.filemanager.ChatManager.response;
 import static me.tye.filemanager.FileGui.fileData;
 import static me.tye.filemanager.FileGui.openFolder;
-import static me.tye.filemanager.FileManager.log;
 
 
 public class FileCommand implements CommandExecutor {
     //TODO: redirect to terminal if you try to use the gui when in console.
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String[] args) {
         if (args.length == 1 && args[0].equals("chat")) {
             String serverFolder = Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
             if (sender instanceof Player) FileGui.position.put(sender.getName(), new PathHolder(serverFolder, serverFolder));
@@ -45,7 +44,15 @@ public class FileCommand implements CommandExecutor {
                 fileData.put(player.getUniqueId(), new FileData(1, 1, null, 1));
                 openFolder(player);
             } else {
-                log(null, sender, Level.WARNING, "This command is only available to online players.");
+                sender.sendMessage(ChatColor.YELLOW + "This command is only available to online players, being redirected to terminal.");
+
+                String serverFolder = Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
+                FileGui.position.put("~", new PathHolder(serverFolder, serverFolder));
+                response.put("~", new ChatParams(sender, "Terminal"));
+
+                sender.sendMessage(ChatColor.GREEN+"You've entered the file manager terminal.\nType \"help\" in chat for help or \"exit\" to leave the terminal.\n");
+                sender.sendMessage(ChatColor.RED + "WARNING: THIS A VERY MUCH A WIP AND NOT YET IMPLEMENTED");
+                sender.sendMessage(ChatColor.GOLD+"-----------------"+ChatColor.BLUE+new PathHolder(serverFolder, serverFolder).getRelativePath()+ChatColor.GOLD+" $");
             }
 
         } else {
