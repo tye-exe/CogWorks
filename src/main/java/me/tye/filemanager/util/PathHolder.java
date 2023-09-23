@@ -32,7 +32,7 @@ public class PathHolder {
     }
 
     /**
-     * @return Sets the current path to teh given string.
+     * Sets the current path to the given string.
      */
     public void setCurrentPath(String currentPath) {
         //guards against people trying to go higher in the file system

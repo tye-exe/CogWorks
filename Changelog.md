@@ -24,3 +24,4 @@
 - User redirected to "/file chat" when trying to use the gui though a terminal.
 - Fixed bug with fileReader not being closed after editing a file.
 - Changed file navigator, text editor & "/plugin" to use more specific permissions.
+- Implemented ability to create new files within the file manager.
