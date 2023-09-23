@@ -16,10 +16,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventException;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.server.ServerCommandEvent;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,15 +73,17 @@ public class ChatManager implements Listener {
                 return;
             }
 
-            try {
-                deletePlugin(params.getPluginName(), deleteConfigs);
-                sender.sendMessage(ChatColor.GREEN+params.getPluginName()+" deleted."+ChatColor.GRAY+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
-            } catch (NoSuchPluginException e) {
-                log(e, sender, Level.WARNING, params.getPluginName()+" couldn't be found on your system.");
-            } catch (IOException e) {
-                log(e, sender, Level.WARNING, params.getPluginName() + " could not be deleted.");
-            }
-            response.remove(name);
+            Bukkit.getScheduler().scheduleSyncDelayedTask(JavaPlugin.getPlugin(FileManager.class), () -> {
+                try {
+                    deletePlugin(params.getPluginName(), deleteConfigs);
+                    sender.sendMessage(ChatColor.GREEN+params.getPluginName()+" deleted."+ChatColor.GRAY+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
+                } catch (NoSuchPluginException e) {
+                    log(e, sender, Level.WARNING, params.getPluginName()+" couldn't be found on your system.");
+                } catch (IOException e) {
+                    log(e, sender, Level.WARNING, params.getPluginName() + " could not be deleted.");
+                }
+                response.remove(name);
+            });
         }
         else {
             new Thread(new Runnable() {
