@@ -55,250 +55,89 @@ public class ChatManager implements Listener {
     }
 
     public static void checks(String name, String message) {
-        new Thread(new Runnable() {
+        if (!response.containsKey(name)) return;
+        ChatParams params = response.get(name);
+        String modifier = params.getModifier();
+        if (message.startsWith("plugin")) return;
+        //deletePlugins method needs to be synchronous.
+        if (modifier.equals("DeletePluginConfigs")) {
+            CommandSender sender = params.getSender();
 
-            private String name;
-            private String message;
-
-            public Runnable init(String name, String message) {
-                this.name = name;
-                this.message = message;
-                return this;
+            boolean deleteConfigs;
+            if (message.equals("y")) deleteConfigs = true;
+            else if (message.equals("n")) deleteConfigs = false;
+            else {
+                sender.sendMessage(ChatColor.YELLOW + "Please enter either \"y\" or \"n\".");
+                return;
             }
-            @Override
-            public void run(){
-                if (!response.containsKey(name)) return;
-                ChatParams params = response.get(name);
-                String modifier = params.getModifier();
-                if (message.startsWith("plugin")) return;
-                if (modifier.equals("DeletePluginConfigs")) {
-                    CommandSender sender = params.getSender();
 
-                    boolean deleteConfigs;
-                    if (message.equals("y")) deleteConfigs = true;
-                    else if (message.equals("n")) deleteConfigs = false;
-                    else {
-                        sender.sendMessage(ChatColor.YELLOW + "Please enter either \"y\" or \"n\".");
-                        return;
-                    }
-                    response.remove(name);
-                    try {
-                        deletePlugin(params.getPluginName(), deleteConfigs);
-                        sender.sendMessage(ChatColor.GREEN+params.getPluginName()+" deleted."+ChatColor.GRAY+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
-                    } catch (NoSuchPluginException e) {
-                        log(e, sender, Level.WARNING, "No plugin with this name could be found on your system.");
-                    } catch (IOException e) {
-                        log(e, sender, Level.WARNING, params.getPluginName() + " could not be deleted.");
-                    }
+            try {
+                deletePlugin(params.getPluginName(), deleteConfigs);
+                sender.sendMessage(ChatColor.GREEN+params.getPluginName()+" deleted."+ChatColor.GRAY+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
+            } catch (NoSuchPluginException e) {
+                log(e, sender, Level.WARNING, params.getPluginName()+" couldn't be found on your system.");
+            } catch (IOException e) {
+                log(e, sender, Level.WARNING, params.getPluginName() + " could not be deleted.");
+            }
+            response.remove(name);
+        }
+        else {
+            new Thread(new Runnable() {
+
+                private String name;
+                private String message;
+
+                public Runnable init(String name, String message) {
+                    this.name = name;
+                    this.message = message;
+                    return this;
                 }
-                if (modifier.equals("PluginSelect")) {
-                    HashMap<JsonObject, JsonArray> validPlugins = params.getValidPlugins();
-                    ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
-                    CommandSender sender = params.getSender();
-                    if (message.equals("q")) {
-                        response.remove(name);
-                        sender.sendMessage(ChatColor.YELLOW+"Quitting.");
-                        return;
-                    }
-                    int chosenPlugin;
-                    try {
-                        chosenPlugin = Integer.parseInt(message);
-                    } catch (NumberFormatException e) {
-                        log(e, sender, Level.WARNING, "Please enter a listed number!");
-                        return;
-                    }
-                    if (chosenPlugin > validPluginKeys.size() || chosenPlugin < 1) {
-                        log(null, sender, Level.WARNING, "Please enter a listed number!");
-                        return;
-                    }
 
-                    JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosenPlugin-1));
-                    ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
-                    if (compatibleFiles.size() == 0) {
-                        sender.sendMessage(ChatColor.YELLOW+"Failed to find compatible file to download.");
-                    } else if (compatibleFiles.size() == 1) {
-                        JsonObject jo = compatibleFiles.get(0).getAsJsonObject();
-                        JsonArray files = jo.get("files").getAsJsonArray();
-                        installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), true, files, sender, false);
-                        return;
-                    } else {
-                        sender.sendMessage(ChatColor.GREEN+"Send the number corresponding to the plugin to install it in chat, or send q to quit.");
-                        int i = 1;
-                        for (JsonElement je : compatibleFiles) {
-                            JsonObject jo = je.getAsJsonObject();
-                            chooseableFiles.add(jo);
-                            TextComponent projectName = new TextComponent(i+": "+jo.get("name").getAsString()+" : "+jo.get("version_number").getAsString());
-                            projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+validPluginKeys.get(chosenPlugin-1).get("project_type").getAsString()+"/"+validPluginKeys.get(chosenPlugin-1).get("slug").getAsString()+"/version/"+jo.get("version_number").getAsString())));
-                            projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
-                            projectName.setUnderlined(true);
-                            sender.spigot().sendMessage(projectName);
-                            i++;
+                @Override
+                public void run() {
+                    if (modifier.equals("PluginSelect")) {
+                        HashMap<JsonObject, JsonArray> validPlugins = params.getValidPlugins();
+                        ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
+                        CommandSender sender = params.getSender();
+                        if (message.equals("q")) {
+                            response.remove(name);
+                            sender.sendMessage(ChatColor.YELLOW + "Quitting.");
+                            return;
                         }
-                        ChatParams newParams = new ChatParams(sender, "PluginFileSelect").setChooseableFiles(chooseableFiles);
-                        if (sender instanceof Player) response.put(sender.getName(), newParams);
-                        else response.put("~", newParams);
-                        return;
-                    }
-                    response.remove(name);
-                }
-                if (modifier.equals("PluginFileSelect")) {
-                    ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
-                    CommandSender sender = params.getSender();
-                    if (message.equals("q")) {
-                        response.remove(name);
-                        sender.sendMessage(ChatColor.YELLOW+"Quitting.");
-                        return;
-                    }
-
-                    int chosenVersion;
-                    try {
-                        chosenVersion = Integer.parseInt(message);
-                    } catch (NumberFormatException e) {
-                        log(e, sender, Level.WARNING, "Please enter a listed number!");
-                        return;
-                    }
-                    if (chosenVersion > chooseableFiles.size() || chosenVersion < 1) {
-                        log(null, sender, Level.WARNING, "Please enter a listed number!");
-                        return;
-                    }
-
-                    JsonObject jo = chooseableFiles.get(chosenVersion-1);
-                    JsonArray files = jo.get("files").getAsJsonArray();
-                    installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), true, files, sender, false);
-                    return;
-                }
-                if (modifier.equals("ConfirmDependencies")) {
-                    JsonArray dependencies = params.getDependencies();
-                    JsonArray files = params.getFiles();
-                    CommandSender sender = params.getSender();
-                    if (message.equals("q")) {
-                        response.remove(name);
-                        sender.sendMessage(ChatColor.YELLOW + "Quitting.");
-                        return;
-                    }
-
-                    boolean installDependencies;
-                    if (message.equals("y")) installDependencies = true;
-                    else if (message.equals("n")) installDependencies = false;
-                    else {
-                        sender.sendMessage(ChatColor.YELLOW + "Please enter \"y\" or \"n\".");
-                        return;
-                    }
-
-                    if (installDependencies) {
-                        sender.sendMessage(ChatColor.GREEN + "Installing required dependencies...");
-                        installModrinthDependencies(dependencies, false, null, sender, false);
-                        sender.sendMessage(ChatColor.GREEN + "Finished installing required dependencies.");
-                    } else {
-                        sender.sendMessage(ChatColor.GREEN + "Skipping required dependencies.");
-                    }
-
-                    sender.sendMessage(ChatColor.GREEN + "Installing plugin(s)...");
-                    for (JsonElement je : files) {
-                        JsonObject file = je.getAsJsonObject();
-                        String fileName = file.get("filename").getAsString();
+                        int chosenPlugin;
                         try {
-                            installPluginURL(new URL(file.get("url").getAsString()), fileName, false);
-                            sender.sendMessage(ChatColor.GREEN + fileName + " installed successfully.");
-                        } catch (MalformedURLException e) {
-                            log(e, sender, Level.WARNING, "Skipping " + fileName + ": Invalid download ulr");
-                        } catch (PluginExistsException e) {
-                            log(e, sender, Level.WARNING,  fileName+" is already installed: Skipping");
-                        } catch (PluginInstallException e) {
-                            log(e, sender, Level.WARNING, e.getMessage());
-                        } catch (IOException e) {
-                            log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + fileName + "\". \"" + fileName + "\" won't work for many features of this plugin.");
+                            chosenPlugin = Integer.parseInt(message);
+                        } catch (NumberFormatException e) {
+                            log(e, sender, Level.WARNING, "Please enter a listed number!");
+                            return;
                         }
-                    }
-                    sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
-
-                    response.remove(name);
-                }
-                if (modifier.equals("PluginBrowse")) {
-                    CommandSender sender = params.getSender();
-                    HashMap<JsonObject, JsonArray> validPlugins = params.getValidPlugins();
-                    ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
-                    int offset = params.getOffset();
-                    if (message.equals("q")) {
-                        response.remove(name);
-                        sender.sendMessage(ChatColor.YELLOW+"Quitting.");
-                        return;
-                    }
-                    int chosen;
-                    try {
-                        chosen = Integer.parseInt(message);
-                    } catch (NumberFormatException e) {
-                        log(e, sender, Level.WARNING, "Please enter a listed number!");
-                        return;
-                    }
-                    if (chosen > validPluginKeys.size()+1 || (offset <= 0 && chosen < 1) || (offset > 0 && chosen < 0)) {
-                        log(null, sender, Level.WARNING, "Please enter a listed number!");
-                        return;
-                    }
-
-                    Integer nextOffset = null;
-                    if (chosen == 0) nextOffset = Math.max(offset-10, 0);
-                    if (chosen == validPluginKeys.size()+1) nextOffset = offset+10;
-
-                    if (nextOffset != null) {
-                        try {
-                            ModrinthSearch modrinthSearch = modrinthBrowse(nextOffset);
-                            ArrayList<JsonObject> newValidPluginKeys = modrinthSearch.getValidPluginKeys();
-                            HashMap<JsonObject, JsonArray> newValidPlugins = modrinthSearch.getValidPlugins();
-
-                            sender.sendMessage(ChatColor.GREEN+"Send the number corresponding to the plugin to install it in chat, or send q to quit.");
-                            int i = 0;
-
-                            if (nextOffset >= 1) {
-                                sender.sendMessage(ChatColor.GREEN+String.valueOf(i)+": ^");
-                            }
-
-                            while (newValidPluginKeys.size() > i) {
-                                JsonObject project = newValidPluginKeys.get(i);
-                                TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
-                                projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
-                                projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
-                                projectName.setUnderlined(true);
-                                sender.spigot().sendMessage(projectName);
-                                i++;
-                            }
-
-                            sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": v");
-
-                            ChatParams newParams = new ChatParams(sender, "PluginBrowse").setValidPlugins(newValidPlugins).setValidPluginKeys(newValidPluginKeys).setOffset(nextOffset);
-                            if (sender instanceof Player) response.put(sender.getName(), newParams);
-                            else response.put("~", newParams);
-
-                        } catch (MalformedURLException e) {
-                            log(e, sender, Level.WARNING, "Error creating url to send api request to Modrinth.");
-                        } catch (ModrinthAPIException e) {
-                            log(e, sender, Level.WARNING, e.getMessage());
+                        if (chosenPlugin > validPluginKeys.size() || chosenPlugin < 1) {
+                            log(null, sender, Level.WARNING, "Please enter a listed number!");
+                            return;
                         }
 
-                    } else {
-                        JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosen-1));
+                        JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosenPlugin - 1));
                         ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
                         if (compatibleFiles.size() == 0) {
-                            sender.sendMessage(ChatColor.YELLOW+"Failed to find compatible file to download.");
+                            sender.sendMessage(ChatColor.YELLOW + "Failed to find compatible file to download.");
                         } else if (compatibleFiles.size() == 1) {
                             JsonObject jo = compatibleFiles.get(0).getAsJsonObject();
                             JsonArray files = jo.get("files").getAsJsonArray();
                             installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), true, files, sender, false);
                             return;
                         } else {
-                            sender.sendMessage(ChatColor.GREEN+"Send the number corresponding to the plugin to install it in chat, or send q to quit.");
+                            sender.sendMessage(ChatColor.GREEN + "Send the number corresponding to the plugin to install it in chat, or send q to quit.");
                             int i = 1;
                             for (JsonElement je : compatibleFiles) {
                                 JsonObject jo = je.getAsJsonObject();
                                 chooseableFiles.add(jo);
-                                TextComponent projectName = new TextComponent(i+": "+jo.get("name").getAsString()+" : "+jo.get("version_number").getAsString());
-                                projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+validPluginKeys.get(chosen-1).get("project_type").getAsString()+"/"+validPluginKeys.get(chosen-1).get("slug").getAsString()+"/version/"+jo.get("version_number").getAsString())));
+                                TextComponent projectName = new TextComponent(i + ": " + jo.get("name").getAsString() + " : " + jo.get("version_number").getAsString());
+                                projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/" + validPluginKeys.get(chosenPlugin - 1).get("project_type").getAsString() + "/" + validPluginKeys.get(chosenPlugin - 1).get("slug").getAsString() + "/version/" + jo.get("version_number").getAsString())));
                                 projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
                                 projectName.setUnderlined(true);
                                 sender.spigot().sendMessage(projectName);
                                 i++;
                             }
-
                             ChatParams newParams = new ChatParams(sender, "PluginFileSelect").setChooseableFiles(chooseableFiles);
                             if (sender instanceof Player) response.put(sender.getName(), newParams);
                             else response.put("~", newParams);
@@ -306,50 +145,216 @@ public class ChatManager implements Listener {
                         }
                         response.remove(name);
                     }
-                }
+                    if (modifier.equals("PluginFileSelect")) {
+                        ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
+                        CommandSender sender = params.getSender();
+                        if (message.equals("q")) {
+                            response.remove(name);
+                            sender.sendMessage(ChatColor.YELLOW + "Quitting.");
+                            return;
+                        }
 
-                if (modifier.equals("Terminal")) {
-                    CommandSender sender = params.getSender();
-                    sender.sendMessage(ChatColor.GOLD+"-----------------");
-                    sender.sendMessage(ChatColor.BLUE+position.get(name).getRelativePath()+ChatColor.GOLD+" $");
-                    if (message.equals("help")) {
-                        sender.sendMessage(ChatColor.AQUA+"help - Shows this message.\n" +
-                                "exit - Leaves the terminal.\n" +
-                                "say - Passes the following text into the chat like normal. The \"say\" is removed.\n" +
-                                "ls - Lists the current folders and files that are in a folder.\n" +
-                                "cd - Changes the current folder to the one specified. Input \"..\" to go back a folder.\n");
+                        int chosenVersion;
+                        try {
+                            chosenVersion = Integer.parseInt(message);
+                        } catch (NumberFormatException e) {
+                            log(e, sender, Level.WARNING, "Please enter a listed number!");
+                            return;
+                        }
+                        if (chosenVersion > chooseableFiles.size() || chosenVersion < 1) {
+                            log(null, sender, Level.WARNING, "Please enter a listed number!");
+                            return;
+                        }
+
+                        JsonObject jo = chooseableFiles.get(chosenVersion - 1);
+                        JsonArray files = jo.get("files").getAsJsonArray();
+                        installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), true, files, sender, false);
+                        return;
                     }
-                    if (message.equals("exit")) {
-                        sender.sendMessage(ChatColor.YELLOW+"Exited terminal.");
+                    if (modifier.equals("ConfirmDependencies")) {
+                        JsonArray dependencies = params.getDependencies();
+                        JsonArray files = params.getFiles();
+                        CommandSender sender = params.getSender();
+                        if (message.equals("q")) {
+                            response.remove(name);
+                            sender.sendMessage(ChatColor.YELLOW + "Quitting.");
+                            return;
+                        }
+
+                        boolean installDependencies;
+                        if (message.equals("y")) installDependencies = true;
+                        else if (message.equals("n")) installDependencies = false;
+                        else {
+                            sender.sendMessage(ChatColor.YELLOW + "Please enter \"y\" or \"n\".");
+                            return;
+                        }
+
+                        if (installDependencies) {
+                            sender.sendMessage(ChatColor.GREEN + "Installing required dependencies...");
+                            installModrinthDependencies(dependencies, false, null, sender, false);
+                            sender.sendMessage(ChatColor.GREEN + "Finished installing required dependencies.");
+                        } else {
+                            sender.sendMessage(ChatColor.GREEN + "Skipping required dependencies.");
+                        }
+
+                        sender.sendMessage(ChatColor.GREEN + "Installing plugin(s)...");
+                        for (JsonElement je : files) {
+                            JsonObject file = je.getAsJsonObject();
+                            String fileName = file.get("filename").getAsString();
+                            try {
+                                installPluginURL(new URL(file.get("url").getAsString()), fileName, false);
+                                sender.sendMessage(ChatColor.GREEN + fileName + " installed successfully.");
+                            } catch (MalformedURLException e) {
+                                log(e, sender, Level.WARNING, "Skipping " + fileName + ": Invalid download ulr");
+                            } catch (PluginExistsException e) {
+                                log(e, sender, Level.WARNING, fileName + " is already installed: Skipping");
+                            } catch (PluginInstallException e) {
+                                log(e, sender, Level.WARNING, e.getMessage());
+                            } catch (IOException e) {
+                                log(e, sender, Level.WARNING, "Unable to access plugin.yml file for \"" + fileName + "\". \"" + fileName + "\" won't work for many features of this plugin.");
+                            }
+                        }
+                        sender.sendMessage(ChatColor.GREEN + "Finished installing plugin(s): Reload or restart for the plugin(s) to activate.");
+
                         response.remove(name);
                     }
-                    if (message.startsWith("say")) {
-                        if (sender instanceof Player player) {
-                            String string = "<"+player.getName()+"> "+message.substring(3).trim();
-                            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) onlinePlayer.sendMessage(string);
-                            Bukkit.getConsoleSender().sendMessage(string);
+                    if (modifier.equals("PluginBrowse")) {
+                        CommandSender sender = params.getSender();
+                        HashMap<JsonObject, JsonArray> validPlugins = params.getValidPlugins();
+                        ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
+                        int offset = params.getOffset();
+                        if (message.equals("q")) {
+                            response.remove(name);
+                            sender.sendMessage(ChatColor.YELLOW + "Quitting.");
+                            return;
                         }
-                    }
-                    if (message.equals("ls")) {
+                        int chosen;
                         try {
-                            List<Path> paths = Files.list(Path.of(position.get(name).getCurrentPath())).toList();
-                            StringBuilder files = new StringBuilder();
-                            int length = position.get(name).getServerPath().length();
-                            for (Path path : paths) files.append(path.toString().substring(length+1)+"\n");
-                            sender.sendMessage(ChatColor.AQUA+files.toString());
-                        } catch (Exception e) {
-                            log(e, sender, Level.WARNING, "Error trying to get files from current folder.");
+                            chosen = Integer.parseInt(message);
+                        } catch (NumberFormatException e) {
+                            log(e, sender, Level.WARNING, "Please enter a listed number!");
+                            return;
+                        }
+                        if (chosen > validPluginKeys.size() + 1 || (offset <= 0 && chosen < 1) || (offset > 0 && chosen < 0)) {
+                            log(null, sender, Level.WARNING, "Please enter a listed number!");
+                            return;
+                        }
+
+                        Integer nextOffset = null;
+                        if (chosen == 0) nextOffset = Math.max(offset - 10, 0);
+                        if (chosen == validPluginKeys.size() + 1) nextOffset = offset + 10;
+
+                        if (nextOffset != null) {
+                            try {
+                                ModrinthSearch modrinthSearch = modrinthBrowse(nextOffset);
+                                ArrayList<JsonObject> newValidPluginKeys = modrinthSearch.getValidPluginKeys();
+                                HashMap<JsonObject, JsonArray> newValidPlugins = modrinthSearch.getValidPlugins();
+
+                                sender.sendMessage(ChatColor.GREEN + "Send the number corresponding to the plugin to install it in chat, or send q to quit.");
+                                int i = 0;
+
+                                if (nextOffset >= 1) {
+                                    sender.sendMessage(ChatColor.GREEN + String.valueOf(i) + ": ^");
+                                }
+
+                                while (newValidPluginKeys.size() > i) {
+                                    JsonObject project = newValidPluginKeys.get(i);
+                                    TextComponent projectName = new TextComponent(i + 1 + ": " + project.get("title").getAsString());
+                                    projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/" + project.get("project_type").getAsString() + "/" + project.get("slug").getAsString())));
+                                    projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
+                                    projectName.setUnderlined(true);
+                                    sender.spigot().sendMessage(projectName);
+                                    i++;
+                                }
+
+                                sender.sendMessage(ChatColor.GREEN + String.valueOf(i + 1) + ": v");
+
+                                ChatParams newParams = new ChatParams(sender, "PluginBrowse").setValidPlugins(newValidPlugins).setValidPluginKeys(newValidPluginKeys).setOffset(nextOffset);
+                                if (sender instanceof Player) response.put(sender.getName(), newParams);
+                                else response.put("~", newParams);
+
+                            } catch (MalformedURLException e) {
+                                log(e, sender, Level.WARNING, "Error creating url to send api request to Modrinth.");
+                            } catch (ModrinthAPIException e) {
+                                log(e, sender, Level.WARNING, e.getMessage());
+                            }
+
+                        } else {
+                            JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosen - 1));
+                            ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
+                            if (compatibleFiles.size() == 0) {
+                                sender.sendMessage(ChatColor.YELLOW + "Failed to find compatible file to download.");
+                            } else if (compatibleFiles.size() == 1) {
+                                JsonObject jo = compatibleFiles.get(0).getAsJsonObject();
+                                JsonArray files = jo.get("files").getAsJsonArray();
+                                installModrinthDependencies(jo.get("dependencies").getAsJsonArray(), true, files, sender, false);
+                                return;
+                            } else {
+                                sender.sendMessage(ChatColor.GREEN + "Send the number corresponding to the plugin to install it in chat, or send q to quit.");
+                                int i = 1;
+                                for (JsonElement je : compatibleFiles) {
+                                    JsonObject jo = je.getAsJsonObject();
+                                    chooseableFiles.add(jo);
+                                    TextComponent projectName = new TextComponent(i + ": " + jo.get("name").getAsString() + " : " + jo.get("version_number").getAsString());
+                                    projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/" + validPluginKeys.get(chosen - 1).get("project_type").getAsString() + "/" + validPluginKeys.get(chosen - 1).get("slug").getAsString() + "/version/" + jo.get("version_number").getAsString())));
+                                    projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
+                                    projectName.setUnderlined(true);
+                                    sender.spigot().sendMessage(projectName);
+                                    i++;
+                                }
+
+                                ChatParams newParams = new ChatParams(sender, "PluginFileSelect").setChooseableFiles(chooseableFiles);
+                                if (sender instanceof Player) response.put(sender.getName(), newParams);
+                                else response.put("~", newParams);
+                                return;
+                            }
+                            response.remove(name);
                         }
                     }
-                    if (message.startsWith("cd")) {
-                        PathHolder pathHolder = position.get(name);
-                        System.out.println(pathHolder.getCurrentPath());
-                        pathHolder.setCurrentPath(pathHolder.getCurrentPath()+File.separator+message.split(" ")[1]);
-                        System.out.println(pathHolder.getCurrentPath());
+
+                    if (modifier.equals("Terminal")) {
+                        CommandSender sender = params.getSender();
+                        sender.sendMessage(ChatColor.GOLD + "-----------------");
+                        sender.sendMessage(ChatColor.BLUE + position.get(name).getRelativePath() + ChatColor.GOLD + " $");
+                        if (message.equals("help")) {
+                            sender.sendMessage(ChatColor.AQUA + "help - Shows this message.\n" +
+                                    "exit - Leaves the terminal.\n" +
+                                    "say - Passes the following text into the chat like normal. The \"say\" is removed.\n" +
+                                    "ls - Lists the current folders and files that are in a folder.\n" +
+                                    "cd - Changes the current folder to the one specified. Input \"..\" to go back a folder.\n");
+                        }
+                        if (message.equals("exit")) {
+                            sender.sendMessage(ChatColor.YELLOW + "Exited terminal.");
+                            response.remove(name);
+                        }
+                        if (message.startsWith("say")) {
+                            if (sender instanceof Player player) {
+                                String string = "<" + player.getName() + "> " + message.substring(3).trim();
+                                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) onlinePlayer.sendMessage(string);
+                                Bukkit.getConsoleSender().sendMessage(string);
+                            }
+                        }
+                        if (message.equals("ls")) {
+                            try {
+                                List<Path> paths = Files.list(Path.of(position.get(name).getCurrentPath())).toList();
+                                StringBuilder files = new StringBuilder();
+                                int length = position.get(name).getServerPath().length();
+                                for (Path path : paths) files.append(path.toString().substring(length + 1) + "\n");
+                                sender.sendMessage(ChatColor.AQUA + files.toString());
+                            } catch (Exception e) {
+                                log(e, sender, Level.WARNING, "Error trying to get files from current folder.");
+                            }
+                        }
+                        if (message.startsWith("cd")) {
+                            PathHolder pathHolder = position.get(name);
+                            System.out.println(pathHolder.getCurrentPath());
+                            pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + message.split(" ")[1]);
+                            System.out.println(pathHolder.getCurrentPath());
+                        }
                     }
                 }
-            }
-        }.init(name, message)).start();
+            }.init(name, message)).start();
+        }
     }
 
 
