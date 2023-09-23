@@ -15,7 +15,19 @@ commands:
     permission: file
 
 permissions:
-  plugin:
+
+  fileman.plugin.install:
     default: op
-  file:
+  fileman.plugin.remove:
+    default: op
+
+  fileman.file.nav:
+    default: op
+  fileman.file.read:
+    default: op
+  fileman.file.edit:
+    default: op
+  fileman.file.create:
+    default: op
+  fileman.file.remove:
     default: op

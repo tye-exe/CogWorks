@@ -19,6 +19,8 @@
 ## 0.3:
 - Converted commands and chat interacts to use separate threads due to networking.
 - Changed chat manager to use custom object, rather than unchecked casting.
-- Implemented "/plugin browse" - the command lets you browse though plugins in modrinth (might be built into "/plugin search" later).
+- Implemented "/plugin browse" - the command lets you browse though plugins in modrinth (might be built into "/plugin install" later).
 - Added README to GitHub.
-- Play redirected to "/file chat" when trying to use the gui though a terminal.
+- User redirected to "/file chat" when trying to use the gui though a terminal.
+- Fixed bug with fileReader not being closed after editing a file.
+- Changed file navigator, text editor & "/plugin" to use more specific permissions.

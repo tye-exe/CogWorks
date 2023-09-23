@@ -24,6 +24,7 @@ public class FileCommand implements CommandExecutor {
     //TODO: redirect to terminal if you try to use the gui when in console.
     @Override
     public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String[] args) {
+        if (!sender.hasPermission("fileman.file.nav")) return true;
         if (args.length == 1 && args[0].equals("chat")) {
             String serverFolder = Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
             if (sender instanceof Player) FileGui.position.put(sender.getName(), new PathHolder(serverFolder, serverFolder));
@@ -56,9 +57,9 @@ public class FileCommand implements CommandExecutor {
             }
 
         } else {
-            sender.sendMessage(ChatColor.GREEN+"/file help - Shows this list."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
-                    "/file chat - (WIP) Turns your chat into a mock command line which lets you interact with files on the server."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
-                    "/file gui - Opens an inventory that lets you interact with the files on the server visually.");
+            sender.sendMessage(ChatColor.BLUE+"/file help -"+ChatColor.GREEN+" Shows this list."+ChatColor.GRAY+"\n" + ChatColor.BLUE +
+                    "/file chat -"+ChatColor.GREEN+" (WIP) Turns your chat into a mock command line which lets you interact with files on the server."+ChatColor.GRAY+"\n" + ChatColor.BLUE +
+                    "/file gui -"+ChatColor.GREEN+" Opens an inventory that lets you interact with the files on the server visually.");
         }
         return true;
     }

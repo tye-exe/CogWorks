@@ -25,7 +25,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -40,7 +40,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,9 +52,10 @@ import static me.tye.filemanager.FileManager.*;
 public class PluginCommand implements CommandExecutor {
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String[] args) {
         if (args.length >= 1) {
             if (args[0].equals("install")) {
+                if (!sender.hasPermission("fileman.plugin.install")) return true;
                 if (args.length >= 2) {
                     new Thread(new Runnable() {
 
@@ -127,6 +127,7 @@ public class PluginCommand implements CommandExecutor {
                     return true;
                 }
             } else if (args[0].equals("remove")) {
+                if (!sender.hasPermission("fileman.plugin.remove")) return true;
                 if (args.length >= 2) {
                     Boolean deleteConfigs = null;
 
@@ -176,6 +177,7 @@ public class PluginCommand implements CommandExecutor {
                     return true;
                 }
             } else if (args[0].equals("browse")) {
+                if (!sender.hasPermission("fileman.plugin.install")) return true;
                 new Thread(new Runnable() {
 
                     private CommandSender sender;
@@ -227,9 +229,16 @@ public class PluginCommand implements CommandExecutor {
                 return true;
             }
         }
-        sender.sendMessage(ChatColor.GREEN+"/plugin help - Shows this message."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
-                "/plugin install <Plugin Name | URL> - If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download."+ChatColor.GRAY+"\n" + ChatColor.GREEN +
-                "/plugin remove <Plugin Name> - Disables and uninstalls the given plugin.");
+
+        StringBuilder message = new StringBuilder(ChatColor.AQUA+"/plugin help -"+ChatColor.GREEN+" Shows this message."+ChatColor.GRAY);
+
+        if (sender.hasPermission("fileman.plugin.install")) message.append("\n").append(ChatColor.AQUA).
+                append("/plugin install <Plugin Name | URL> -").append(ChatColor.GREEN).append(" If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download.")
+                .append(ChatColor.GRAY).append("\n").append(ChatColor.AQUA).append("/plugin browse -").append(ChatColor.GREEN).append(" Allows the user to search though the most popular plugins on modrinth that are compatible with your server type and install them with the press of a button.").append(ChatColor.GRAY);
+
+        if (sender.hasPermission("fileman.plugin.remove")) message.append("\n").append(ChatColor.AQUA).append("/plugin remove <Plugin Name> -").append(ChatColor.GREEN).append(" Disables and uninstalls the given plugin.");
+
+        sender.sendMessage(message.toString());
         return true;
     }
 
