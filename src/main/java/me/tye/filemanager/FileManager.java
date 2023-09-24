@@ -337,7 +337,7 @@ public final class FileManager extends JavaPlugin {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (position.containsKey(player.getName())) {
                 player.closeInventory();
-                log(null, Level.WARNING, "Menu closed due to reload to prevent errors.");
+                log(null, Level.WARNING, "Menu closed due to reload, this is to prevent errors.");
             }
         }
     }
