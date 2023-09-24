@@ -325,7 +325,7 @@ public class FileGui implements Listener {
 
             ItemStack item = e.getCurrentItem();
             ItemMeta meta = item.getItemMeta();
-            meta.getDisplayName().replaceAll(String.valueOf(ChatColor.YELLOW), "");
+            meta.setDisplayName(meta.getDisplayName().replaceAll(String.valueOf(ChatColor.YELLOW), ""));
             item.setItemMeta(meta);
 
             new AnvilGUI.Builder()
