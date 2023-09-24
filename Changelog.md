@@ -25,3 +25,4 @@
 - Fixed bug with fileReader not being closed after editing a file.
 - Changed file navigator, text editor & "/plugin" to use more specific permissions.
 - Implemented ability to create new files within the file manager.
+- Fixed weird behaviour when interacting with normal items when using the "/file" command.

@@ -245,12 +245,9 @@ public class FileGui implements Listener {
 
     @EventHandler
     public void stopStealing(InventoryClickEvent e) {
-        HumanEntity player = e.getWhoClicked();
-        if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || !position.containsKey(player.getName()) || e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING) != null) {
+        if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null) return;
+        if (e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING) != null) {
             e.setCancelled(true);
-        } else {
-            position.remove(player.getName());
-            fileData.remove(player.getUniqueId());
         }
     }
 
