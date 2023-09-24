@@ -16,10 +16,12 @@ import me.tye.filemanager.util.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
@@ -359,13 +361,16 @@ public final class FileManager extends JavaPlugin {
      * @param item The item to apply the properties to.
      * @param displayName The desired item name.
      * @param lore The desired item lore.
+     * @param identifier Gives an item a persistent data with the tag "identifier". This is used to uniquely identify items when using guis.
      * @return The modified item.
      */
-    public static ItemStack itemProperties(ItemStack item, @Nullable String displayName, @Nullable List<String> lore) {
+    public static ItemStack itemProperties(ItemStack item, @Nullable String displayName, @Nullable List<String> lore, @Nullable String identifier) {
         ItemMeta itemMeta = item.getItemMeta();
         if (itemMeta == null) return item;
         if (displayName != null) itemMeta.setDisplayName(displayName);
         if (lore != null) itemMeta.setLore(lore);
+        if (identifier == null) identifier = "";
+        itemMeta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING, identifier);
         item.setItemMeta(itemMeta);
         return item;
     }

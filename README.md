@@ -23,8 +23,8 @@ The latest public version of the plugin will always be available on [Modrinth](h
 - fileman.file.nav - Able to use the "/file" command, view files and folders, & navigate though folders.
 - fileman.file.read - Able to read the content of files.
 - fileman.file.edit - Able to edit the content of files.
-- fileman.file.create - Able to create new files.
-- fileman.file.remove - Able to delete new files.
+- fileman.file.mk - Able to create new files.
+- fileman.file.rm - Able to delete files.
 
 ### Currently Supports:
 - Installing jar files from web links.

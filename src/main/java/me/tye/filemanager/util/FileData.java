@@ -8,12 +8,14 @@ public class FileData {
     int maxLine;
     String searchPhrase;
     int searchInstance;
+    boolean deleteMode;
 
-    public FileData(int currentLine, int maxLine, @Nullable String searchPhrase, int searchInstance) {
+    public FileData(int currentLine, int maxLine, @Nullable String searchPhrase, int searchInstance, boolean deleteMode) {
         setCurrentLine(currentLine);
         setMaxLine(maxLine);
         setSearchPhrase(searchPhrase);
         this.searchInstance = searchInstance;
+        this.deleteMode = deleteMode;
     }
 
     /**
@@ -44,6 +46,12 @@ public class FileData {
         return maxLine;
     }
 
+    /**
+     * @return Whether the user is in delete mode.
+     */
+    public boolean getDeleteMode() {
+        return deleteMode;
+    }
 
     /**
      * @param lineNumber Sets the current line the player is viewing on the top row.
@@ -85,6 +93,15 @@ public class FileData {
         if (searchPhrase == null) searchPhrase = "";
         if (searchPhrase.startsWith("\u200B")) searchPhrase = searchPhrase.substring(1);
         this.searchPhrase = searchPhrase;
+        return this;
+    }
+
+    /**
+     * @param deleteMode Sets whether the player is in delete mode.
+     * @return Modified FileData object.
+     */
+    public FileData setDeleteMode(boolean deleteMode) {
+        this.deleteMode = deleteMode;
         return this;
     }
 }

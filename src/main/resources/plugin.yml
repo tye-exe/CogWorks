@@ -27,7 +27,7 @@ permissions:
     default: op
   fileman.file.edit:
     default: op
-  fileman.file.create:
+  fileman.file.mk:
     default: op
-  fileman.file.remove:
+  fileman.file.rm:
     default: op
