@@ -17,6 +17,18 @@ The latest public version of the plugin will always be available on [Modrinth](h
 - /plugin - The base command for installing or removing plugins from the server. <br>
 - /file - Opens a GUI for navigating around the file system, alongside editing, creating, & deleting files.
 
+### Currently Supports:
+- Installing jar files from web links.
+- Installing jar files from Modrinth.
+- Will prompt to install plugin dependencies, if present.
+- Deleting plugins.
+- GUI file explorer.
+- Editing of files.
+- Creation of files & folders.
+- Deleting files & folders.
+- Automatically attempts to resolve unmet dependencies on start up if a plugin has unmet dependencies.
+- Permissions.
+
 ### Permissions:
 - fileman.plugin.install - Able to install plugins.
 - fileman.plugin.remove - Able to remove plugins.
@@ -26,18 +38,9 @@ The latest public version of the plugin will always be available on [Modrinth](h
 - fileman.file.mk - Able to create new files.
 - fileman.file.rm - Able to delete files.
 
-### Currently Supports:
-- Installing jar files from web links.
-- Installing jar files from Modrinth by plugin name.
-- Will prompt to install plugin dependencies, if present.
-- Deleting plugins.
-- GUI file explorer.
-- Editing of files.
-- Automatically attempts to resolve unmet dependencies on start up if a plugin has unmet dependencies.
 
 ### Future Plans:
 - Bug fixes.
 - Attempts at back-porting to older mc versions.
-- Supporting downloading plugins by name from other websites.
+- Supporting downloading plugins from other websites.
 - Chat based file manager.
-- General improvements to file editing.

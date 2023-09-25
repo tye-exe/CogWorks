@@ -3,8 +3,8 @@ package me.tye.filemanager;
 import me.tye.filemanager.util.FileData;
 import me.tye.filemanager.util.PathHolder;
 import net.wesjd.anvilgui.AnvilGUI;
+import org.apache.commons.io.FileUtils;
 import org.bukkit.*;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -53,22 +53,17 @@ public class FileGui implements Listener {
         //creates file and folder objects, then sorts them
         ArrayList<ItemStack> files = new ArrayList<>();
         ArrayList<ItemStack> folders = new ArrayList<>();
+        FileData data = fileData.get(player.getUniqueId());
         for (Path path : paths) {
             if (Files.isDirectory(path)) {
-                ItemStack folder = itemProperties(new ItemStack(Material.YELLOW_WOOL), ChatColor.YELLOW + path.getFileName().toString(), List.of("Folder"), "folder");
-                ItemMeta meta = folder.getItemMeta();
-                assert meta != null;
-                meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "path"), PersistentDataType.STRING, path.getFileName().toString());
-                folder.setItemMeta(meta);
-                folders.add(folder);
+                ItemStack item = new ItemStack(Material.YELLOW_WOOL);
+                if (data.getDeleteMode()) item = new ItemStack(Material.RED_WOOL);
+                folders.add(itemProperties(item, ChatColor.YELLOW + path.getFileName().toString(), List.of("Folder"), "folder"));
             }
             else {
-                ItemStack file = itemProperties(new ItemStack(Material.WHITE_WOOL), path.getFileName().toString(), List.of("File"), "file");
-                ItemMeta meta = file.getItemMeta();
-                assert meta != null;
-                meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "path"), PersistentDataType.STRING, path.getFileName().toString());
-                file.setItemMeta(meta);
-                files.add(file);
+                ItemStack item = new ItemStack(Material.WHITE_WOOL);
+                if (data.getDeleteMode()) item = new ItemStack(Material.ORANGE_WOOL);
+                files.add(itemProperties(item, path.getFileName().toString(), List.of("File"), "file"));
             }
         }
         folders.addAll(files);
@@ -80,7 +75,7 @@ public class FileGui implements Listener {
             } else if (i == 4) {
                 content.add(itemProperties(new ItemStack(Material.BARRIER), "Exit", List.of("Closes the gui."), "exit"));
             } else if (i == 7 && player.hasPermission("fileman.file.rm")) {
-                content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), "Delete", List.of("Deletes a file/folder in the current folder."), "deleteFile"));
+                content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), "Delete", List.of("Deletes a file/folder in the current folder."), "deleteFileToggle"));
             } else if (i == 8 && player.hasPermission("fileman.file.mk")) {
                 content.add(itemProperties(new ItemStack(Material.GREEN_CONCRETE), "Create", List.of("Creates a new file/folder in the current folder."), "createFileMenu"));
             } else if (i > 8 && folders.size() > i-9) {
@@ -305,7 +300,7 @@ public class FileGui implements Listener {
             ItemStack item = e.getCurrentItem();
             if (checkIdentifier(e.getCurrentItem(), "createFolder")) {
                 ItemMeta meta = item.getItemMeta();
-                meta.setDisplayName(meta.getDisplayName().substring(2));
+                if (meta.getDisplayName().startsWith(String.valueOf(ChatColor.YELLOW))) meta.setDisplayName(meta.getDisplayName().substring(2));
                 item.setItemMeta(meta);
                 itemProperties(item, null, null, "confirmCreateFolder");
             } else {
@@ -348,10 +343,11 @@ public class FileGui implements Listener {
     public void deleteToggle(InventoryClickEvent e) {
         if (e.getWhoClicked() instanceof Player player) {
             if (!player.hasPermission("fileman.file.rm")) return;
-            if (!position.containsKey(player.getName()) || e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || !checkIdentifier(e.getCurrentItem(), "deleteFile")) return;
+            if (!position.containsKey(player.getName()) || e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || !checkIdentifier(e.getCurrentItem(), "deleteFileToggle")) return;
 
             FileData data = fileData.get(player.getUniqueId());
             fileData.put(player.getUniqueId(), data.setDeleteMode(!data.getDeleteMode()));
+            openFolder(player);
         }
     }
 
@@ -363,17 +359,20 @@ public class FileGui implements Listener {
 
             if (data.getDeleteMode()) {
                 if (!player.hasPermission("fileman.file.rm")) return;
-                player.closeInventory();
                 Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, "Confirm Deletion");
 
                 ArrayList<ItemStack> content = new ArrayList<>();
                 for (int i = 0; i <= 8; i++) {
                     if (i == 3) {
-                        content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), ChatColor.RED + "Deny", null, null));
+                        content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), ChatColor.RED + "Deny", null, "denyDelete"));
                     } else if (i == 5) {
-                        content.add(itemProperties(new ItemStack(Material.GREEN_CONCRETE), ChatColor.GREEN + "Confirm", null, null));
+                        ItemStack item = itemProperties(new ItemStack(Material.GREEN_CONCRETE), ChatColor.GREEN + "Confirm", null, "confirmDelete");
+                        ItemMeta meta = item.getItemMeta();
+                        meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "path"), PersistentDataType.STRING, position.get(player.getName()).getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getDisplayName().substring(2));
+                        item.setItemMeta(meta);
+                        content.add(item);
                     } else {
-                        content.add(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE));
+                        content.add(itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, null));
                     }
                 }
 
@@ -381,20 +380,74 @@ public class FileGui implements Listener {
                 player.openInventory(gui);
             } else {
                 PathHolder pathHolder = position.get(player.getName());
-                pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "path"), PersistentDataType.STRING));
+                if (e.getCurrentItem().getItemMeta().getDisplayName().startsWith(String.valueOf(ChatColor.YELLOW))) pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getDisplayName().substring(2));
+                else pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getDisplayName());
                 openFolder(player);
             }
         }
     }
 
     @EventHandler
-    public void useFile(InventoryClickEvent e) {
+    public void denyDelete(InventoryClickEvent e) {
+        if (e.getWhoClicked() instanceof Player player) {
+            if (!position.containsKey(player.getName()) || e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || !checkIdentifier(e.getCurrentItem(), "denyDelete")) return;
+            openFolder(player);
+        }
+    }
+
+    @EventHandler
+    public void confirmDelete(InventoryClickEvent e) {
+        if (e.getWhoClicked() instanceof Player player) {
+            if (!position.containsKey(player.getName()) || e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || !checkIdentifier(e.getCurrentItem(), "confirmDelete")) return;
+            File file = new File(e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(getPlugin(FileManager.class), "path"), PersistentDataType.STRING));
+            try {
+                if (file.isDirectory()) {
+                    FileUtils.deleteDirectory(file);
+                } else {
+                    FileUtils.delete(file);
+                }
+            } catch (IOException ex) {
+                log(ex, player, Level.WARNING, "Failed to delete "+file.getName()+".");
+            }
+            player.closeInventory();
+            openFolder(player);
+        }
+    }
+
+    @EventHandler
+    public void fileInteract(InventoryClickEvent e) {
         if (e.getWhoClicked() instanceof Player player) {
             if (!position.containsKey(player.getName()) || e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null || !checkIdentifier(e.getCurrentItem(), "file")) return;
-            PathHolder pathHolder = position.get(player.getName());
-            pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "path"), PersistentDataType.STRING));
-            fileData.put(player.getUniqueId(), fileData.get(player.getUniqueId()).setCurrentLine(1));
-            openFile(player);
+            FileData data = fileData.get(player.getUniqueId());
+
+            if (data.getDeleteMode()) {
+                if (!player.hasPermission("fileman.file.rm")) return;
+                Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, "Confirm Deletion");
+
+                ArrayList<ItemStack> content = new ArrayList<>();
+                for (int i = 0; i <= 8; i++) {
+                    if (i == 3) {
+                        content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), ChatColor.RED + "Deny", null, "denyDelete"));
+                    } else if (i == 5) {
+                        ItemStack item = itemProperties(new ItemStack(Material.GREEN_CONCRETE), ChatColor.GREEN + "Confirm", null, "confirmDelete");
+                        ItemMeta meta = item.getItemMeta();
+                        meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "path"), PersistentDataType.STRING, position.get(player.getName()).getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getDisplayName().substring(2));
+                        item.setItemMeta(meta);
+                        content.add(item);
+                    } else {
+                        content.add(itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, null));
+                    }
+                }
+
+                gui.setContents(content.toArray(new ItemStack[0]));
+                player.openInventory(gui);
+            } else {
+                PathHolder pathHolder = position.get(player.getName());
+                if (e.getCurrentItem().getItemMeta().getDisplayName().startsWith(String.valueOf(ChatColor.YELLOW))) pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getDisplayName().substring(2));
+                else pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + e.getCurrentItem().getItemMeta().getDisplayName());
+                fileData.put(player.getUniqueId(), data.setCurrentLine(1));
+                openFile(player);
+            }
         }
     }
 
