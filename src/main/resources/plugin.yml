@@ -15,7 +15,19 @@ commands:
     permission: file
 
 permissions:
-  plugin:
+
+  fileman.plugin.ins:
     default: op
-  file:
+  fileman.plugin.rm:
+    default: op
+
+  fileman.file.nav:
+    default: op
+  fileman.file.read:
+    default: op
+  fileman.file.edit:
+    default: op
+  fileman.file.mk:
+    default: op
+  fileman.file.rm:
     default: op

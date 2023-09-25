@@ -16,10 +16,12 @@ import me.tye.filemanager.util.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
@@ -45,13 +47,14 @@ import static me.tye.filemanager.FileGui.position;
 import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
 
 public final class FileManager extends JavaPlugin {
-    //TODO: /plugin brows
     //TODO: editing files in /file by adding toggle to separate mode - new permission : add check before deleting or creating anything
 
+    //TODO: check if dependencies are already met before trying to install them?
     //TODO: convert install modrinth dependencies to use errors, not sender
     //TODO: run install dependencies on plugins installed from auto dependency resolve
     //TODO: add advise on how to fix errors in the error message.
     //TODO: add central lang file to allow for translation.
+    //TODO: when uninstalling plugins check if any other plugins depend on them.
 
     //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
     //TODO: allow to delete multiple plugins at once - separate by ","?
@@ -280,8 +283,7 @@ public final class FileManager extends JavaPlugin {
                     try {
                         executorService.awaitTermination(1, TimeUnit.MINUTES);
                     } catch (InterruptedException e) {
-                        log(null, Level.WARNING, "Threads attempting to download plugins for longer than 60 seconds.");
-                        log(e, Level.WARNING, "Skipping automatic dependency resolution for \""+unmetDepName+"\".");
+                        log(e, Level.WARNING, "Threads attempting to download plugins for longer than 60 seconds. Skipping automatic dependency resolution for \""+unmetDepName+"\".");
                     }
 
                     File dependency = null;
@@ -315,12 +317,12 @@ public final class FileManager extends JavaPlugin {
                         }
                     }
 
-                    //if one of the dependencies matched teh required one it moves it to the ./plugins folder and deletes the rest of the plugins
+                    //if one of the dependencies matched the required one it moves it to the ./plugins folder and deletes the rest of the plugins
                     try {
                         if (dependency != null) FileUtils.moveFile(dependency, new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
                         FileUtils.deleteDirectory(pluginStore);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        log(e, Level.WARNING, "Error trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder "+pluginStore.getAbsolutePath()+ " at your earliest convince.");
                     }
 
                     if (dependency == null) log(null, Level.WARNING, "Unmet dependency for \""+unmetDependencies.get(unmetDepInfo).getName()+"\" could not be automatically resolved.");
@@ -335,7 +337,7 @@ public final class FileManager extends JavaPlugin {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (position.containsKey(player.getName())) {
                 player.closeInventory();
-                log(null, Level.WARNING, "Menu closed due to reload to prevent errors.");
+                log(null, Level.WARNING, "Menu closed due to reload, this is to prevent errors.");
             }
         }
     }
@@ -359,13 +361,16 @@ public final class FileManager extends JavaPlugin {
      * @param item The item to apply the properties to.
      * @param displayName The desired item name.
      * @param lore The desired item lore.
+     * @param identifier Gives an item a persistent data with the tag "identifier". This is used to uniquely identify items when using guis.
      * @return The modified item.
      */
-    public static ItemStack itemProperties(ItemStack item, @Nullable String displayName, @Nullable List<String> lore) {
+    public static ItemStack itemProperties(ItemStack item, @Nullable String displayName, @Nullable List<String> lore, @Nullable String identifier) {
         ItemMeta itemMeta = item.getItemMeta();
         if (itemMeta == null) return item;
         if (displayName != null) itemMeta.setDisplayName(displayName);
         if (lore != null) itemMeta.setLore(lore);
+        if (identifier == null) identifier = "";
+        itemMeta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING, identifier);
         item.setItemMeta(itemMeta);
         return item;
     }
@@ -517,6 +522,7 @@ public final class FileManager extends JavaPlugin {
             if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
             player.sendMessage(formattedMessage);
         }
+        if ((Boolean) configs.get("showErrorTrace") && e != null) e.printStackTrace();
     }
     /**
      * Sends log message to specified CommandSender.
@@ -532,5 +538,7 @@ public final class FileManager extends JavaPlugin {
             if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
             sender.sendMessage(formattedMessage);
         }
+
+        if ((Boolean) configs.get("showErrorTrace") && e != null) e.printStackTrace();
     }
 }

@@ -6,7 +6,7 @@
 
     <groupId>me.tye</groupId>
     <artifactId>FileManager</artifactId>
-    <version>0.3-snapshot-2</version>
+    <version>0.3</version>
     <packaging>jar</packaging>
 
     <name>FileManager</name>

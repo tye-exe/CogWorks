@@ -1,0 +1,32 @@
+## 0.2.1:
+- Fixed capital letters getting deleted from query when using "/plugin" install.
+- General improvements to "/file" command.
+- Fixed broken url for plugin main page when using "/plugin install".
+- Minor QOL changes.
+- Can now delete plugins that didn't load.
+- Reworked internal method handling for errors.
+- Checking for dependencies on startup and attempts to resolve them automatically.
+- Made automatic dependency resolve occur in multiple threads.
+- Fixed bug where played would still have inventory interact events canceled after closing the  "/file" gui.
+- Added user editable config options.
+- Added understandable error messages.
+- Added check for an out-of-bounds number input when installing a plugin.
+- Plugins get added/removed from pluginData on install/deletion.
+- Added java docs for internal methods.
+- Fixed bug in dependency resolve where if a matching plugin was found it wouldn't be deleted.
+- A message is sent to ops on log on if there has been a severe error since last restart.
+
+## 0.3:
+- Converted commands and chat interacts to use separate threads due to networking.
+- Changed chat manager to use custom object, rather than unchecked casting.
+- Implemented "/plugin browse" - the command lets you browse though plugins in modrinth (might be built into "/plugin install" later).
+- Added README to GitHub.
+- User redirected to "/file chat" when trying to use the gui though a terminal.
+- Fixed bug with fileReader not being closed after editing a file.
+- Changed file navigator, text editor & "/plugin" to use more specific permissions.
+- Implemented ability to create new files.
+- Fixed weird behaviour when interacting with normal items when using the "/file" command.
+- Implemented ability to delete files.
+- Optimized FileGui file.
+- Removed scroll limit on files.
+- Implemented ability to add end of liens & new lines by clicking on the background.

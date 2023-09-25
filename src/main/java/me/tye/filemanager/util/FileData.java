@@ -5,15 +5,15 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class FileData {
 
     int currentLine;
-    int maxLine;
     String searchPhrase;
     int searchInstance;
+    boolean deleteMode;
 
-    public FileData(int currentLine, int maxLine, @Nullable String searchPhrase, int searchInstance) {
+    public FileData(int currentLine, @Nullable String searchPhrase, int searchInstance, boolean deleteMode) {
         setCurrentLine(currentLine);
-        setMaxLine(maxLine);
         setSearchPhrase(searchPhrase);
         this.searchInstance = searchInstance;
+        this.deleteMode = deleteMode;
     }
 
     /**
@@ -38,12 +38,11 @@ public class FileData {
     }
 
     /**
-     * @return The maximum line of the current file the player is viewing.
+     * @return Whether the user is in delete mode.
      */
-    public int getMaxLine() {
-        return maxLine;
+    public boolean getDeleteMode() {
+        return deleteMode;
     }
-
 
     /**
      * @param lineNumber Sets the current line the player is viewing on the top row.
@@ -53,17 +52,6 @@ public class FileData {
     public FileData setCurrentLine(int lineNumber) {
         if (lineNumber < 1) lineNumber = 1;
         this.currentLine = lineNumber;
-        return this;
-    }
-
-    /**
-     * @param maxLine Sets the maximum line of the current file the player is viewing.
-     *                default: 1
-     * @return Modified FileData object.
-     */
-    public FileData setMaxLine(int maxLine) {
-        if (maxLine < 1) maxLine = 1;
-        this.maxLine = maxLine;
         return this;
     }
 
@@ -85,6 +73,15 @@ public class FileData {
         if (searchPhrase == null) searchPhrase = "";
         if (searchPhrase.startsWith("\u200B")) searchPhrase = searchPhrase.substring(1);
         this.searchPhrase = searchPhrase;
+        return this;
+    }
+
+    /**
+     * @param deleteMode Sets whether the player is in delete mode.
+     * @return Modified FileData object.
+     */
+    public FileData setDeleteMode(boolean deleteMode) {
+        this.deleteMode = deleteMode;
         return this;
     }
 }
