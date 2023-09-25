@@ -17,7 +17,7 @@ import java.nio.file.Path;
 
 import static me.tye.filemanager.ChatManager.response;
 import static me.tye.filemanager.FileGui.fileData;
-import static me.tye.filemanager.FileGui.openFolder;
+import static me.tye.filemanager.FileGui.open;
 
 
 public class FileCommand implements CommandExecutor {
@@ -43,7 +43,7 @@ public class FileCommand implements CommandExecutor {
                 String serverFolder = Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
                 FileGui.position.put(player.getName(), new PathHolder(serverFolder, serverFolder));
                 fileData.put(player.getUniqueId(), new FileData(1, 1, null, 1, false));
-                openFolder(player);
+                open(player);
             } else {
                 sender.sendMessage(ChatColor.YELLOW + "This command is only available to online players, being redirected to terminal.");
 

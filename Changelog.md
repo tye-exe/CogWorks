@@ -27,3 +27,4 @@
 - Implemented ability to create new files.
 - Fixed weird behaviour when interacting with normal items when using the "/file" command.
 - Implemented ability to delete files.
+- Optimized FileGui file.

@@ -32,6 +32,21 @@ public class PathHolder {
     }
 
     /**
+     * @return The current path, with the path to the server removed from the start.
+     */
+    public String getRelativePath() {
+        return getCurrentPath().substring(getServerPath().length()) + File.separator;
+    }
+
+    /**
+     * @return The name of the file or folder that is current being accessed.
+     */
+    public String getFileName() {
+        return Path.of(getCurrentPath()).getFileName().toString();
+    }
+
+
+    /**
      * Sets the current path to the given string.
      */
     public void setCurrentPath(String currentPath) {
@@ -40,12 +55,5 @@ public class PathHolder {
         String trueCurrentPosition = Path.of(currentPath).normalize().toString();
         if (trueCurrentPosition.startsWith(trueServerPath) && Files.exists(Path.of(currentPath))) this.currentPath = currentPath;
         else this.currentPath = trueServerPath;
-    }
-
-    /**
-     * @return The current path, with the path to the server removed from the start.
-     */
-    public String getRelativePath() {
-        return getCurrentPath().substring(getServerPath().length()) + File.separator;
     }
 }
