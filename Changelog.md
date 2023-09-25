@@ -28,3 +28,5 @@
 - Fixed weird behaviour when interacting with normal items when using the "/file" command.
 - Implemented ability to delete files.
 - Optimized FileGui file.
+- Removed scroll limit on files.
+- Implemented ability to add end of liens & new lines by clicking on the background.

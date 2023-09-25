@@ -42,7 +42,7 @@ public class FileCommand implements CommandExecutor {
             if (sender instanceof Player player) {
                 String serverFolder = Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
                 FileGui.position.put(player.getName(), new PathHolder(serverFolder, serverFolder));
-                fileData.put(player.getUniqueId(), new FileData(1, 1, null, 1, false));
+                fileData.put(player.getUniqueId(), new FileData(1, null, 1, false));
                 open(player);
             } else {
                 sender.sendMessage(ChatColor.YELLOW + "This command is only available to online players, being redirected to terminal.");

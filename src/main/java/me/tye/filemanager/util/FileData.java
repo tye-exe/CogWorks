@@ -5,14 +5,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class FileData {
 
     int currentLine;
-    int maxLine;
     String searchPhrase;
     int searchInstance;
     boolean deleteMode;
 
-    public FileData(int currentLine, int maxLine, @Nullable String searchPhrase, int searchInstance, boolean deleteMode) {
+    public FileData(int currentLine, @Nullable String searchPhrase, int searchInstance, boolean deleteMode) {
         setCurrentLine(currentLine);
-        setMaxLine(maxLine);
         setSearchPhrase(searchPhrase);
         this.searchInstance = searchInstance;
         this.deleteMode = deleteMode;
@@ -40,13 +38,6 @@ public class FileData {
     }
 
     /**
-     * @return The maximum line of the current file the player is viewing.
-     */
-    public int getMaxLine() {
-        return maxLine;
-    }
-
-    /**
      * @return Whether the user is in delete mode.
      */
     public boolean getDeleteMode() {
@@ -61,17 +52,6 @@ public class FileData {
     public FileData setCurrentLine(int lineNumber) {
         if (lineNumber < 1) lineNumber = 1;
         this.currentLine = lineNumber;
-        return this;
-    }
-
-    /**
-     * @param maxLine Sets the maximum line of the current file the player is viewing.
-     *                default: 1
-     * @return Modified FileData object.
-     */
-    public FileData setMaxLine(int maxLine) {
-        if (maxLine < 1) maxLine = 1;
-        this.maxLine = maxLine;
         return this;
     }
 

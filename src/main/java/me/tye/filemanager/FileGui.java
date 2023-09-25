@@ -59,7 +59,7 @@ public class FileGui implements Listener {
         File lastFileClicked = new File(pathHolder.getCurrentPath());
 
 
-        //general
+        //file navigation
         if (identifier.equals("up")) {
             pathHolder.setCurrentPath(Path.of(pathHolder.getCurrentPath()).getParent().toString());
             open(player);
@@ -98,6 +98,118 @@ public class FileGui implements Listener {
                 open(player);
             }
 
+        }
+
+        if (identifier.equals("scrollUp") || identifier.equals("scrollDown")) {
+            if (identifier.equals("scrollDown"))
+                data.setCurrentLine(data.getCurrentLine()+5);
+            if (identifier.equals("scrollUp"))
+                data.setCurrentLine(Math.max(1, data.getCurrentLine()-5));
+
+            data.setSearchInstance(0);
+            fileData.put(player.getUniqueId(), data);
+            open(player);
+        }
+
+        if (identifier.equals("goto")) {
+            new AnvilGUI.Builder()
+                    .plugin(JavaPlugin.getPlugin(FileManager.class))
+                    .preventClose()
+                    .title("Goto:")
+                    .itemLeft(itemProperties(new ItemStack(Material.PAPER), String.valueOf(data.getCurrentLine()), null, null))
+                    .onClick((slot, stateSnapshot) -> {
+                        if (slot == AnvilGUI.Slot.OUTPUT) {
+                            return List.of(AnvilGUI.ResponseAction.close());
+                        }
+                        return Collections.emptyList();
+                    })
+                    .onClose(stateSnapshot -> {
+                        if (stateSnapshot.getOutputItem().getItemMeta() != null) {
+                            try {
+                                int line = Integer.parseInt(stateSnapshot.getOutputItem().getItemMeta().getDisplayName().trim());
+                                if (line < 1) line = 1;
+                                fileData.put(stateSnapshot.getPlayer().getUniqueId(), fileData.get(stateSnapshot.getPlayer().getUniqueId()).setCurrentLine(line));
+                            } catch (Exception ignore) {}
+                        }
+                        open(stateSnapshot.getPlayer());
+                    })
+                    .open(player);
+        }
+
+        if (identifier.equals("search")) {
+            if (e.isLeftClick()) {
+                ItemStack paper = itemProperties(new ItemStack(Material.PAPER), "\u200B", null, null);
+
+                new AnvilGUI.Builder()
+                        .plugin(JavaPlugin.getPlugin(FileManager.class))
+                        .preventClose()
+                        .title("Search:")
+                        .itemLeft(paper)
+                        .itemOutput(paper)
+                        .onClick((slot, stateSnapshot) -> {
+                            if (slot == AnvilGUI.Slot.OUTPUT) {
+                                return List.of(AnvilGUI.ResponseAction.close());
+                            }
+                            return Collections.emptyList();
+                        })
+                        .onClose(stateSnapshot -> {
+                            fileData.put(stateSnapshot.getPlayer().getUniqueId(), fileData.get(stateSnapshot.getPlayer().getUniqueId()).setSearchPhrase(stateSnapshot.getOutputItem().getItemMeta().getDisplayName()));
+                            open(stateSnapshot.getPlayer());
+                        })
+                        .open(player);
+            }
+            else {
+                try {
+                    String searchPhrase = data.getSearchPhrase();
+                    if (searchPhrase.isEmpty())  {
+                        player.playNote(player.getLocation(), Instrument.PLING, Note.sharp(2, Note.Tone.F));
+                        return;
+                    }
+
+                    BufferedReader fileReader = new BufferedReader(new FileReader(position.get(player.getName()).getCurrentPath()));
+
+                    String text;
+                    int i = 0;
+                    int instance = data.getSearchInstance();
+                    int instances = 1;
+                    int firstInstance = 0;
+
+                    while ((text = fileReader.readLine()) != null) {
+                        i++;
+                        if (instance == 0) {
+                            if (text.contains(searchPhrase)) {
+                                if (firstInstance == 0) firstInstance = i;
+                                instances++;
+                                if (i < data.getCurrentLine()) continue;
+                                fileData.put(player.getUniqueId(), data.setCurrentLine(i).setSearchInstance(instances));
+                                open(player);
+                                return;
+                            }
+                        } else {
+                            if (text.contains(searchPhrase)) {
+                                if (firstInstance == 0) firstInstance = i;
+                                if (instances == instance) {
+                                    fileData.put(player.getUniqueId(), data.setSearchInstance(instance + 1).setCurrentLine(i));
+                                    open(player);
+                                    return;
+                                }
+                                instances++;
+                            }
+                        }
+                    }
+
+                    if (firstInstance == 0) {
+                        player.playNote(player.getLocation(), Instrument.PLING, Note.sharp(2, Note.Tone.F));
+                        return;
+                    }
+
+                    fileData.put(player.getUniqueId(), data.setSearchInstance(firstInstance));
+                    open(player);
+
+                } catch (IOException ex) {
+                    log(ex, player, Level.WARNING, "There was an error reading \""+position.get(player.getName()).getRelativePath()+"\" while trying to search.");
+                }
+            }
         }
 
         //file creation
@@ -207,118 +319,8 @@ public class FileGui implements Listener {
         }
 
         //file editing
-        if (identifier.equals("scrollUp") || identifier.equals("scrollDown")) {
-            if (identifier.equals("scrollDown"))
-                data.setCurrentLine(Math.min(data.getMaxLine(), data.getCurrentLine()+5));
-            if (identifier.equals("scrollUp"))
-                data.setCurrentLine(Math.max(1, data.getCurrentLine()-5));
-
-            data.setSearchInstance(0);
-            fileData.put(player.getUniqueId(), data);
-            open(player);
-        }
-
-        if (identifier.equals("goto")) {
-            new AnvilGUI.Builder()
-                    .plugin(JavaPlugin.getPlugin(FileManager.class))
-                    .preventClose()
-                    .title("Min: 1, Max: "+data.getMaxLine())
-                    .itemLeft(itemProperties(new ItemStack(Material.PAPER), String.valueOf(data.getCurrentLine()), null, null))
-                    .onClick((slot, stateSnapshot) -> {
-                        if (slot == AnvilGUI.Slot.OUTPUT) {
-                            return List.of(AnvilGUI.ResponseAction.close());
-                        }
-                        return Collections.emptyList();
-                    })
-                    .onClose(stateSnapshot -> {
-                        if (stateSnapshot.getOutputItem().getItemMeta() != null) {
-                            try {
-                                int line = Integer.parseInt(stateSnapshot.getOutputItem().getItemMeta().getDisplayName().trim());
-                                fileData.put(stateSnapshot.getPlayer().getUniqueId(), fileData.get(stateSnapshot.getPlayer().getUniqueId()).setCurrentLine(line));
-                            } catch (Exception ignore) {}
-                        }
-                        open(stateSnapshot.getPlayer());
-                    })
-                    .open(player);
-        }
-
-        if (identifier.equals("search")) {
-            if (e.isLeftClick()) {
-                ItemStack paper = itemProperties(new ItemStack(Material.PAPER), "\u200B", null, null);
-
-                new AnvilGUI.Builder()
-                        .plugin(JavaPlugin.getPlugin(FileManager.class))
-                        .preventClose()
-                        .title("Search:")
-                        .itemLeft(paper)
-                        .itemOutput(paper)
-                        .onClick((slot, stateSnapshot) -> {
-                            if (slot == AnvilGUI.Slot.OUTPUT) {
-                                return List.of(AnvilGUI.ResponseAction.close());
-                            }
-                            return Collections.emptyList();
-                        })
-                        .onClose(stateSnapshot -> {
-                            fileData.put(stateSnapshot.getPlayer().getUniqueId(), fileData.get(stateSnapshot.getPlayer().getUniqueId()).setSearchPhrase(stateSnapshot.getOutputItem().getItemMeta().getDisplayName()));
-                            open(stateSnapshot.getPlayer());
-                        })
-                        .open(player);
-            }
-            else {
-                try {
-                    String searchPhrase = data.getSearchPhrase();
-                    if (searchPhrase.isEmpty())  {
-                        player.playNote(player.getLocation(), Instrument.PLING, Note.sharp(2, Note.Tone.F));
-                        return;
-                    }
-
-                    BufferedReader fileReader = new BufferedReader(new FileReader(position.get(player.getName()).getCurrentPath()));
-
-                    String text;
-                    int i = 0;
-                    int instance = data.getSearchInstance();
-                    int instances = 1;
-                    int firstInstance = 0;
-
-                    while ((text = fileReader.readLine()) != null) {
-                        i++;
-                        if (instance == 0) {
-                            if (text.contains(searchPhrase)) {
-                                if (firstInstance == 0) firstInstance = i;
-                                instances++;
-                                if (i < data.getCurrentLine()) continue;
-                                fileData.put(player.getUniqueId(), data.setCurrentLine(i).setSearchInstance(instances));
-                                open(player);
-                                return;
-                            }
-                        } else {
-                            if (text.contains(searchPhrase)) {
-                                if (firstInstance == 0) firstInstance = i;
-                                if (instances == instance) {
-                                    fileData.put(player.getUniqueId(), data.setSearchInstance(instance + 1).setCurrentLine(i));
-                                    open(player);
-                                    return;
-                                }
-                                instances++;
-                            }
-                        }
-                    }
-
-                    if (firstInstance == 0) {
-                        player.playNote(player.getLocation(), Instrument.PLING, Note.sharp(2, Note.Tone.F));
-                        return;
-                    }
-
-                    fileData.put(player.getUniqueId(), data.setSearchInstance(firstInstance));
-                    open(player);
-
-                } catch (IOException ex) {
-                    log(ex, player, Level.WARNING, "There was an error reading \""+position.get(player.getName()).getRelativePath()+"\" while trying to search.");
-                }
-            }
-        }
-
         if (identifier.equals("text")) {
+            if (!player.hasPermission("fileman.file.edit")) return;
             if (Boolean.TRUE.equals(e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "edited"), PersistentDataType.BOOLEAN))) return;
 
             ItemStack paper = e.getCurrentItem();
@@ -340,7 +342,101 @@ public class FileGui implements Listener {
                         return Collections.emptyList();
                     })
                     .onClose(stateSnapshot -> {
-                        editFile(stateSnapshot.getPlayer(), stateSnapshot.getOutputItem());
+                        PathHolder localPathHolder = position.get(stateSnapshot.getPlayer().getName());
+                        if (stateSnapshot.getOutputItem().getItemMeta() == null) return;
+                        Integer line = stateSnapshot.getOutputItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "line"), PersistentDataType.INTEGER);
+                        Integer offset = stateSnapshot.getOutputItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "offset"), PersistentDataType.INTEGER);
+                        if (line == null|| offset == null) return;
+
+                        try {
+                            BufferedReader br = new BufferedReader(new FileReader(localPathHolder.getCurrentPath()));
+                            StringBuilder content = new StringBuilder();
+
+                            String text;
+                            int i = 1;
+                            while ((text = br.readLine()) != null) {
+                                if (line == i) {
+                                    int startOfReplace = 35*offset;
+                                    String start = text.substring(0, startOfReplace);
+                                    String end = text.substring(Math.min(startOfReplace+35, text.length()));
+                                    text = start+stateSnapshot.getOutputItem().getItemMeta().getDisplayName()+end;
+                                }
+                                i++;
+                                content.append(text).append("\n");
+                            };
+                            br.close();
+                            Files.writeString(Path.of(localPathHolder.getCurrentPath()), content.toString());
+                        } catch (IOException ex) {
+                            log(ex, stateSnapshot.getPlayer(), Level.WARNING, "There was an error editing \""+position.get(player.getName()).getRelativePath()+"\".");
+                        }
+                        open(stateSnapshot.getPlayer());
+                    })
+                    .open(player);
+        }
+
+        if (identifier.equals("fileBackground")) {
+            if (!player.hasPermission("fileman.file.edit")) return;
+
+            Integer line = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "line"), PersistentDataType.INTEGER);
+            if (line == null) return;
+
+            ItemStack paper = itemProperties(new ItemStack(Material.PAPER), "\u200B", null, "");
+            ItemMeta meta = paper.getItemMeta();
+            meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "line"), PersistentDataType.INTEGER, line);
+            paper.setItemMeta(meta);
+
+            new AnvilGUI.Builder()
+                    .plugin(getPlugin(FileManager.class))
+                    .preventClose()
+                    .title("File editor:")
+                    .itemLeft(paper)
+                    .onClick((slot, stateSnapshot) -> {
+                        if (slot == AnvilGUI.Slot.OUTPUT) {
+                            return List.of(AnvilGUI.ResponseAction.close());
+                        }
+                        return Collections.emptyList();
+                    })
+                    .onClose(stateSnapshot -> {
+                        PathHolder localPathHolder = position.get(stateSnapshot.getPlayer().getName());
+                        if (stateSnapshot.getOutputItem().getItemMeta() == null) return;
+                        Integer localLine = stateSnapshot.getOutputItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(getPlugin(FileManager.class), "line"), PersistentDataType.INTEGER);
+                        if (localLine == null) return;
+
+                        String newText = stateSnapshot.getOutputItem().getItemMeta().getDisplayName();
+                        if (newText.startsWith("\u200B")) newText = newText.substring(1);
+
+                        try {
+                            BufferedReader br = new BufferedReader(new FileReader(localPathHolder.getCurrentPath()));
+                            StringBuilder content = new StringBuilder();
+
+                            int i = 1;
+                            boolean textAdded = false;
+                            while (true) {
+                                String text = br.readLine();
+                                if (localLine == i) {
+                                    if (text == null) {
+                                        content.append(newText);
+                                        break;
+                                    }
+                                    else {
+                                        text+=newText;
+                                        textAdded = true;
+                                    }
+                                }
+                                i++;
+                                if (!textAdded) {
+                                    if (text == null) text = "";
+                                    content.append(text).append("\n");
+                                } else {
+                                    if (text == null) break;
+                                    content.append(text).append("\n");
+                                }
+                            }
+                            br.close();
+                            Files.writeString(Path.of(localPathHolder.getCurrentPath()), content.toString());
+                        } catch (IOException ex) {
+                            log(ex, stateSnapshot.getPlayer(), Level.WARNING, "There was an error editing \""+position.get(player.getName()).getRelativePath()+"\".");
+                        }
                         open(stateSnapshot.getPlayer());
                     })
                     .open(player);
@@ -441,11 +537,7 @@ public class FileGui implements Listener {
                 log(e, player, Level.WARNING, "There was an error closing the file \""+file.getName()+"\". This file will not be able to be used until the server is restarted.");
             }
 
-            if (lineNumber > lines.size()) lineNumber = lines.size();
-            if (lineNumber == 0) lineNumber++;
-            if (lineNumber < 0) lineNumber = 1;
-
-            data.setMaxLine(lines.size());
+            if (lineNumber < 1) lineNumber = 1;
 
             for (int i = 0; i <= 8; i++) {
                 if (i == 0) {
@@ -477,7 +569,7 @@ public class FileGui implements Listener {
                 }
             }
 
-            for (int i = 0; i <= 4; i++) {
+            for (int i = 0; i < 5; i++) {
                 if (lines.size()-1 >= i+lineNumber-1) {
                     //max 50 chars per item
                     String line = lines.get(i+lineNumber-1);
@@ -485,7 +577,7 @@ public class FileGui implements Listener {
                         String paperName = line.substring(0, Math.min(35, line.length()));
                         line = line.substring(Math.min(35, line.length()));
                         if (!paperName.isEmpty()) {
-                            ItemStack paper = itemProperties(new ItemStack(Material.PAPER), paperName, null, null);
+                            ItemStack paper = itemProperties(new ItemStack(Material.PAPER), paperName, null, "text");
                             if (!searchPhrase.isEmpty() && paperName.contains(searchPhrase)) {
                                 paper = itemProperties(new ItemStack(Material.FILLED_MAP), paperName.replace(searchPhrase, ChatColor.YELLOW + searchPhrase + ChatColor.WHITE), null, "text");
                             }
@@ -497,11 +589,21 @@ public class FileGui implements Listener {
                             paper.setItemMeta(paperMeta);
                             content.add(paper);
                         }
-                        else content.add(itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, null));
+                        else {
+                            ItemStack background = itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, "fileBackground");
+                            ItemMeta meta = background.getItemMeta();
+                            meta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "line"), PersistentDataType.INTEGER, i+lineNumber);
+                            background.setItemMeta(meta);
+                            content.add(background);
+                        }
                     }
                 } else {
                     for (int ii = 0; ii <= 8; ii++) {
-                        content.add(itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, null));
+                        ItemStack background = itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, "fileBackground");
+                        ItemMeta meta = background.getItemMeta();
+                        meta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(FileManager.class), "line"), PersistentDataType.INTEGER, i+lineNumber);
+                        background.setItemMeta(meta);
+                        content.add(background);
                     }
                 }
             }
@@ -513,42 +615,6 @@ public class FileGui implements Listener {
 
         gui.setContents(content.toArray(new ItemStack[0]));
         player.openInventory(gui);
-    }
-
-    public static void editFile(Player player, ItemStack editedText) {
-        if (!player.hasPermission("fileman.file.edit")) {
-            fileData.remove(player.getUniqueId());
-            position.remove(player.getName());
-            return;
-        }
-
-        if (editedText.getItemMeta() == null) return;
-        PathHolder pathHolder = position.get(player.getName());
-        Integer line = editedText.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "line"), PersistentDataType.INTEGER);
-        Integer offset = editedText.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "offset"), PersistentDataType.INTEGER);
-        if (line == null|| offset == null) return;
-
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(pathHolder.getCurrentPath()));
-            StringBuilder content = new StringBuilder();
-
-            String text;
-            int i = 1;
-            while ((text = br.readLine()) != null) {
-                if (line == i) {
-                    int startOfReplace = 35*offset;
-                    String start = text.substring(0, startOfReplace);
-                    String end = text.substring(Math.min(startOfReplace+35, text.length()));
-                    text = start+editedText.getItemMeta().getDisplayName()+end;
-                }
-                i++;
-                content.append(text).append("\n");
-            };
-            br.close();
-            Files.writeString(Path.of(pathHolder.getCurrentPath()), content.toString());
-        } catch (IOException e) {
-            log(e, player, Level.WARNING, "There was an error reading/writing to \""+position.get(player.getName()).getRelativePath()+"\".");
-        }
     }
 
     public static boolean checkIdentifier(ItemStack item, String identifier) {
