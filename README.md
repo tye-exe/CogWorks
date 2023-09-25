@@ -30,8 +30,8 @@ The latest public version of the plugin will always be available on [Modrinth](h
 - Permissions.
 
 ### Permissions:
-- fileman.plugin.install - Able to install plugins.
-- fileman.plugin.remove - Able to remove plugins.
+- fileman.plugin.ins - Able to install plugins.
+- fileman.plugin.rm - Able to remove plugins.
 - fileman.file.nav - Able to use the "/file" command, view files and folders, & navigate though folders.
 - fileman.file.read - Able to read the content of files.
 - fileman.file.edit - Able to edit the content of files.

@@ -55,7 +55,7 @@ public class PluginCommand implements CommandExecutor {
     public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String[] args) {
         if (args.length >= 1) {
             if (args[0].equals("install")) {
-                if (!sender.hasPermission("fileman.plugin.install")) return true;
+                if (!sender.hasPermission("fileman.plugin.ins")) return true;
                 if (args.length >= 2) {
                     new Thread(new Runnable() {
 
@@ -127,7 +127,7 @@ public class PluginCommand implements CommandExecutor {
                     return true;
                 }
             } else if (args[0].equals("remove")) {
-                if (!sender.hasPermission("fileman.plugin.remove")) return true;
+                if (!sender.hasPermission("fileman.plugin.rm")) return true;
                 if (args.length >= 2) {
                     Boolean deleteConfigs = null;
 
@@ -177,7 +177,7 @@ public class PluginCommand implements CommandExecutor {
                     return true;
                 }
             } else if (args[0].equals("browse")) {
-                if (!sender.hasPermission("fileman.plugin.install")) return true;
+                if (!sender.hasPermission("fileman.plugin.ins")) return true;
                 new Thread(new Runnable() {
 
                     private CommandSender sender;
@@ -232,11 +232,11 @@ public class PluginCommand implements CommandExecutor {
 
         StringBuilder message = new StringBuilder(ChatColor.AQUA+"/plugin help -"+ChatColor.GREEN+" Shows this message."+ChatColor.GRAY);
 
-        if (sender.hasPermission("fileman.plugin.install")) message.append("\n").append(ChatColor.AQUA).
+        if (sender.hasPermission("fileman.plugin.ins")) message.append("\n").append(ChatColor.AQUA).
                 append("/plugin install <Plugin Name | URL> -").append(ChatColor.GREEN).append(" If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download.")
                 .append(ChatColor.GRAY).append("\n").append(ChatColor.AQUA).append("/plugin browse -").append(ChatColor.GREEN).append(" Allows the user to search though the most popular plugins on modrinth that are compatible with your server type and install them with the press of a button.").append(ChatColor.GRAY);
 
-        if (sender.hasPermission("fileman.plugin.remove")) message.append("\n").append(ChatColor.AQUA).append("/plugin remove <Plugin Name> -").append(ChatColor.GREEN).append(" Disables and uninstalls the given plugin.");
+        if (sender.hasPermission("fileman.plugin.rm")) message.append("\n").append(ChatColor.AQUA).append("/plugin remove <Plugin Name> -").append(ChatColor.GREEN).append(" Disables and uninstalls the given plugin.");
 
         sender.sendMessage(message.toString());
         return true;

@@ -24,10 +24,10 @@ public class TabComplete implements TabCompleter {
         ArrayList<String> completions = new ArrayList<>();
         if (label.equals("plugin") ) {
             if (args.length == 1) {
-                if (sender.hasPermission("fileman.plugin.install")) {
+                if (sender.hasPermission("fileman.plugin.ins")) {
                     StringUtil.copyPartialMatches(args[0], Arrays.asList("install", "browse"), completions);
                 }
-                if (sender.hasPermission("fileman.plugin.remove")) {
+                if (sender.hasPermission("fileman.plugin.rm")) {
                     StringUtil.copyPartialMatches(args[0], List.of("remove"), completions);
                 }
 

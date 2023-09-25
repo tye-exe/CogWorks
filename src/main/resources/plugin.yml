@@ -16,9 +16,9 @@ commands:
 
 permissions:
 
-  fileman.plugin.install:
+  fileman.plugin.ins:
     default: op
-  fileman.plugin.remove:
+  fileman.plugin.rm:
     default: op
 
   fileman.file.nav:
