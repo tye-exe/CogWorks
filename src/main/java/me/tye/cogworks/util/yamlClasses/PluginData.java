@@ -1,4 +1,4 @@
-package me.tye.filemanager.util.yamlClasses;
+package me.tye.cogworks.util.yamlClasses;
 
 import java.util.ArrayList;
 import java.util.Map;

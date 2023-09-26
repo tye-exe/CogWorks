@@ -1,11 +1,11 @@
-package me.tye.filemanager.util;
+package me.tye.cogworks.util;
 
 import com.google.gson.JsonElement;
 import org.bukkit.Bukkit;
 
 import java.util.concurrent.Callable;
 
-import static me.tye.filemanager.commands.PluginCommand.modrinthAPI;
+import static me.tye.cogworks.commands.PluginCommand.modrinthAPI;
 
 public class VersionGetThread implements Callable<JsonElement> {
 

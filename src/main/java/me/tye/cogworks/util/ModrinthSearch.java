@@ -1,4 +1,4 @@
-package me.tye.filemanager.util;
+package me.tye.cogworks.util;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;

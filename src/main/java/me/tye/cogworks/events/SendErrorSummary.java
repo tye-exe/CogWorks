@@ -1,4 +1,4 @@
-package me.tye.filemanager.events;
+package me.tye.cogworks.events;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -7,8 +7,8 @@ import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.util.logging.Level;
 
-import static me.tye.filemanager.FileManager.configs;
-import static me.tye.filemanager.FileManager.log;
+import static me.tye.cogworks.CogWorks.configs;
+import static me.tye.cogworks.CogWorks.log;
 
 public class SendErrorSummary implements Listener {
     public static int severe = 0;

@@ -1,12 +1,12 @@
-name: FileManager
+name: CogWorks
 version: '${version}'
-main: me.tye.filemanager.FileManager
+main: me.tye.cogworks.CogWorks
 api-version: '1.20'
 load: STARTUP
 
 commands:
   plugin:
-    usage: /<command> <install/remove> <install:pluginName/Url remove:pluginName>
+    usage: /<command> <install/remove/browse> <install:pluginName/Url remove:pluginName>
     description: The base command for installing or removing plugins from the server.
     permission: plugin
   file:
@@ -16,18 +16,18 @@ commands:
 
 permissions:
 
-  fileman.plugin.ins:
+  cogworks.plugin.ins:
     default: op
-  fileman.plugin.rm:
+  cogworks.plugin.rm:
     default: op
 
-  fileman.file.nav:
+  cogworks.file.nav:
     default: op
-  fileman.file.read:
+  cogworks.file.read:
     default: op
-  fileman.file.edit:
+  cogworks.file.edit:
     default: op
-  fileman.file.mk:
+  cogworks.file.mk:
     default: op
-  fileman.file.rm:
+  cogworks.file.rm:
     default: op

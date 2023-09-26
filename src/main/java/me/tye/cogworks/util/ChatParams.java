@@ -1,10 +1,9 @@
-package me.tye.filemanager.util;
+package me.tye.cogworks.util;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.bukkit.command.CommandSender;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;

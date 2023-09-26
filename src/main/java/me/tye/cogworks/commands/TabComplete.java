@@ -1,22 +1,20 @@
-package me.tye.filemanager.commands;
+package me.tye.cogworks.commands;
 
-import me.tye.filemanager.FileManager;
-import me.tye.filemanager.util.yamlClasses.PluginData;
+import me.tye.cogworks.CogWorks;
+import me.tye.cogworks.util.yamlClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.permissions.Permission;
 import org.bukkit.util.StringUtil;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
 
-import static me.tye.filemanager.FileManager.log;
+import static me.tye.cogworks.CogWorks.log;
 
 public class TabComplete implements TabCompleter {
     @Override
@@ -24,10 +22,10 @@ public class TabComplete implements TabCompleter {
         ArrayList<String> completions = new ArrayList<>();
         if (label.equals("plugin") ) {
             if (args.length == 1) {
-                if (sender.hasPermission("fileman.plugin.ins")) {
+                if (sender.hasPermission("cogworks.plugin.ins")) {
                     StringUtil.copyPartialMatches(args[0], Arrays.asList("install", "browse"), completions);
                 }
-                if (sender.hasPermission("fileman.plugin.rm")) {
+                if (sender.hasPermission("cogworks.plugin.rm")) {
                     StringUtil.copyPartialMatches(args[0], List.of("remove"), completions);
                 }
 
@@ -40,7 +38,7 @@ public class TabComplete implements TabCompleter {
                 ArrayList<String> plugins = new ArrayList<>();
 
                 try {
-                    for (PluginData data : FileManager.readPluginData())
+                    for (PluginData data : CogWorks.readPluginData())
                         plugins.add(data.getName());
                 } catch (IOException e) {
                     log(e, sender, Level.WARNING, "There was an error reading the plugin names from the pluginData file.");
@@ -50,7 +48,7 @@ public class TabComplete implements TabCompleter {
             }
         }
 
-        if (label.equals("file") && sender.hasPermission("fileman.file.nav")) {
+        if (label.equals("file") && sender.hasPermission("cogworks.file.nav")) {
             if (args.length == 1) {
                 StringUtil.copyPartialMatches(args[0], Arrays.asList("help", "chat", "gui"), completions);
             }

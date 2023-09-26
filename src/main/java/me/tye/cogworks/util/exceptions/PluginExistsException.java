@@ -1,4 +1,4 @@
-package me.tye.filemanager.util.exceptions;
+package me.tye.cogworks.util.exceptions;
 
 public class PluginExistsException extends Exception {
     public PluginExistsException(String message) {
