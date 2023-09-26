@@ -47,7 +47,6 @@ import static me.tye.filemanager.FileGui.position;
 import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
 
 public final class FileManager extends JavaPlugin {
-    //TODO: editing files in /file by adding toggle to separate mode - new permission : add check before deleting or creating anything
 
     //TODO: check if dependencies are already met before trying to install them?
     //TODO: convert install modrinth dependencies to use errors, not sender
@@ -80,6 +79,9 @@ public final class FileManager extends JavaPlugin {
         File configsFile = new File(getDataFolder().getAbsolutePath() + File.separator + "configs.yml");
         File pluginStore = new File(getDataFolder().getAbsoluteFile() + File.separator + ".pluginStore");
         File plugins = new File(pluginStore.getAbsolutePath() + File.separator + "pluginData.json");
+
+        File langFolder = new File(getDataFolder().getAbsoluteFile() + File.separator + "langFiles");
+        File engLang = new File(langFolder.getAbsoluteFile() + File.separator + "eng.yml");
         try {
             if (!getDataFolder().exists()) if (!getDataFolder().mkdir()) throw new Exception();
 
@@ -88,11 +90,14 @@ public final class FileManager extends JavaPlugin {
                 HashMap<String, Object> map = new Yaml().load(is);
                 if (map != null) configs = map;
             } else {
-                if (!configsFile.createNewFile()) throw new Exception("Unable to create config.yml file in ./plugins/FileManager");
+                if (!configsFile.createNewFile()) throw new Exception("Unable to create config.yml in ./plugins/FileManager");
             }
 
-            if (!pluginStore.exists()) if(!pluginStore.mkdir()) throw new Exception("Unable to create .pluginStore file in ./plugins/FileManager");
-            if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception("Unable to create pluginData.json file in ./plugins/FileManager/.pluginStore");
+            if (!pluginStore.exists()) if(!pluginStore.mkdir()) throw new Exception("Unable to create .pluginStore in ./plugins/FileManager");
+            if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception("Unable to create pluginData.json in ./plugins/FileManager/.pluginStore");
+
+            if (!langFolder.exists()) if (!langFolder.mkdir()) throw new Exception("Unable to create LangFolder in ./plugins/FileManager");
+            if (!engLang.exists()) if (engLang.createNewFile()) throw new Exception("Unable to create engLang.yml in ./plugins/FileManager/langFolder");
         }
         catch (Exception e) {
             setConfigsToDefault();
@@ -103,6 +108,7 @@ public final class FileManager extends JavaPlugin {
         //TODO: remove lines of text that don't conform to the notes/keys that aren't valid?
         try {
             FileWriter fr = new FileWriter(configsFile);
+            if (!configs.containsKey("lang")) fr.write("#Determins the current lang file.\nKeys: eng - English\nlang: eng\n\n");
             if (!configs.containsKey("showErrors")) fr.write("#Displays custom error messages to inform exactly what went wrong.\nshowErrors: true\n\n");
             if (!configs.containsKey("showErrorTrace")) fr.write("#Displays stack trace to help with debugging.\n#Turn this on before reporting a bug.\n#This will be enabled by default until release.\nshowErrorTrace: true\n\n");
             if (!configs.containsKey("showOpErrorSummary")) fr.write("#On join send op players the amount of errors and warnings have happened with this plugin since last reload/restart.\nshowOpErrorSummary: true\n\n");
@@ -343,6 +349,7 @@ public final class FileManager extends JavaPlugin {
     }
 
     public static void setConfigsToDefault() {
+        configs.put("lang", "eng");
         configs.put("showErrors", true);
         configs.put("showErrorTrace", true);
         configs.put("showOpErrorSummary", true);
