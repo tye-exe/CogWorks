@@ -1,0 +1,9 @@
+#English lang file for the CogWorks plugin.
+#
+#Info: If q value for the key can't be got for a string it will not be replaced.
+#Keys:
+#fileName = The name of the file
+#filePath = The path to the file.
+
+exceptions:
+  fileCreation: "Unable to create {fileName} file in {filePath}."

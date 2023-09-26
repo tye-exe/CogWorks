@@ -1,18 +1,18 @@
-package me.tye.filemanager;
+package me.tye.cogworks;
 
 import com.google.common.io.Files;
 import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
-import me.tye.filemanager.commands.FileCommand;
-import me.tye.filemanager.commands.PluginCommand;
-import me.tye.filemanager.commands.TabComplete;
-import me.tye.filemanager.events.SendErrorSummary;
-import me.tye.filemanager.util.ModrinthSearch;
-import me.tye.filemanager.util.UrlFilename;
-import me.tye.filemanager.util.exceptions.ModrinthAPIException;
-import me.tye.filemanager.util.exceptions.NoSuchPluginException;
-import me.tye.filemanager.util.yamlClasses.DependencyInfo;
-import me.tye.filemanager.util.yamlClasses.PluginData;
+import me.tye.cogworks.commands.FileCommand;
+import me.tye.cogworks.commands.PluginCommand;
+import me.tye.cogworks.commands.TabComplete;
+import me.tye.cogworks.events.SendErrorSummary;
+import me.tye.cogworks.util.ModrinthSearch;
+import me.tye.cogworks.util.UrlFilename;
+import me.tye.cogworks.util.exceptions.ModrinthAPIException;
+import me.tye.cogworks.util.exceptions.NoSuchPluginException;
+import me.tye.cogworks.util.yamlClasses.DependencyInfo;
+import me.tye.cogworks.util.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -43,11 +43,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-import static me.tye.filemanager.FileGui.position;
-import static me.tye.filemanager.commands.PluginCommand.modrinthSearch;
+import static me.tye.cogworks.FileGui.position;
+import static me.tye.cogworks.commands.PluginCommand.modrinthSearch;
 
-public final class FileManager extends JavaPlugin {
-    //TODO: editing files in /file by adding toggle to separate mode - new permission : add check before deleting or creating anything
+public final class CogWorks extends JavaPlugin {
 
     //TODO: check if dependencies are already met before trying to install them?
     //TODO: convert install modrinth dependencies to use errors, not sender
@@ -80,6 +79,9 @@ public final class FileManager extends JavaPlugin {
         File configsFile = new File(getDataFolder().getAbsolutePath() + File.separator + "configs.yml");
         File pluginStore = new File(getDataFolder().getAbsoluteFile() + File.separator + ".pluginStore");
         File plugins = new File(pluginStore.getAbsolutePath() + File.separator + "pluginData.json");
+
+        File langFolder = new File(getDataFolder().getAbsoluteFile() + File.separator + "langFiles");
+        File engLang = new File(langFolder.getAbsoluteFile() + File.separator + "eng.yml");
         try {
             if (!getDataFolder().exists()) if (!getDataFolder().mkdir()) throw new Exception();
 
@@ -88,11 +90,14 @@ public final class FileManager extends JavaPlugin {
                 HashMap<String, Object> map = new Yaml().load(is);
                 if (map != null) configs = map;
             } else {
-                if (!configsFile.createNewFile()) throw new Exception("Unable to create config.yml file in ./plugins/FileManager");
+                if (!configsFile.createNewFile()) throw new Exception("Unable to create config.yml in ./plugins/CogWorks");
             }
 
-            if (!pluginStore.exists()) if(!pluginStore.mkdir()) throw new Exception("Unable to create .pluginStore file in ./plugins/FileManager");
-            if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception("Unable to create pluginData.json file in ./plugins/FileManager/.pluginStore");
+            if (!pluginStore.exists()) if(!pluginStore.mkdir()) throw new Exception("Unable to create .pluginStore in ./plugins/CogWorks");
+            if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception("Unable to create pluginData.json in ./plugins/CogWorks/.pluginStore");
+
+            if (!langFolder.exists()) if (!langFolder.mkdir()) throw new Exception("Unable to create LangFolder in ./plugins/CogWorks");
+            if (!engLang.exists()) if (engLang.createNewFile()) throw new Exception("Unable to create engLang.yml in ./plugins/CogWorks/langFolder");
         }
         catch (Exception e) {
             setConfigsToDefault();
@@ -103,6 +108,7 @@ public final class FileManager extends JavaPlugin {
         //TODO: remove lines of text that don't conform to the notes/keys that aren't valid?
         try {
             FileWriter fr = new FileWriter(configsFile);
+            if (!configs.containsKey("lang")) fr.write("#Determins the current lang file.\nKeys: eng - English\nlang: eng\n\n");
             if (!configs.containsKey("showErrors")) fr.write("#Displays custom error messages to inform exactly what went wrong.\nshowErrors: true\n\n");
             if (!configs.containsKey("showErrorTrace")) fr.write("#Displays stack trace to help with debugging.\n#Turn this on before reporting a bug.\n#This will be enabled by default until release.\nshowErrorTrace: true\n\n");
             if (!configs.containsKey("showOpErrorSummary")) fr.write("#On join send op players the amount of errors and warnings have happened with this plugin since last reload/restart.\nshowOpErrorSummary: true\n\n");
@@ -319,7 +325,7 @@ public final class FileManager extends JavaPlugin {
 
                     //if one of the dependencies matched the required one it moves it to the ./plugins folder and deletes the rest of the plugins
                     try {
-                        if (dependency != null) FileUtils.moveFile(dependency, new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
+                        if (dependency != null) FileUtils.moveFile(dependency, new File(Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
                         FileUtils.deleteDirectory(pluginStore);
                     } catch (IOException e) {
                         log(e, Level.WARNING, "Error trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder "+pluginStore.getAbsolutePath()+ " at your earliest convince.");
@@ -343,6 +349,7 @@ public final class FileManager extends JavaPlugin {
     }
 
     public static void setConfigsToDefault() {
+        configs.put("lang", "eng");
         configs.put("showErrors", true);
         configs.put("showErrorTrace", true);
         configs.put("showOpErrorSummary", true);
@@ -370,7 +377,7 @@ public final class FileManager extends JavaPlugin {
         if (displayName != null) itemMeta.setDisplayName(displayName);
         if (lore != null) itemMeta.setLore(lore);
         if (identifier == null) identifier = "";
-        itemMeta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(FileManager.class), "identifier"), PersistentDataType.STRING, identifier);
+        itemMeta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(CogWorks.class), "identifier"), PersistentDataType.STRING, identifier);
         item.setItemMeta(itemMeta);
         return item;
     }
@@ -391,7 +398,7 @@ public final class FileManager extends JavaPlugin {
         }
 
         if (pluginToRemove == null) {
-            throw new NoSuchPluginException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(FileManager.class).getName());
+            throw new NoSuchPluginException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(CogWorks.class).getName());
         }
 
         pluginData.remove(pluginToRemove);
@@ -445,7 +452,7 @@ public final class FileManager extends JavaPlugin {
      */
     public static ArrayList<PluginData> readPluginData() throws IOException {
         ArrayList<PluginData> pluginData = new ArrayList<>();
-        FileReader fr =  new FileReader(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + ".pluginStore" + File.separator + "pluginData.json");
+        FileReader fr =  new FileReader(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath() + File.separator + ".pluginStore" + File.separator + "pluginData.json");
         JsonReader jr = new JsonReader(fr);
         JsonElement jsonElement = JsonParser.parseReader(jr);
         if (jsonElement.isJsonNull()) return pluginData;
@@ -469,7 +476,7 @@ public final class FileManager extends JavaPlugin {
         for (PluginData data : readPluginData()) {
             if (data.getName().equals(pluginName)) return data;
         }
-        throw new NoSuchPluginException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(FileManager.class).getName());
+        throw new NoSuchPluginException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(CogWorks.class).getName());
     }
 
     /**
@@ -479,7 +486,7 @@ public final class FileManager extends JavaPlugin {
      * @throws IOException If the plugin data can't be written to the pluginData file.
      */
     public static void writePluginData(ArrayList<PluginData> pluginData) throws IOException {
-        File plugins = new File(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath() + File.separator + ".pluginStore" + File.separator + "pluginData.json");
+        File plugins = new File(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath() + File.separator + ".pluginStore" + File.separator + "pluginData.json");
             GsonBuilder gson = new GsonBuilder();
             gson.setPrettyPrinting();
             FileWriter fileWriter = new FileWriter((plugins));
@@ -498,10 +505,10 @@ public final class FileManager extends JavaPlugin {
             else if (level.getName().equals("SEVERE")) {colour = ChatColor.RED; SendErrorSummary.severe++;}
             else colour = ChatColor.GREEN;
 
-            Bukkit.getLogger().log(level, MessageFormat.format("[{0}]: {1}" ,JavaPlugin.getPlugin(FileManager.class).getName(), message));
+            Bukkit.getLogger().log(level, MessageFormat.format("[{0}]: {1}" ,JavaPlugin.getPlugin(CogWorks.class).getName(), message));
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (!player.isOp()) continue;
-                String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(FileManager.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+                String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(CogWorks.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
                 if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
                 player.sendMessage(formattedMessage);
             }
@@ -518,7 +525,7 @@ public final class FileManager extends JavaPlugin {
         else colour = ChatColor.GREEN;
 
         if ((Boolean) configs.get("showErrors")) {
-            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(FileManager.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(CogWorks.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
             if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
             player.sendMessage(formattedMessage);
         }
@@ -534,7 +541,7 @@ public final class FileManager extends JavaPlugin {
         else colour = ChatColor.GREEN;
 
         if ((Boolean) configs.get("showErrors")) {
-            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(FileManager.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(CogWorks.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
             if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
             sender.sendMessage(formattedMessage);
         }

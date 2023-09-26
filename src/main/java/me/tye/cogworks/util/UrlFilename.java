@@ -1,4 +1,4 @@
-package me.tye.filemanager.util;
+package me.tye.cogworks.util;
 
 public class UrlFilename {
 

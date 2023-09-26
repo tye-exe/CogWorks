@@ -1,22 +1,21 @@
-package me.tye.filemanager;
+package me.tye.cogworks;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import me.tye.filemanager.util.ChatParams;
-import me.tye.filemanager.util.ModrinthSearch;
-import me.tye.filemanager.util.PathHolder;
-import me.tye.filemanager.util.exceptions.ModrinthAPIException;
-import me.tye.filemanager.util.exceptions.NoSuchPluginException;
-import me.tye.filemanager.util.exceptions.PluginExistsException;
-import me.tye.filemanager.util.exceptions.PluginInstallException;
+import me.tye.cogworks.util.ChatParams;
+import me.tye.cogworks.util.ModrinthSearch;
+import me.tye.cogworks.util.PathHolder;
+import me.tye.cogworks.util.exceptions.ModrinthAPIException;
+import me.tye.cogworks.util.exceptions.NoSuchPluginException;
+import me.tye.cogworks.util.exceptions.PluginExistsException;
+import me.tye.cogworks.util.exceptions.PluginInstallException;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventException;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
@@ -34,9 +33,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 
-import static me.tye.filemanager.FileGui.position;
-import static me.tye.filemanager.FileManager.log;
-import static me.tye.filemanager.commands.PluginCommand.*;
+import static me.tye.cogworks.FileGui.position;
+import static me.tye.cogworks.CogWorks.log;
+import static me.tye.cogworks.commands.PluginCommand.*;
 
 public class ChatManager implements Listener {
 
@@ -73,7 +72,7 @@ public class ChatManager implements Listener {
                 return;
             }
 
-            Bukkit.getScheduler().scheduleSyncDelayedTask(JavaPlugin.getPlugin(FileManager.class), () -> {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(JavaPlugin.getPlugin(CogWorks.class), () -> {
                 try {
                     deletePlugin(params.getPluginName(), deleteConfigs);
                     sender.sendMessage(ChatColor.GREEN+params.getPluginName()+" deleted."+ChatColor.GRAY+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");

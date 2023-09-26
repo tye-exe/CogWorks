@@ -1,4 +1,4 @@
-# File Manager
+# CogWorks:
 Allows for easy and frictionless management of plugins right from Minecraft!
 
 
@@ -30,13 +30,13 @@ The latest public version of the plugin will always be available on [Modrinth](h
 - Permissions.
 
 ### Permissions:
-- fileman.plugin.ins - Able to install plugins.
-- fileman.plugin.rm - Able to remove plugins.
-- fileman.file.nav - Able to use the "/file" command, view files and folders, & navigate though folders.
-- fileman.file.read - Able to read the content of files.
-- fileman.file.edit - Able to edit the content of files.
-- fileman.file.mk - Able to create new files.
-- fileman.file.rm - Able to delete files.
+- cogworks.plugin.ins - Able to install plugins.
+- cogworks.plugin.rm - Able to remove plugins.
+- cogworks.file.nav - Able to use the "/file" command, view files and folders, & navigate though folders.
+- cogworks.file.read - Able to read the content of files.
+- cogworks.file.edit - Able to edit the content of files.
+- cogworks.file.mk - Able to create new files.
+- cogworks.file.rm - Able to delete files.
 
 
 ### Future Plans:

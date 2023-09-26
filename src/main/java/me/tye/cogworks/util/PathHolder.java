@@ -1,4 +1,4 @@
-package me.tye.filemanager.util;
+package me.tye.cogworks.util;
 
 import java.io.File;
 import java.nio.file.Files;

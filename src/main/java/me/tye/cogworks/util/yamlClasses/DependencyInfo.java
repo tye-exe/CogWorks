@@ -1,4 +1,4 @@
-package me.tye.filemanager.util.yamlClasses;
+package me.tye.cogworks.util.yamlClasses;
 
 public class DependencyInfo {
 

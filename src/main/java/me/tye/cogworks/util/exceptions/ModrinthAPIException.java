@@ -1,4 +1,4 @@
-package me.tye.filemanager.util.exceptions;
+package me.tye.cogworks.util.exceptions;
 
 public class ModrinthAPIException extends Exception{
     public ModrinthAPIException(String message) {

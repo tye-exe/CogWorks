@@ -1,19 +1,19 @@
-package me.tye.filemanager.commands;
+package me.tye.cogworks.commands;
 
 import com.google.common.io.Files;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import me.tye.filemanager.FileManager;
-import me.tye.filemanager.util.ChatParams;
-import me.tye.filemanager.util.ModrinthSearch;
-import me.tye.filemanager.util.VersionGetThread;
-import me.tye.filemanager.util.exceptions.ModrinthAPIException;
-import me.tye.filemanager.util.exceptions.NoSuchPluginException;
-import me.tye.filemanager.util.exceptions.PluginExistsException;
-import me.tye.filemanager.util.exceptions.PluginInstallException;
-import me.tye.filemanager.util.yamlClasses.PluginData;
+import me.tye.cogworks.CogWorks;
+import me.tye.cogworks.util.ChatParams;
+import me.tye.cogworks.util.ModrinthSearch;
+import me.tye.cogworks.util.VersionGetThread;
+import me.tye.cogworks.util.exceptions.ModrinthAPIException;
+import me.tye.cogworks.util.exceptions.NoSuchPluginException;
+import me.tye.cogworks.util.exceptions.PluginExistsException;
+import me.tye.cogworks.util.exceptions.PluginInstallException;
+import me.tye.cogworks.util.yamlClasses.PluginData;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.apache.commons.io.FileUtils;
@@ -46,8 +46,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 
-import static me.tye.filemanager.ChatManager.response;
-import static me.tye.filemanager.FileManager.*;
+import static me.tye.cogworks.ChatManager.response;
+import static me.tye.cogworks.CogWorks.*;
 
 public class PluginCommand implements CommandExecutor {
 
@@ -55,7 +55,7 @@ public class PluginCommand implements CommandExecutor {
     public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String[] args) {
         if (args.length >= 1) {
             if (args[0].equals("install")) {
-                if (!sender.hasPermission("fileman.plugin.ins")) return true;
+                if (!sender.hasPermission("cogworks.plugin.ins")) return true;
                 if (args.length >= 2) {
                     new Thread(new Runnable() {
 
@@ -127,7 +127,7 @@ public class PluginCommand implements CommandExecutor {
                     return true;
                 }
             } else if (args[0].equals("remove")) {
-                if (!sender.hasPermission("fileman.plugin.rm")) return true;
+                if (!sender.hasPermission("cogworks.plugin.rm")) return true;
                 if (args.length >= 2) {
                     Boolean deleteConfigs = null;
 
@@ -177,7 +177,7 @@ public class PluginCommand implements CommandExecutor {
                     return true;
                 }
             } else if (args[0].equals("browse")) {
-                if (!sender.hasPermission("fileman.plugin.ins")) return true;
+                if (!sender.hasPermission("cogworks.plugin.ins")) return true;
                 new Thread(new Runnable() {
 
                     private CommandSender sender;
@@ -232,11 +232,11 @@ public class PluginCommand implements CommandExecutor {
 
         StringBuilder message = new StringBuilder(ChatColor.AQUA+"/plugin help -"+ChatColor.GREEN+" Shows this message."+ChatColor.GRAY);
 
-        if (sender.hasPermission("fileman.plugin.ins")) message.append("\n").append(ChatColor.AQUA).
+        if (sender.hasPermission("cogworks.plugin.ins")) message.append("\n").append(ChatColor.AQUA).
                 append("/plugin install <Plugin Name | URL> -").append(ChatColor.GREEN).append(" If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download.")
                 .append(ChatColor.GRAY).append("\n").append(ChatColor.AQUA).append("/plugin browse -").append(ChatColor.GREEN).append(" Allows the user to search though the most popular plugins on modrinth that are compatible with your server type and install them with the press of a button.").append(ChatColor.GRAY);
 
-        if (sender.hasPermission("fileman.plugin.rm")) message.append("\n").append(ChatColor.AQUA).append("/plugin remove <Plugin Name> -").append(ChatColor.GREEN).append(" Disables and uninstalls the given plugin.");
+        if (sender.hasPermission("cogworks.plugin.rm")) message.append("\n").append(ChatColor.AQUA).append("/plugin remove <Plugin Name> -").append(ChatColor.GREEN).append(" Disables and uninstalls the given plugin.");
 
         sender.sendMessage(message.toString());
         return true;
@@ -253,7 +253,7 @@ public class PluginCommand implements CommandExecutor {
      */
     public static void installPluginURL(URL downloadURL, String fileName, Boolean addFileHash) throws PluginExistsException, PluginInstallException, IOException {
 
-        File file = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+fileName);
+        File file = new File(Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+fileName);
         if (file.exists()) {
             throw new PluginExistsException(fileName + " is already installed: Skipping.");
         }
@@ -276,7 +276,7 @@ public class PluginCommand implements CommandExecutor {
         String hash = "";
         if (addFileHash) {
             try {
-                InputStream is = new FileInputStream(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString() + File.separator + fileName);
+                InputStream is = new FileInputStream(Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString() + File.separator + fileName);
                 DigestInputStream dis = new DigestInputStream(is, MessageDigest.getInstance("MD5"));
                 dis.readAllBytes();
                 dis.close();
@@ -289,8 +289,8 @@ public class PluginCommand implements CommandExecutor {
         }
 
         //moves the file to plugin folder
-        File destination = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
-        File downloadedFile = new File(Path.of(JavaPlugin.getPlugin(FileManager.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString()+File.separator+fileName);
+        File destination = new File(Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
+        File downloadedFile = new File(Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString()+File.separator+fileName);
         try {
             Files.move(downloadedFile, destination);
         } catch (IOException ioException) {
@@ -314,7 +314,7 @@ public class PluginCommand implements CommandExecutor {
         File pluginDataFolder = new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getName());
 
         //disables the plugin so that the file can be deleted
-        Plugin plugin = JavaPlugin.getPlugin(FileManager.class).getServer().getPluginManager().getPlugin(pluginName);
+        Plugin plugin = JavaPlugin.getPlugin(CogWorks.class).getServer().getPluginManager().getPlugin(pluginName);
         if (plugin != null) {
             plugin.getPluginLoader().disablePlugin(plugin);
         }
@@ -342,11 +342,11 @@ public class PluginCommand implements CommandExecutor {
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod(requestMethod);
             con.setRequestProperty("Content-Type", "application/json");
-            con.setRequestProperty("User-Agent", "FileManager: https://github.com/Mapty231 contact: tye.exe@gmail.com");
+            con.setRequestProperty("User-Agent", "CogWorks: https://github.com/Mapty231 contact: tye.exe@gmail.com");
 
             int status = con.getResponseCode();
             if (status == 410) {
-                throw new ModrinthAPIException("The FileManager plugin is using an outdated version of the Modrinth api. Please update your version of the plugin!");
+                throw new ModrinthAPIException("Please update to a newer version of CogWorks, as the current version is using an outdated Modrinth API!");
             }
             if (status == 429) {
                 throw new ModrinthAPIException("You've exceeded the Modrinth API rate limit. Please slow down.");
