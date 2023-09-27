@@ -76,7 +76,7 @@ public class ChatManager implements Listener {
             Bukkit.getScheduler().scheduleSyncDelayedTask(JavaPlugin.getPlugin(CogWorks.class), () -> {
                 try {
                     deletePlugin(params.getPluginName(), deleteConfigs);
-                    sender.sendMessage(Util.getLang("chat.deletedPlugin.success", "pluginName", params.getPluginName()));
+                    sender.sendMessage(Util.getLang("chat.deletePlugin.success", "pluginName", params.getPluginName()));
                 } catch (NoSuchPluginException e) {
                     log(e, sender, Level.WARNING, Util.getLang("exceptions.deletePlugin.noSuchPlugin", "pluginName", params.getPluginName()));
                 } catch (IOException e) {
@@ -351,9 +351,7 @@ public class ChatManager implements Listener {
                         }
                         if (message.startsWith("cd")) {
                             PathHolder pathHolder = position.get(name);
-                            System.out.println(pathHolder.getCurrentPath());
                             pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + message.split(" ")[1]);
-                            System.out.println(pathHolder.getCurrentPath());
                         }
                     }
                 }
@@ -425,7 +423,7 @@ public class ChatManager implements Listener {
             try {
                 JsonElement pluginProjects = modrinthAPI(projectUrl.substring(0, projectUrl.length() - 1) + "]", "GET");
                 if (pluginProjects == null) {
-                    sender.sendMessage(ChatColor.RED + "Error getting dependency plugins from Modrinth.");
+                    sender.sendMessage(ChatColor.YELLOW + "Error getting dependency plugins from Modrinth.");
                     return;
                 }
 
@@ -436,7 +434,7 @@ public class ChatManager implements Listener {
                 }
 
             } catch (MalformedURLException | ModrinthAPIException e) {
-                log(e, sender, Level.SEVERE, "Error getting dependency plugins from Modrinth.");
+                log(e, sender, Level.WARNING, "Error getting dependency plugins from Modrinth.");
                 return;
             }
         }
@@ -455,7 +453,7 @@ public class ChatManager implements Listener {
                 return;
             }
         } catch (MalformedURLException | ModrinthAPIException e) {
-            log(e, sender, Level.SEVERE, "Error getting dependency plugins from Modrinth.");
+            log(e, sender, Level.WARNING, "Error getting dependency plugins from Modrinth.");
             return;
         }
 

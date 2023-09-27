@@ -66,19 +66,6 @@ public final class CogWorks extends JavaPlugin {
     @Override
     public void onEnable() {
 
-        //Commands
-        getCommand("plugin").setExecutor(new PluginCommand());
-        getCommand("file").setExecutor(new FileCommand());
-
-        getCommand("plugin").setTabCompleter(new TabComplete());
-        getCommand("file").setTabCompleter(new TabComplete());
-
-        //Listeners
-        getServer().getPluginManager().registerEvents(new ChatManager(), this);
-        getServer().getPluginManager().registerEvents(new FileGui(), this);
-        getServer().getPluginManager().registerEvents(new SendErrorSummary(), this);
-
-
         //Set up required config files
         File configFile = new File(getDataFolder().getAbsolutePath() + File.separator + "config.yml");
         File pluginStore = new File(getDataFolder().getAbsoluteFile() + File.separator + ".pluginStore");
@@ -87,23 +74,20 @@ public final class CogWorks extends JavaPlugin {
         File langFolder = new File(getDataFolder().getAbsoluteFile() + File.separator + "langFiles");
         File engLang = new File(langFolder.getAbsoluteFile() + File.separator + "eng.yml");
 
+
         //creates the config files
-        if (!getDataFolder().exists()) if (!getDataFolder().mkdir()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));
+        createFile(getDataFolder(), null, false);
+        createFile(pluginStore, null, false);
+        createFile(langFolder, null, false);
 
-        if (!pluginStore.exists()) if (!pluginStore.mkdir()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));
-        try {if (!plugins.exists()) if (!plugins.createNewFile()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
-        catch (IOException e) {log(e, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
+        createFile(plugins, null, true);
+        createFile(engLang, "langFiles/eng.yml", true);
+        createFile(configFile, "config.yml", true);
 
-        if (!langFolder.exists()) if (!langFolder.mkdir()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));
-        try {if (!engLang.exists()) if (engLang.createNewFile()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
-        catch (IOException e) {log(e, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
-
-        try {if (!configFile.exists()) if (!configFile.createNewFile()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
-        catch (IOException e) {log(e, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
 
         //loads config files
-        Util.setConfig(returnFileConfigs(configFile, "config.yml"));
-        Util.setLang(returnFileConfigs(engLang, "langFiles/eng.yml"));
+        Util.setConfig(returnFileConfigs(configFile, "config.yml", true));
+        Util.setLang(returnFileConfigs(engLang, "langFiles/eng.yml", false));
 
 
         //clears out leftover files in plugin store dir
@@ -147,7 +131,6 @@ public final class CogWorks extends JavaPlugin {
         }
 
         //adds any new plugins to the pluginData
-
         pluginFolder = new File(getDataFolder().getParent());
         for (File file : pluginFolder.listFiles()) {
             if (file.isDirectory()) continue;
@@ -324,6 +307,19 @@ public final class CogWorks extends JavaPlugin {
             }.init(unmetDepInfo, pluginStore, unmetDependencies)).start();
         }
 
+
+        //Commands
+        getCommand("plugin").setExecutor(new PluginCommand());
+        getCommand("file").setExecutor(new FileCommand());
+
+        getCommand("plugin").setTabCompleter(new TabComplete());
+        getCommand("file").setTabCompleter(new TabComplete());
+
+        //Listeners
+        getServer().getPluginManager().registerEvents(new ChatManager(), this);
+        getServer().getPluginManager().registerEvents(new FileGui(), this);
+        getServer().getPluginManager().registerEvents(new SendErrorSummary(), this);
+
     }
 
     @Override
@@ -337,60 +333,100 @@ public final class CogWorks extends JavaPlugin {
     }
 
     /**
+     * Copies the content of an internal file to an external one.
+     * @param file External file destination
+     * @param resourcePath Internal path to resource, or null if target is an empty file/dir.
+     */
+    public static void createFile(File file, @Nullable String resourcePath, boolean isFile) {
+        try {
+            if (!file.exists()) {
+                if (isFile) {
+                    if (!file.createNewFile()) throw new IOException("Making file failed.");
+                } else
+                    if (!file.mkdir()) throw new IOException("Making dir failed.");
+
+                if (resourcePath != null) {
+                    String text = new String(JavaPlugin.getPlugin(CogWorks.class).getResource(resourcePath).readAllBytes());
+                    FileWriter fw = new FileWriter(file);
+                    fw.write(text);
+                    fw.close();
+                }
+            }
+        }
+        catch (IOException e) {
+            log(e, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", file.getName(), "filePath", file.getAbsolutePath()));
+        }
+    }
+
+    /**
      * Reads the data from an external specified yaml file and returns the data in a hashmap. Appending any missing values to teh external file, making use of the resourcePath of the file inside the jar.
      * @param externalFile External config file.
      * @param resourcePath Path to the internal file from the resource folder.
+     * @param repairComments Whether to adds teh comments alongside the yaml values (currently only supports yml files with no "." in them).
      * @return The data from the external file with any missing values being loaded in as defaults.
      */
-    public static HashMap<String, String> returnFileConfigs(File externalFile, String resourcePath) {
-        HashMap<String, String> loadedValues;
+    public static HashMap<String, Object> returnFileConfigs(File externalFile, String resourcePath, boolean repairComments) {
+        HashMap<String, Object> loadedValues;
 
         //loads the values from the config files.
         try {
             InputStream is = new FileInputStream(externalFile);
             loadedValues = new Yaml().load(is);
+            is.close();
             if (loadedValues == null) loadedValues = new HashMap<>();
 
-            HashMap<String, String> defaultValues = getDefault(resourcePath);
+            HashMap<String, Object> defaultValues = getDefault(resourcePath);
 
             //if there are missing values it adds them to the file
             if (!loadedValues.keySet().containsAll(defaultValues.keySet())) {
-                Object[] internalFileText = new String(JavaPlugin.getPlugin(CogWorks.class).getResource(resourcePath).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
-                ArrayList<String> missingKeys = new ArrayList<>();
+                //also adds comments to yaml file (currently only supports yaml files with no "." in them).
+                if (repairComments) {
+                    Object[] internalFileText = new String(JavaPlugin.getPlugin(CogWorks.class).getResource(resourcePath).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
+                    ArrayList<String> missingKeys = new ArrayList<>();
 
-                for (String key : defaultValues.keySet()) {
-                    if (loadedValues.containsKey(key)) continue;
-                    loadedValues.put(key, defaultValues.get(key));
-                    missingKeys.add(key);
-                }
+                    for (String key : defaultValues.keySet()) {
+                        if (loadedValues.containsKey(key)) continue;
+                        loadedValues.put(key, defaultValues.get(key));
+                        missingKeys.add(key);
+                    }
 
-                StringBuilder toAppend = new StringBuilder();
-                for (String missingKey : missingKeys) {
-                    for (int i = 0; i < internalFileText.length; i++) {
-                        if (internalFileText[i].toString().startsWith(missingKey)) {
-                            //search up for start of comments
-                            int ii = -1;
-                            while (i+ii > 0 && internalFileText[i+ii].toString().startsWith("#")) {
-                                ii--;
-                            }
-                            //appends all of the comments in correct order
-                            while (ii < 1) {
-                                toAppend.append(internalFileText[i+ii]).append("\n");
-                                ii++;
+                    StringBuilder toAppend = new StringBuilder();
+                    for (String missingKey : missingKeys) {
+                        for (int i = 0; i < internalFileText.length; i++) {
+                            if (internalFileText[i].toString().startsWith(missingKey)) {
+                                //search up for start of comments
+                                int ii = -1;
+                                while (i + ii > 0 && internalFileText[i + ii].toString().startsWith("#")) {
+                                    ii--;
+                                }
+                                //appends all of the comments in correct order
+                                while (ii < 1) {
+                                    toAppend.append(internalFileText[i + ii]).append("\n");
+                                    ii++;
+                                }
                             }
                         }
                     }
+
+                    //writes the data to the config file.
+                    try {
+                        FileOutputStream fos = new FileOutputStream(externalFile, true);
+                        fos.write(toAppend.toString().getBytes());
+                        fos.flush();
+                        fos.close();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            } else {
+                for (String key : defaultValues.keySet()) {
+                    if (loadedValues.containsKey(key)) continue;
+                    loadedValues.put(key, defaultValues.get(key));
                 }
 
-                //writes the data to the config file.
-                try {
-                    FileOutputStream fos = new FileOutputStream(externalFile, true);
-                    fos.write(toAppend.toString().getBytes());
-                    fos.flush();
-                    fos.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                FileWriter fw = new FileWriter(externalFile);
+                new Yaml().dump(loadedValues, fw);
+                fw.close();
             }
 
         } catch (Exception e) {
@@ -405,13 +441,8 @@ public final class CogWorks extends JavaPlugin {
      * @param filepath Path to the file inside the resource folder.
      * @return The default YAML values of the resource.
      */
-    public static HashMap<String, String> getDefault(String filepath) {
-        HashMap<String, String> stringValues = new HashMap<>();
-        HashMap<String, Object> values = new Yaml().load(JavaPlugin.getPlugin(CogWorks.class).getResource(filepath));
-        for (String key : values.keySet()) {
-            stringValues.put(key, String.valueOf(values.get(key)));
-        }
-        return stringValues;
+    public static HashMap<String, Object> getDefault(String filepath) {
+        return new Yaml().load(JavaPlugin.getPlugin(CogWorks.class).getResource(filepath));
     }
 
     /**

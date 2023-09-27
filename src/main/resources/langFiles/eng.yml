@@ -7,6 +7,7 @@
 #filePath = The path to the file.
 #depName = The name of the dependency.
 #pluginName = The name of the plugin.
+#key = value used to retrieve an element from a group.
 
 exceptions:
   seeConsole: " Please see the console for stack trace."
@@ -19,7 +20,7 @@ exceptions:
   ADR:
     skipping: "Skipping automatic dependency resolution for \"{depName}\"."
     ModrinthSearch: "Error querying Modrinth for automatic dependency resolution. "
-    downloading: "Error downloading \"{fileName}}\" to check plugin name in \"plugin.yml\" for automatic dependency resolution. Skipping plugin."
+    downloading: "Error downloading \"{fileName}\" to check plugin name in \"plugin.yml\" for automatic dependency resolution. Skipping plugin."
     threadInterrupted: "Threads attempting to download plugins for longer than 60 seconds. "
     threadTime: "Threads attempting to download plugins for longer than 60 seconds. "
     pluginYMLCheck: "Error checking plugin name from \"plugin.yml\" for \"{fileName}\". Skipping \"{fileName}\" as possible dependency."
@@ -31,6 +32,8 @@ exceptions:
   deletePlugin:
     noSuchPlugin: "Plugin \"{pluginName}\" couldn't be found on your system."
     couldNotDel:
+
+  noSuchResponse: "No lang response could be found for \"{key}\". Please inform the devs about this."
 
 info:
   ADR:
