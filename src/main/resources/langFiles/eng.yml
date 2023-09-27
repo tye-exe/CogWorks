@@ -1,9 +1,47 @@
 #English lang file for the CogWorks plugin.
-#
-#Info: If q value for the key can't be got for a string it will not be replaced.
+
+#Info: If a value for the key can't be got for a string it will not be replaced.
+#Info: the keys need to be surrounded with "{" & "}".
 #Keys:
-#fileName = The name of the file
+#fileName = The name of the file.
 #filePath = The path to the file.
+#depName = The name of the dependency.
+#pluginName = The name of the plugin.
 
 exceptions:
-  fileCreation: "Unable to create {fileName} file in {filePath}."
+  seeConsole: " Please see the console for stack trace."
+  fileCreation: "Unable to create \"{fileName}\" file in \"{filePath}\"."
+  removeLeftoverFiles: "Unable to clean up unused file \"{fileName}\". Please manually delete this file at your earliest convenience."
+  noAccessPluginYML: "Unable to access plugin.yml file, many features of this plugin WILL break."
+  deletingRemovedPlugin: "Error deleting removed plugin ({fileName}) from pluginData."
+  noAccessDeleteRemovedPlugins: "Unable to access pluginData file to remove \"{fileName}\". This will cause the plugin to appear present when interacting with CogWorks."
+  noAccessNewPlugin: "Unable to access plugin.yml file for \"{fileName}\". \"{fileName}\" won't work for many features of this plugin."
+  ADR:
+    skipping: "Skipping automatic dependency resolution for \"{depName}\"."
+    ModrinthSearch: "Error querying Modrinth for automatic dependency resolution. "
+    downloading: "Error downloading \"{fileName}}\" to check plugin name in \"plugin.yml\" for automatic dependency resolution. Skipping plugin."
+    threadInterrupted: "Threads attempting to download plugins for longer than 60 seconds. "
+    threadTime: "Threads attempting to download plugins for longer than 60 seconds. "
+    pluginYMLCheck: "Error checking plugin name from \"plugin.yml\" for \"{fileName}\". Skipping \"{fileName}\" as possible dependency."
+    cleanUpPossiblePlugins: "Error trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder \"{filePath}}\" at your earliest convince."
+
+  errorWritingConfigs: "Error writing configurations to config file. Reverting to default settings."
+  pluginNotRegistered: "{pluginName} either not installed or not indexed by CogWorks."
+
+  deletePlugin:
+    noSuchPlugin: "Plugin \"{pluginName}\" couldn't be found on your system."
+    couldNotDel:
+
+info:
+  ADR:
+    attempting: "Attempting to automatically resolve missing dependency \"{depName}\" for \"{fileName}\"."
+    success: "Unmet dependency for \"{fileName}\" successfully resolved by installing \"{depName}\"."
+    fail: "Unmet dependency for \"{fileName}}\" could not be automatically resolved."
+  menuClose: "Menu closed due to reload, this is to prevent errors."
+
+chat:
+  deletePlugin:
+    success: "§aPlugin \"{pluginName}\" deleted. §7\n§eImmediately reload or restart to avoid errors."
+
+
+  deleteConfigs: "§ePlease enter either \"y\" or \"n\"."

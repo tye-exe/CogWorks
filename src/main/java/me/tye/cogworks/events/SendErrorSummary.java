@@ -7,7 +7,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.util.logging.Level;
 
-import static me.tye.cogworks.CogWorks.configs;
+import static me.tye.cogworks.util.Util.getConfig;
 import static me.tye.cogworks.CogWorks.log;
 
 public class SendErrorSummary implements Listener {
@@ -16,7 +16,7 @@ public class SendErrorSummary implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e) {
         Player player = e.getPlayer();
-        if (player.isOp() && (Boolean) configs.get("showOpErrorSummary")) {
+        if (player.isOp() && (Boolean) getConfig("showOpErrorSummary")) {
             if (severe > 0)
                 log(null, Level.WARNING, "There have been "+severe+" severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues.");
         }

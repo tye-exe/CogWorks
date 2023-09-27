@@ -9,6 +9,7 @@ import me.tye.cogworks.commands.TabComplete;
 import me.tye.cogworks.events.SendErrorSummary;
 import me.tye.cogworks.util.ModrinthSearch;
 import me.tye.cogworks.util.UrlFilename;
+import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.exceptions.ModrinthAPIException;
 import me.tye.cogworks.util.exceptions.NoSuchPluginException;
 import me.tye.cogworks.util.yamlClasses.DependencyInfo;
@@ -31,6 +32,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
@@ -47,19 +49,20 @@ import static me.tye.cogworks.FileGui.position;
 import static me.tye.cogworks.commands.PluginCommand.modrinthSearch;
 
 public final class CogWorks extends JavaPlugin {
+    //TODO: make returnFileConfigs support the multiple line yaml stuff.
+    //TODO: add central lang file to allow for translation.
 
     //TODO: check if dependencies are already met before trying to install them?
     //TODO: convert install modrinth dependencies to use errors, not sender
     //TODO: run install dependencies on plugins installed from auto dependency resolve
     //TODO: add advise on how to fix errors in the error message.
-    //TODO: add central lang file to allow for translation.
     //TODO: when uninstalling plugins check if any other plugins depend on them.
+    //TODO: when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
 
     //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
     //TODO: allow to delete multiple plugins at once - separate by ","?
     //TODO: allow to install multiple plugins at once when using a url.
 
-    public static HashMap<String, Object> configs = new HashMap<>();
     @Override
     public void onEnable() {
 
@@ -75,52 +78,33 @@ public final class CogWorks extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new FileGui(), this);
         getServer().getPluginManager().registerEvents(new SendErrorSummary(), this);
 
+
         //Set up required config files
-        File configsFile = new File(getDataFolder().getAbsolutePath() + File.separator + "configs.yml");
+        File configFile = new File(getDataFolder().getAbsolutePath() + File.separator + "config.yml");
         File pluginStore = new File(getDataFolder().getAbsoluteFile() + File.separator + ".pluginStore");
         File plugins = new File(pluginStore.getAbsolutePath() + File.separator + "pluginData.json");
 
         File langFolder = new File(getDataFolder().getAbsoluteFile() + File.separator + "langFiles");
         File engLang = new File(langFolder.getAbsoluteFile() + File.separator + "eng.yml");
-        try {
-            if (!getDataFolder().exists()) if (!getDataFolder().mkdir()) throw new Exception();
 
-            if (configsFile.exists()) {
-                InputStream is = new FileInputStream(configsFile);
-                HashMap<String, Object> map = new Yaml().load(is);
-                if (map != null) configs = map;
-            } else {
-                if (!configsFile.createNewFile()) throw new Exception("Unable to create config.yml in ./plugins/CogWorks");
-            }
+        //creates the config files
+        if (!getDataFolder().exists()) if (!getDataFolder().mkdir()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));
 
-            if (!pluginStore.exists()) if(!pluginStore.mkdir()) throw new Exception("Unable to create .pluginStore in ./plugins/CogWorks");
-            if (!plugins.exists()) if (!plugins.createNewFile()) throw new Exception("Unable to create pluginData.json in ./plugins/CogWorks/.pluginStore");
+        if (!pluginStore.exists()) if (!pluginStore.mkdir()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));
+        try {if (!plugins.exists()) if (!plugins.createNewFile()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
+        catch (IOException e) {log(e, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
 
-            if (!langFolder.exists()) if (!langFolder.mkdir()) throw new Exception("Unable to create LangFolder in ./plugins/CogWorks");
-            if (!engLang.exists()) if (engLang.createNewFile()) throw new Exception("Unable to create engLang.yml in ./plugins/CogWorks/langFolder");
-        }
-        catch (Exception e) {
-            setConfigsToDefault();
-            log(e, Level.SEVERE, "Error initialising config folders. Reverting to default settings. Please report the following error.");
-        }
+        if (!langFolder.exists()) if (!langFolder.mkdir()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));
+        try {if (!engLang.exists()) if (engLang.createNewFile()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
+        catch (IOException e) {log(e, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
 
-        //checks that config file has the correct content.
-        //TODO: remove lines of text that don't conform to the notes/keys that aren't valid?
-        try {
-            FileWriter fr = new FileWriter(configsFile);
-            if (!configs.containsKey("lang")) fr.write("#Determins the current lang file.\nKeys: eng - English\nlang: eng\n\n");
-            if (!configs.containsKey("showErrors")) fr.write("#Displays custom error messages to inform exactly what went wrong.\nshowErrors: true\n\n");
-            if (!configs.containsKey("showErrorTrace")) fr.write("#Displays stack trace to help with debugging.\n#Turn this on before reporting a bug.\n#This will be enabled by default until release.\nshowErrorTrace: true\n\n");
-            if (!configs.containsKey("showOpErrorSummary")) fr.write("#On join send op players the amount of errors and warnings have happened with this plugin since last reload/restart.\nshowOpErrorSummary: true\n\n");
-            fr.close();
+        try {if (!configFile.exists()) if (!configFile.createNewFile()) log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
+        catch (IOException e) {log(e, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", getName(), "filePath", getDataFolder().getAbsolutePath()));}
 
-            InputStream is = new FileInputStream(configsFile);
-            HashMap<String, Object> map = new Yaml().load(is);
-            if (map != null) configs = map;
-        } catch (IOException e) {
-            setConfigsToDefault();
-            log(null, Level.SEVERE, "Error writing configurations to config file. Reverting to default settings. Please report the following error.");
-        }
+        //loads config files
+        Util.setConfig(returnFileConfigs(configFile, "config.yml"));
+        Util.setLang(returnFileConfigs(engLang, "langFiles/eng.yml"));
+
 
         //clears out leftover files in plugin store dir
         for (File file : pluginStore.listFiles()) {
@@ -129,7 +113,7 @@ public final class CogWorks extends JavaPlugin {
                 if (file.isFile()) if (!file.delete()) throw new IOException();
                 if (file.isDirectory()) FileUtils.deleteDirectory(file);
             } catch (IOException e) {
-                log(e, Level.WARNING, "Unable to clean up unused file \"" + file.getName() + "\". Please manually delete this file at your earliest convenience.");
+                log(e, Level.WARNING, Util.getLang("exceptions.removeLeftoverFiles", "fileName", getName()));
             }
         }
 
@@ -138,7 +122,7 @@ public final class CogWorks extends JavaPlugin {
         try {
             identifiers = readPluginData();
         } catch (IOException e) {
-            log(e, Level.SEVERE, "Unable to access plugin.yml file, many features of this plugin WILL break.");
+            log(e, Level.SEVERE, Util.getLang("exceptions.noAccessPluginYML"));
         }
 
         //removes any plugin from plugin data that have been deleted
@@ -156,9 +140,9 @@ public final class CogWorks extends JavaPlugin {
             try {
                 removePluginData(data.getName());
             } catch (NoSuchPluginException e) {
-                log(e, Level.WARNING, "Error deleting removed plugin from pluginData.");
+                log(e, Level.WARNING, Util.getLang("exceptions.deletingRemovedPlugin","fileName", data.getName()));
             } catch (IOException e) {
-                log(e, Level.WARNING, "Unable to access pluginData file to remove "+data.getName()+". This will cause the plugn to appear present when interacting with "+this.getDataFolder().getName());
+                log(e, Level.WARNING,  Util.getLang("exceptions.noAccessDeleteRemovedPlugins","fileName", data.getName()));
             }
         }
 
@@ -171,7 +155,7 @@ public final class CogWorks extends JavaPlugin {
             try {
                 appendPluginData(file);
             } catch (IOException e) {
-                log(e, Level.WARNING, "Unable to access plugin.yml file for \"" + file.getName() + "\". \"" + file.getName() + "\" won't work for many features of this plugin.");
+                log(e, Level.WARNING, Util.getLang("exceptions.noAccessNewPlugin","fileName", file.getName()));
             }
         }
 
@@ -179,7 +163,7 @@ public final class CogWorks extends JavaPlugin {
         try {
             identifiers = readPluginData();
         } catch (IOException e) {
-            log(e, Level.SEVERE, "Unable to access plugin.yml file, many features of this plugin WILL break.");
+            log(e, Level.SEVERE, Util.getLang("exceptions.noAccessPluginYML"));
         }
 
         //checks for uninstalled dependencies
@@ -222,7 +206,7 @@ public final class CogWorks extends JavaPlugin {
                     ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
                     HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
 
-                    log(null, Level.INFO, "Attempting to automatically resolve missing dependency \""+unmetDepInfo.getName()+"\" for \""+unmetDependencies.get(unmetDepInfo).getName()+"\".");
+                    log(null, Level.INFO, Util.getLang("info.ADR.attempting", "depName", unmetDepName, "fileName", unmetDependencies.get(unmetDepInfo).getName()));
 
                     //searches the dependency name on modrinth
                     try {
@@ -230,8 +214,8 @@ public final class CogWorks extends JavaPlugin {
                         validPluginKeys = search.getValidPluginKeys();
                         validPlugins = search.getValidPlugins();
                     } catch (MalformedURLException | ModrinthAPIException e) {
-                        log(null, Level.WARNING, "Error querying Modrinth for automatic dependency resolution.");
-                        log(e, Level.WARNING, "Skipping resolving for: " + unmetDepName);
+                        log(e, Level.WARNING, Util.getLang("exceptions.ADR.ModrinthSearch")+Util.getLang("exceptions.skippingADR", "depName", unmetDepName));
+                        return;
                     }
 
                     //gets the urls to download from
@@ -280,16 +264,20 @@ public final class CogWorks extends JavaPlugin {
                                     rbc.close();
                                     inputStream.close();
                                 } catch (IOException e) {
-                                    log(e, Level.WARNING, "Error downloading \""+file.getName()+"\" to check plugin name in \"plugin.yml\" for automatic dependency resolution. Skipping plugin.");
+                                    log(e, Level.WARNING, Util.getLang("exceptions.ADR.downloading", "fileName", file.getName()));
                                 }
                             }
                         });
                     }
                     executorService.shutdown();
                     try {
-                        executorService.awaitTermination(1, TimeUnit.MINUTES);
+                        if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
+                            log(null, Level.WARNING, Util.getLang("exceptions.ADR.threadTime")+Util.getLang("exceptions.skippingADR", "depName", unmetDepName));
+                            return;
+                        }
                     } catch (InterruptedException e) {
-                        log(e, Level.WARNING, "Threads attempting to download plugins for longer than 60 seconds. Skipping automatic dependency resolution for \""+unmetDepName+"\".");
+                        log(e, Level.WARNING, Util.getLang("exceptions.ADR.threadInterrupted")+Util.getLang("exceptions.skippingADR", "depName", unmetDepName));
+                        return;
                     }
 
                     File dependency = null;
@@ -312,14 +300,14 @@ public final class CogWorks extends JavaPlugin {
                                 Map<String, Object> yamlData = yaml.load(out.toString());
                                 if (yamlData.get("name").equals(unmetDepName)) {
                                     dependency = file;
-                                    log(null, Level.INFO, "Unmet dependency for \"" + unmetDependencies.get(unmetDepInfo).getName() + "\" successfully resolved by installing \"" + yamlData.get("name") + "\".");
+                                    log(null, Level.INFO, Util.getLang("info.ADR.success", "fileName", unmetDependencies.get(unmetDepInfo).getName(), "depName", (String) yamlData.get("name")));
                                     zip.close();
                                     break dependencyCheck;
                                 }
                             }
                             zip.close();
                         } catch (Exception e) {
-                            log(e, Level.WARNING, "Error checking plugin name from \"plugin.yml\" for \""+file.getName()+"\". Skipping possible dependency.");
+                            log(e, Level.WARNING, Util.getLang("exceptions.ADR.pluginYMLCheck", "fileName", file.getName()));
                         }
                     }
 
@@ -328,10 +316,10 @@ public final class CogWorks extends JavaPlugin {
                         if (dependency != null) FileUtils.moveFile(dependency, new File(Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
                         FileUtils.deleteDirectory(pluginStore);
                     } catch (IOException e) {
-                        log(e, Level.WARNING, "Error trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder "+pluginStore.getAbsolutePath()+ " at your earliest convince.");
+                        log(e, Level.WARNING,  Util.getLang("exceptions.ADR.cleanUpPossiblePlugins", "filePath", pluginStore.getAbsolutePath()));
                     }
 
-                    if (dependency == null) log(null, Level.WARNING, "Unmet dependency for \""+unmetDependencies.get(unmetDepInfo).getName()+"\" could not be automatically resolved.");
+                    if (dependency == null) log(null, Level.INFO, Util.getLang("info.ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
                 }
             }.init(unmetDepInfo, pluginStore, unmetDependencies)).start();
         }
@@ -343,16 +331,87 @@ public final class CogWorks extends JavaPlugin {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (position.containsKey(player.getName())) {
                 player.closeInventory();
-                log(null, Level.WARNING, "Menu closed due to reload, this is to prevent errors.");
+                log(null, player, Level.WARNING, Util.getLang("info.menuClose"));
             }
         }
     }
 
-    public static void setConfigsToDefault() {
-        configs.put("lang", "eng");
-        configs.put("showErrors", true);
-        configs.put("showErrorTrace", true);
-        configs.put("showOpErrorSummary", true);
+    /**
+     * Reads the data from an external specified yaml file and returns the data in a hashmap. Appending any missing values to teh external file, making use of the resourcePath of the file inside the jar.
+     * @param externalFile External config file.
+     * @param resourcePath Path to the internal file from the resource folder.
+     * @return The data from the external file with any missing values being loaded in as defaults.
+     */
+    public static HashMap<String, String> returnFileConfigs(File externalFile, String resourcePath) {
+        HashMap<String, String> loadedValues;
+
+        //loads the values from the config files.
+        try {
+            InputStream is = new FileInputStream(externalFile);
+            loadedValues = new Yaml().load(is);
+            if (loadedValues == null) loadedValues = new HashMap<>();
+
+            HashMap<String, String> defaultValues = getDefault(resourcePath);
+
+            //if there are missing values it adds them to the file
+            if (!loadedValues.keySet().containsAll(defaultValues.keySet())) {
+                Object[] internalFileText = new String(JavaPlugin.getPlugin(CogWorks.class).getResource(resourcePath).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
+                ArrayList<String> missingKeys = new ArrayList<>();
+
+                for (String key : defaultValues.keySet()) {
+                    if (loadedValues.containsKey(key)) continue;
+                    loadedValues.put(key, defaultValues.get(key));
+                    missingKeys.add(key);
+                }
+
+                StringBuilder toAppend = new StringBuilder();
+                for (String missingKey : missingKeys) {
+                    for (int i = 0; i < internalFileText.length; i++) {
+                        if (internalFileText[i].toString().startsWith(missingKey)) {
+                            //search up for start of comments
+                            int ii = -1;
+                            while (i+ii > 0 && internalFileText[i+ii].toString().startsWith("#")) {
+                                ii--;
+                            }
+                            //appends all of the comments in correct order
+                            while (ii < 1) {
+                                toAppend.append(internalFileText[i+ii]).append("\n");
+                                ii++;
+                            }
+                        }
+                    }
+                }
+
+                //writes the data to the config file.
+                try {
+                    FileOutputStream fos = new FileOutputStream(externalFile, true);
+                    fos.write(toAppend.toString().getBytes());
+                    fos.flush();
+                    fos.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+        } catch (Exception e) {
+            loadedValues = getDefault(resourcePath);
+            if (resourcePath.equals("config.yml")) Util.setConfig(getDefault(resourcePath));
+            log(e, Level.SEVERE, Util.getLang("exception.errorWritingConfigs"));
+        }
+        return loadedValues;
+    }
+
+    /**
+     * @param filepath Path to the file inside the resource folder.
+     * @return The default YAML values of the resource.
+     */
+    public static HashMap<String, String> getDefault(String filepath) {
+        HashMap<String, String> stringValues = new HashMap<>();
+        HashMap<String, Object> values = new Yaml().load(JavaPlugin.getPlugin(CogWorks.class).getResource(filepath));
+        for (String key : values.keySet()) {
+            stringValues.put(key, String.valueOf(values.get(key)));
+        }
+        return stringValues;
     }
 
     /**
@@ -398,7 +457,7 @@ public final class CogWorks extends JavaPlugin {
         }
 
         if (pluginToRemove == null) {
-            throw new NoSuchPluginException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(CogWorks.class).getName());
+            throw new NoSuchPluginException(Util.getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
         }
 
         pluginData.remove(pluginToRemove);
@@ -476,7 +535,7 @@ public final class CogWorks extends JavaPlugin {
         for (PluginData data : readPluginData()) {
             if (data.getName().equals(pluginName)) return data;
         }
-        throw new NoSuchPluginException(pluginName + " either not installed or not indexed by " + JavaPlugin.getPlugin(CogWorks.class).getName());
+        throw new NoSuchPluginException(Util.getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
     }
 
     /**
@@ -487,11 +546,11 @@ public final class CogWorks extends JavaPlugin {
      */
     public static void writePluginData(ArrayList<PluginData> pluginData) throws IOException {
         File plugins = new File(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath() + File.separator + ".pluginStore" + File.separator + "pluginData.json");
-            GsonBuilder gson = new GsonBuilder();
-            gson.setPrettyPrinting();
-            FileWriter fileWriter = new FileWriter((plugins));
-            gson.create().toJson(pluginData, fileWriter);
-            fileWriter.close();
+        GsonBuilder gson = new GsonBuilder();
+        gson.setPrettyPrinting();
+        FileWriter fileWriter = new FileWriter((plugins));
+        gson.create().toJson(pluginData, fileWriter);
+        fileWriter.close();
     }
 
 
@@ -499,7 +558,7 @@ public final class CogWorks extends JavaPlugin {
      * Sends log message to console and all online op players.
      */
     public static void log(@Nullable Exception e, Level level, String message) {
-        if ((Boolean) configs.get("showErrors")) {
+        if (Util.getConfig("showErrors")) {
             ChatColor colour;
             if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
             else if (level.getName().equals("SEVERE")) {colour = ChatColor.RED; SendErrorSummary.severe++;}
@@ -509,11 +568,11 @@ public final class CogWorks extends JavaPlugin {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (!player.isOp()) continue;
                 String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(CogWorks.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
-                if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
+                if ((Boolean) Util.getConfig("showErrorTrace") && e != null) formattedMessage+=Util.getLang("exceptions.seeConsole");
                 player.sendMessage(formattedMessage);
             }
         }
-        if ((Boolean) configs.get("showErrorTrace") && e != null) e.printStackTrace();
+        if ((Boolean) Util.getConfig("showErrorTrace") && e != null) e.printStackTrace();
     }
     /**
      * Sends log message to specified Player.
@@ -524,12 +583,12 @@ public final class CogWorks extends JavaPlugin {
         else if (level.getName().equals("SEVERE")) {colour = ChatColor.RED; SendErrorSummary.severe++;}
         else colour = ChatColor.GREEN;
 
-        if ((Boolean) configs.get("showErrors")) {
+        if (Util.getConfig("showErrors")) {
             String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(CogWorks.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
-            if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
+            if ((Boolean) Util.getConfig("showErrorTrace") && e != null) formattedMessage+=Util.getLang("exceptions.seeConsole");
             player.sendMessage(formattedMessage);
         }
-        if ((Boolean) configs.get("showErrorTrace") && e != null) e.printStackTrace();
+        if ((Boolean) Util.getConfig("showErrorTrace") && e != null) e.printStackTrace();
     }
     /**
      * Sends log message to specified CommandSender.
@@ -540,12 +599,12 @@ public final class CogWorks extends JavaPlugin {
         else if (level.getName().equals("SEVERE")) {colour = ChatColor.RED; SendErrorSummary.severe++;}
         else colour = ChatColor.GREEN;
 
-        if ((Boolean) configs.get("showErrors")) {
+        if (Util.getConfig("showErrors")) {
             String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(CogWorks.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
-            if ((Boolean) configs.get("showErrorTrace") && e != null) formattedMessage+=" Please see the console for stack trace.";
+            if ((Boolean) Util.getConfig("showErrorTrace") && e != null) formattedMessage+=Util.getLang("exceptions.seeConsole");
             sender.sendMessage(formattedMessage);
         }
 
-        if ((Boolean) configs.get("showErrorTrace") && e != null) e.printStackTrace();
+        if ((Boolean) Util.getConfig("showErrorTrace") && e != null) e.printStackTrace();
     }
 }

@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import me.tye.cogworks.util.ChatParams;
 import me.tye.cogworks.util.ModrinthSearch;
 import me.tye.cogworks.util.PathHolder;
+import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.exceptions.ModrinthAPIException;
 import me.tye.cogworks.util.exceptions.NoSuchPluginException;
 import me.tye.cogworks.util.exceptions.PluginExistsException;
@@ -68,18 +69,18 @@ public class ChatManager implements Listener {
             if (message.equals("y")) deleteConfigs = true;
             else if (message.equals("n")) deleteConfigs = false;
             else {
-                sender.sendMessage(ChatColor.YELLOW + "Please enter either \"y\" or \"n\".");
+                sender.sendMessage(Util.getLang("chat.deleteConfigs"));
                 return;
             }
 
             Bukkit.getScheduler().scheduleSyncDelayedTask(JavaPlugin.getPlugin(CogWorks.class), () -> {
                 try {
                     deletePlugin(params.getPluginName(), deleteConfigs);
-                    sender.sendMessage(ChatColor.GREEN+params.getPluginName()+" deleted."+ChatColor.GRAY+"\n"+ChatColor.YELLOW+"Immediately reload or restart to avoid errors.");
+                    sender.sendMessage(Util.getLang("chat.deletedPlugin.success", "pluginName", params.getPluginName()));
                 } catch (NoSuchPluginException e) {
-                    log(e, sender, Level.WARNING, params.getPluginName()+" couldn't be found on your system.");
+                    log(e, sender, Level.WARNING, Util.getLang("exceptions.deletePlugin.noSuchPlugin", "pluginName", params.getPluginName()));
                 } catch (IOException e) {
-                    log(e, sender, Level.WARNING, params.getPluginName() + " could not be deleted.");
+                    log(e, sender, Level.WARNING, Util.getLang("exceptions.deletePlugin.couldNotDel", "pluginName", params.getPluginName()));
                 }
                 response.remove(name);
             });
