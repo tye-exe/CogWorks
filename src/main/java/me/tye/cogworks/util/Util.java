@@ -4,6 +4,7 @@ import me.tye.cogworks.CogWorks;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,6 +22,7 @@ public class Util {
     public static void setLang(HashMap<String, Object> lang) {
         Util.lang = getKeysRecursive(lang);
     }
+
     public static void setConfig(HashMap<String, Object> config) {
         Util.config = getKeysRecursive(config);
     }
@@ -65,26 +67,25 @@ public class Util {
 
     /**
      * Gets value from loaded lang file.
-     * @param key key for lang response.
+     * @param key Key to the value from the loaded lang file.
      * @param replace Should be inputted in "valueToReplace0", valueToReplaceWith0", "valueToReplace1", valueToReplaceWith2"... etc
      * @return Lang response with the specified values replaced.
      */
     public static String getLang(String key, String...replace) {
         String rawResponse = String.valueOf(lang.get(key));
+        //if config doesn't contain the key it checks if it is present in default config files.
         if (rawResponse == null || rawResponse.equals("null")) {
-            try {
-                HashMap<String, Object> defaultLang = new Yaml().load(new String(JavaPlugin.getPlugin(CogWorks.class).getResource("langFiles/" + getConfig("lang") + ".yml").readAllBytes(), StandardCharsets.UTF_8));
-                lang.put(key, defaultLang.get(key));
-                log(null, Level.WARNING, "Unable to get external lang response for " + key + ". Using internal value.");
-                rawResponse = String.valueOf(defaultLang.get(key));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+            HashMap<String, Object> defaultLang = getKeysRecursive(new Yaml().load(JavaPlugin.getPlugin(CogWorks.class).getResource("langFiles/" + getConfig("lang") + ".yml")));
+            rawResponse = String.valueOf(defaultLang.get(key));
 
-        if (rawResponse == null || rawResponse.equals("null")) {
-            if (key.equals("exceptions.noSuchResponse")) return "Unable to get key \"exceptions.noSuchResponse\" from lang file. This message is in english to prevent a stack overflow error.";
-            else getLang("exceptions.noSuchResponse", "key", key);
+            if (rawResponse == null || rawResponse.equals("null")) {
+                if (key.equals("exceptions.noSuchResponse"))
+                    return "Unable to get key \"exceptions.noSuchResponse\" from lang file. This message is in english to prevent a stack overflow error.";
+                else getLang("exceptions.noSuchResponse", "key", key);
+            }
+
+            lang.put(key, defaultLang.get(key));
+            log(null, Level.WARNING, "Unable to get external lang response for \"" + key + "\". Using internal value.");
         }
 
         for (int i = 0; i <= replace.length-1; i+=2) {
@@ -93,17 +94,31 @@ public class Util {
 
         return rawResponse;
     }
+
+    /**
+     * Gets a value from the config file.
+     * @param key Key for the config to get the value of.
+     * @return The value from the file.
+     */
     public static <T> T getConfig(String key) {
         Object response;
+        //if config doesn't contain the key it checks if it is present in default config files.
         if (!config.containsKey(key)) {
-            HashMap<String, Object> defaultConfig = new Yaml().load(JavaPlugin.getPlugin(CogWorks.class).getResource("config.yml"));
-            config.put(key, defaultConfig.get(key));
-            log(null, Level.WARNING, "Unable to get external config for \""+key+"\". Using internal value.");
+            HashMap<String, Object> defaultConfig = getKeysRecursive(new Yaml().load(JavaPlugin.getPlugin(CogWorks.class).getResource("config.yml")));
             response = defaultConfig.get(key);
+
+            if (response == null) {
+                log(null, Level.WARNING, Util.getLang("exceptions.noSuchResponse", "key", key));
+                return (T) Boolean.TRUE;
+            }
+
+            config.put(key, response);
+            log(null, Level.WARNING, "Unable to get external config for \""+key+"\". Using internal value.");
+
         } else response = String.valueOf(config.get(key));
 
         switch (key) {
-            case "lang": return (T) response;
+            case "lang": return (T) String.valueOf(response);
             case "showErrors", "showErrorTrace", "showOpErrorSummary": return (T) Boolean.valueOf(String.valueOf(response));
         }
 

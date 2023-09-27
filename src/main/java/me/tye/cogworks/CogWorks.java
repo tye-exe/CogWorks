@@ -47,10 +47,10 @@ import java.util.zip.ZipFile;
 
 import static me.tye.cogworks.FileGui.position;
 import static me.tye.cogworks.commands.PluginCommand.modrinthSearch;
+import static me.tye.cogworks.util.Util.getKeysRecursive;
 
 public final class CogWorks extends JavaPlugin {
-    //TODO: make returnFileConfigs support the multiple line yaml stuff.
-    //TODO: add central lang file to allow for translation.
+    //TODO: convert plugin to use lang file
 
     //TODO: check if dependencies are already met before trying to install them?
     //TODO: convert install modrinth dependencies to use errors, not sender
@@ -74,20 +74,19 @@ public final class CogWorks extends JavaPlugin {
         File langFolder = new File(getDataFolder().getAbsoluteFile() + File.separator + "langFiles");
         File engLang = new File(langFolder.getAbsoluteFile() + File.separator + "eng.yml");
 
-
-        //creates the config files
+        //creates the essential config files
         createFile(getDataFolder(), null, false);
-        createFile(pluginStore, null, false);
-        createFile(langFolder, null, false);
-
-        createFile(plugins, null, true);
-        createFile(engLang, "langFiles/eng.yml", true);
         createFile(configFile, "config.yml", true);
+        createFile(langFolder, null, false);
+        createFile(engLang, "langFiles/eng.yml", true);
 
+        //loads the essential config files
+        Util.setConfig(returnFileConfigs(configFile, "config.yml"));
+        Util.setLang(returnFileConfigs(engLang, "langFiles/"+Util.getConfig("lang")+".yml"));
 
-        //loads config files
-        Util.setConfig(returnFileConfigs(configFile, "config.yml", true));
-        Util.setLang(returnFileConfigs(engLang, "langFiles/eng.yml", false));
+        //creates the other files
+        createFile(pluginStore, null, false);
+        createFile(plugins, null, true);
 
 
         //clears out leftover files in plugin store dir
@@ -341,9 +340,9 @@ public final class CogWorks extends JavaPlugin {
         try {
             if (!file.exists()) {
                 if (isFile) {
-                    if (!file.createNewFile()) throw new IOException("Making file failed.");
+                    if (!file.createNewFile()) throw new IOException();
                 } else
-                    if (!file.mkdir()) throw new IOException("Making dir failed.");
+                if (!file.mkdir()) throw new IOException();
 
                 if (resourcePath != null) {
                     String text = new String(JavaPlugin.getPlugin(CogWorks.class).getResource(resourcePath).readAllBytes());
@@ -354,85 +353,88 @@ public final class CogWorks extends JavaPlugin {
             }
         }
         catch (IOException e) {
-            log(e, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", file.getName(), "filePath", file.getAbsolutePath()));
+            log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", file.getName(), "filePath", file.getAbsolutePath()));
         }
     }
 
     /**
-     * Reads the data from an external specified yaml file and returns the data in a hashmap. Appending any missing values to teh external file, making use of the resourcePath of the file inside the jar.
+     * Reads the data from an external specified yaml file and returns the data in a hashmap of Key, Value. Appending any missing values to the external file, making use of the resourcePath of the file inside the jar.
      * @param externalFile External config file.
      * @param resourcePath Path to the internal file from the resource folder.
-     * @param repairComments Whether to adds teh comments alongside the yaml values (currently only supports yml files with no "." in them).
      * @return The data from the external file with any missing values being loaded in as defaults.
      */
-    public static HashMap<String, Object> returnFileConfigs(File externalFile, String resourcePath, boolean repairComments) {
+    public static HashMap<String, Object> returnFileConfigs(File externalFile, String resourcePath) {
         HashMap<String, Object> loadedValues;
 
-        //loads the values from the config files.
         try {
-            InputStream is = new FileInputStream(externalFile);
-            loadedValues = new Yaml().load(is);
-            is.close();
-            if (loadedValues == null) loadedValues = new HashMap<>();
+            //reads data from config file and formats it
+            FileReader fr = new FileReader(externalFile);
+            HashMap<String, Object> unformattedloadedValues = new Yaml().load(fr);
+            fr.close();
+            if (unformattedloadedValues == null) unformattedloadedValues = new HashMap<>();
 
-            HashMap<String, Object> defaultValues = getDefault(resourcePath);
+            loadedValues = getKeysRecursive(unformattedloadedValues);
+            HashMap<String, Object> defaultValues = getKeysRecursive(getDefault(resourcePath));
 
-            //if there are missing values it adds them to the file
-            if (!loadedValues.keySet().containsAll(defaultValues.keySet())) {
-                //also adds comments to yaml file (currently only supports yaml files with no "." in them).
-                if (repairComments) {
-                    Object[] internalFileText = new String(JavaPlugin.getPlugin(CogWorks.class).getResource(resourcePath).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
-                    ArrayList<String> missingKeys = new ArrayList<>();
+            //checks if there is a key missing in the file
+            if (loadedValues.keySet().containsAll(defaultValues.keySet())) return loadedValues;
 
-                    for (String key : defaultValues.keySet()) {
-                        if (loadedValues.containsKey(key)) continue;
-                        loadedValues.put(key, defaultValues.get(key));
-                        missingKeys.add(key);
-                    }
-
-                    StringBuilder toAppend = new StringBuilder();
-                    for (String missingKey : missingKeys) {
-                        for (int i = 0; i < internalFileText.length; i++) {
-                            if (internalFileText[i].toString().startsWith(missingKey)) {
-                                //search up for start of comments
-                                int ii = -1;
-                                while (i + ii > 0 && internalFileText[i + ii].toString().startsWith("#")) {
-                                    ii--;
-                                }
-                                //appends all of the comments in correct order
-                                while (ii < 1) {
-                                    toAppend.append(internalFileText[i + ii]).append("\n");
-                                    ii++;
-                                }
-                            }
-                        }
-                    }
-
-                    //writes the data to the config file.
-                    try {
-                        FileOutputStream fos = new FileOutputStream(externalFile, true);
-                        fos.write(toAppend.toString().getBytes());
-                        fos.flush();
-                        fos.close();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            } else {
-                for (String key : defaultValues.keySet()) {
-                    if (loadedValues.containsKey(key)) continue;
-                    loadedValues.put(key, defaultValues.get(key));
-                }
-
-                FileWriter fw = new FileWriter(externalFile);
-                new Yaml().dump(loadedValues, fw);
-                fw.close();
+            //gets the missing keys
+            HashMap<String, Object> missing = new HashMap<>();
+            for (String key : defaultValues.keySet()) {
+                if (loadedValues.containsKey(key)) continue;
+                missing.put(key, defaultValues.get(key));
             }
 
+            StringBuilder toAppend = new StringBuilder();
+            Object[] internalFileText = new String(JavaPlugin.getPlugin(CogWorks.class).getResource(resourcePath).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
+
+            //appends the missing keys with default values and comments that are above them in the default file.
+            for (String missingKey : missing.keySet()) {
+                toAppend.append("\n");
+
+                //splits the key into subkeys
+                String[] missingKeySequence = missingKey.split("\\.");
+                for (int key = 0; key < missingKeySequence.length; key++) {
+                    missingKeySequence[key] = "  ".repeat(key)+missingKeySequence[key];
+                }
+
+                //searches though internal file to retrieve subkeys, values,  & comments
+                int key = 0;
+                for (int i = 0; i < internalFileText.length; i++) {
+                    if (internalFileText[i].toString().startsWith(missingKeySequence[key])) {
+                        if (key+1 < missingKeySequence.length) {
+                            key++;
+                            continue;
+                        }
+                        //search up for start of comments
+                        int ii = 0;
+                        while (i + ii-1 > 0 && internalFileText[i + ii-1].toString().startsWith("#")) {
+                            ii--;
+                        }
+                        //appends all of the comments in correct order
+                        while (ii < 0) {
+                            toAppend.append(internalFileText[i + ii]).append("\n");
+                            ii++;
+                        }
+                        toAppend.append(missingKey).append(internalFileText[i].toString().replaceAll(missingKeySequence[key], ""));
+
+                    }
+                }
+
+            }
+
+            //writes the missing data (if present) to the config file.
+            if (!toAppend.isEmpty()) {
+                loadedValues.putAll(missing);
+                FileWriter fw = new FileWriter(externalFile, true);
+                fw.write(toAppend.toString());
+                fw.close();
+            }
         } catch (Exception e) {
-            loadedValues = getDefault(resourcePath);
+            loadedValues = getKeysRecursive(getDefault(resourcePath));
             if (resourcePath.equals("config.yml")) Util.setConfig(getDefault(resourcePath));
-            log(e, Level.SEVERE, Util.getLang("exception.errorWritingConfigs"));
+            log(e, Level.SEVERE, Util.getLang("exceptions.errorWritingConfigs"));
         }
         return loadedValues;
     }

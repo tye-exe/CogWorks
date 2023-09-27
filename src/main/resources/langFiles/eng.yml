@@ -26,7 +26,7 @@ exceptions:
     pluginYMLCheck: "Error checking plugin name from \"plugin.yml\" for \"{fileName}\". Skipping \"{fileName}\" as possible dependency."
     cleanUpPossiblePlugins: "Error trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder \"{filePath}}\" at your earliest convince."
 
-  errorWritingConfigs: "Error writing configurations to config file. Reverting to default settings."
+  errorWritingConfigs: "Error writing configurations to \"{filePath}\" file. Reverting to default settings."
   pluginNotRegistered: "{pluginName} either not installed or not indexed by CogWorks."
 
   deletePlugin:
@@ -43,8 +43,5 @@ info:
   menuClose: "Menu closed due to reload, this is to prevent errors."
 
 chat:
-  deletePlugin:
-    success: "§aPlugin \"{pluginName}\" deleted. §7\n§eImmediately reload or restart to avoid errors."
-
-
+  deletePlugin.success: "§aPlugin \"{pluginName}\" deleted. §7\n§eImmediately reload or restart to avoid errors."
   deleteConfigs: "§ePlease enter either \"y\" or \"n\"."
