@@ -9,32 +9,6 @@
 #pluginName = The name of the plugin.
 #key = value used to retrieve an element from a group.
 
-exceptions:
-  seeConsole: " Please see the console for stack trace."
-  fileCreation: "Unable to create \"{fileName}\" file in \"{filePath}\"."
-  removeLeftoverFiles: "Unable to clean up unused file \"{fileName}\". Please manually delete this file at your earliest convenience."
-  noAccessPluginYML: "Unable to access plugin.yml file, many features of this plugin WILL break."
-  deletingRemovedPlugin: "Error deleting removed plugin ({fileName}) from pluginData."
-  noAccessDeleteRemovedPlugins: "Unable to access pluginData file to remove \"{fileName}\". This will cause the plugin to appear present when interacting with CogWorks."
-  noAccessNewPlugin: "Unable to access plugin.yml file for \"{fileName}\". \"{fileName}\" won't work for many features of this plugin."
-  ADR:
-    skipping: "Skipping automatic dependency resolution for \"{depName}\"."
-    ModrinthSearch: "Error querying Modrinth for automatic dependency resolution. "
-    downloading: "Error downloading \"{fileName}\" to check plugin name in \"plugin.yml\" for automatic dependency resolution. Skipping plugin."
-    threadInterrupted: "Threads attempting to download plugins for longer than 60 seconds. "
-    threadTime: "Threads attempting to download plugins for longer than 60 seconds. "
-    pluginYMLCheck: "Error checking plugin name from \"plugin.yml\" for \"{fileName}\". Skipping \"{fileName}\" as possible dependency."
-    cleanUpPossiblePlugins: "Error trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder \"{filePath}}\" at your earliest convince."
-
-  errorWritingConfigs: "Error writing configurations to \"{filePath}\" file. Reverting to default settings."
-  pluginNotRegistered: "{pluginName} either not installed or not indexed by CogWorks."
-
-  deletePlugin:
-    noSuchPlugin: "Plugin \"{pluginName}\" couldn't be found on your system."
-    couldNotDel:
-
-  noSuchResponse: "No lang response could be found for \"{key}\". Please inform the devs about this."
-
 info:
   ADR:
     attempting: "Attempting to automatically resolve missing dependency \"{depName}\" for \"{fileName}\"."
@@ -43,5 +17,48 @@ info:
   menuClose: "Menu closed due to reload, this is to prevent errors."
 
 chat:
-  deletePlugin.success: "§aPlugin \"{pluginName}\" deleted. §7\n§eImmediately reload or restart to avoid errors."
-  deleteConfigs: "§ePlease enter either \"y\" or \"n\"."
+  quit: "§eQuitting."
+  confirm: "§ePlease enter either \"y\" or \"n\"."
+  notAListedNumber: "Please enter a listed number!"
+  pluginSelectPrompt: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
+  noCompatibleFile: "§eFailed to find compatible file to download."
+
+  deletePlugin:
+    success: "§aPlugin \"{pluginName}\" deleted. §7\n§eImmediately reload or restart to avoid errors."
+    noSuchPlugin: "Plugin \"{pluginName}\" couldn't be found on your system."
+    couldNotDel: "Plugin \"{pluginName}\" couldn't be deleted."
+
+  dependencyInstall:
+    start: "§aInstalling required dependencies..."
+    finish: "§aFinished installing required dependencies."
+    skip: "§aSkipping required dependencies."
+
+  pluginInstall:
+    start: "§aInstalling plugin(s)..."
+    install: "§aPlugin \"{fileName}\" installed successfully."
+    finish: "§aFinished installing plugin(s): Reload or restart for the plugin(s) to activate."
+    badUrl: "Skipping \"{fileName}\". Invalid download URL."
+    alreadyExists: "A file with the name \"{fileName}\" already exists in the plugin folder. Preserving old file"
+
+ADR:
+  skipping: "Skipping automatic dependency resolution for \"{depName}\"."
+  ModrinthSearch: "Error querying Modrinth for automatic dependency resolution. "
+  downloading: "Error downloading \"{fileName}\" to check plugin name in \"plugin.yml\" for automatic dependency resolution. Skipping plugin."
+  threadInterrupted: "Threads attempting to download plugins for longer than 60 seconds. "
+  threadTime: "Threads attempting to download plugins for longer than 60 seconds. "
+  pluginYMLCheck: "Error checking plugin name from \"plugin.yml\" for \"{fileName}\". Skipping \"{fileName}\" as possible dependency."
+  cleanUpPossiblePlugins: "Error trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder \"{filePath}}\" at your earliest convince."
+
+exceptions:
+  seeConsole: " Please see the console for stack trace."
+  noSuchResponse: "No lang response could be found for \"{key}\". Please inform the devs about this."
+
+  fileCreation: "Unable to create \"{fileName}\" file in \"{filePath}\"."
+  removeLeftoverFiles: "Unable to clean up unused file \"{fileName}\". Please manually delete this file at your earliest convenience."
+  noAccessPluginYML: "Unable to access plugin.yml file, many features of this plugin WILL break."
+  deletingRemovedPlugin: "Error deleting removed plugin ({fileName}) from pluginData."
+  noAccessDeleteRemovedPlugins: "Unable to access pluginData file to remove \"{fileName}\". This will cause the plugin to appear present when interacting with CogWorks."
+  badYmlAccess: "Unable to access plugin.yml file for \"{fileName}\". \"{fileName}\" won't work for many features of this plugin."
+  errorWritingConfigs: "Error writing configurations to \"{filePath}\" file. Reverting to default settings."
+  pluginNotRegistered: "Plugin {pluginName} either not installed or not indexed by CogWorks."
+  badModrinthUrl: "Creating a url to send request to Modrinth failed. An invalid url was created."

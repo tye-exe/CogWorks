@@ -51,6 +51,7 @@ import static me.tye.cogworks.util.Util.getKeysRecursive;
 
 public final class CogWorks extends JavaPlugin {
     //TODO: convert plugin to use lang file
+    //TODO: download Lang files for version from github?
 
     //TODO: check if dependencies are already met before trying to install them?
     //TODO: convert install modrinth dependencies to use errors, not sender
@@ -58,6 +59,7 @@ public final class CogWorks extends JavaPlugin {
     //TODO: add advise on how to fix errors in the error message.
     //TODO: when uninstalling plugins check if any other plugins depend on them.
     //TODO: when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
+    //TODO: voice paper interactions throws error in automatic dependency resolve.
 
     //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
     //TODO: allow to delete multiple plugins at once - separate by ","?
@@ -137,7 +139,7 @@ public final class CogWorks extends JavaPlugin {
             try {
                 appendPluginData(file);
             } catch (IOException e) {
-                log(e, Level.WARNING, Util.getLang("exceptions.noAccessNewPlugin","fileName", file.getName()));
+                log(e, Level.WARNING, Util.getLang("exceptions.badYmlAccess","fileName", file.getName()));
             }
         }
 
@@ -611,6 +613,11 @@ public final class CogWorks extends JavaPlugin {
      * Sends log message to specified Player.
      */
     public static void log(@Nullable Exception e, Player player, Level level, String message) {
+        if (player == null) {
+            log(e, level, message);
+            return;
+        }
+
         ChatColor colour;
         if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
         else if (level.getName().equals("SEVERE")) {colour = ChatColor.RED; SendErrorSummary.severe++;}
@@ -627,6 +634,11 @@ public final class CogWorks extends JavaPlugin {
      * Sends log message to specified CommandSender.
      */
     public static void log(@Nullable Exception e, CommandSender sender, Level level, String message) {
+        if (sender == null) {
+            log(e, level, message);
+            return;
+        }
+
         ChatColor colour;
         if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
         else if (level.getName().equals("SEVERE")) {colour = ChatColor.RED; SendErrorSummary.severe++;}
