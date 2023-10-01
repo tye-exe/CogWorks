@@ -1,13 +1,10 @@
 package me.tye.cogworks.util;
 
 import me.tye.cogworks.CogWorks;
-import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -17,6 +14,18 @@ import static me.tye.cogworks.CogWorks.log;
 
 public class Util {
 
+    //constants
+    public static final JavaPlugin plugin = JavaPlugin.getPlugin(CogWorks.class);
+
+    public static final File configFile = new File(plugin.getDataFolder().getAbsolutePath() + File.separator + "config.yml");
+    public static final File dataStore = new File(plugin.getDataFolder().getAbsoluteFile() + File.separator + ".data");
+    public static final File pluginDataFile = new File(dataStore.getAbsolutePath() + File.separator + "pluginData.json");
+    public static final File langFolder = new File(plugin.getDataFolder().getAbsoluteFile() + File.separator + "langFiles");
+    public static final File engLang = new File(langFolder.getAbsoluteFile() + File.separator + "eng.yml");
+    public static final File ADR = new File(plugin.getDataFolder() + File.separator + ".ADR");
+
+
+    //lang & config
     private static HashMap<String, Object> lang = new HashMap<>();
     private static HashMap<String, Object> config = new HashMap<>();
 
@@ -76,7 +85,7 @@ public class Util {
         String rawResponse = String.valueOf(lang.get(key));
         //if config doesn't contain the key it checks if it is present in default config files.
         if (rawResponse == null || rawResponse.equals("null")) {
-            HashMap<String, Object> defaultLang = getKeysRecursive(new Yaml().load(JavaPlugin.getPlugin(CogWorks.class).getResource("langFiles/" + getConfig("lang") + ".yml")));
+            HashMap<String, Object> defaultLang = getKeysRecursive(new Yaml().load(plugin.getResource("langFiles/" + getConfig("lang") + ".yml")));
             rawResponse = String.valueOf(defaultLang.get(key));
 
             if (rawResponse == null || rawResponse.equals("null")) {
@@ -107,7 +116,7 @@ public class Util {
         Object response;
         //if config doesn't contain the key it checks if it is present in default config files.
         if (!config.containsKey(key)) {
-            HashMap<String, Object> defaultConfig = getKeysRecursive(new Yaml().load(JavaPlugin.getPlugin(CogWorks.class).getResource("config.yml")));
+            HashMap<String, Object> defaultConfig = getKeysRecursive(new Yaml().load(plugin.getResource("config.yml")));
             response = defaultConfig.get(key);
 
             if (response == null) {

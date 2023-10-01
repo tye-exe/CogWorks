@@ -5,7 +5,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import me.tye.cogworks.CogWorks;
 import me.tye.cogworks.util.*;
 import me.tye.cogworks.util.exceptions.ModrinthAPIException;
 import me.tye.cogworks.util.exceptions.NoSuchPluginException;
@@ -20,7 +19,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -45,6 +43,7 @@ import java.util.logging.Level;
 
 import static me.tye.cogworks.ChatManager.response;
 import static me.tye.cogworks.CogWorks.*;
+import static me.tye.cogworks.util.Util.plugin;
 
 public class PluginCommand implements CommandExecutor {
 
@@ -222,7 +221,7 @@ public class PluginCommand implements CommandExecutor {
      * @param addFileHash If downloading from a non api source the file hash can be added to the end of the file, as many downloads have generic names such as "download".
      */
     public static void installPluginURL(@Nullable CommandSender sender, String state, URL Url, String fileName, Boolean addFileHash) {
-        File file = new File(Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString()+File.separator+fileName);
+        File file = new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().getParent().toString()+File.separator+fileName);
         File destination = null;
 
         if (file.exists()) {
@@ -254,7 +253,7 @@ public class PluginCommand implements CommandExecutor {
             }
 
             //moves the file to plugin folder
-            destination = new File(Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
+            destination = new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
             Files.move(file, destination);
 
             appendPluginData(destination);
@@ -284,9 +283,9 @@ public class PluginCommand implements CommandExecutor {
             File pluginDataFolder = new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getName());
 
             //disables the plugin so that the file can be deleted
-            Plugin plugin = JavaPlugin.getPlugin(CogWorks.class).getServer().getPluginManager().getPlugin(pluginName);
-            if (plugin != null) {
-                plugin.getPluginLoader().disablePlugin(plugin);
+            Plugin removePlugin = plugin.getServer().getPluginManager().getPlugin(pluginName);
+            if (removePlugin != null) {
+                removePlugin.getPluginLoader().disablePlugin(removePlugin);
             }
 
             //deletes config files if specified

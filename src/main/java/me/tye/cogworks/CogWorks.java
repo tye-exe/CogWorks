@@ -7,6 +7,7 @@ import me.tye.cogworks.commands.FileCommand;
 import me.tye.cogworks.commands.PluginCommand;
 import me.tye.cogworks.commands.TabComplete;
 import me.tye.cogworks.events.SendErrorSummary;
+import me.tye.cogworks.util.Log;
 import me.tye.cogworks.util.ModrinthSearch;
 import me.tye.cogworks.util.UrlFilename;
 import me.tye.cogworks.util.Util;
@@ -33,7 +34,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,16 +48,13 @@ import java.util.zip.ZipFile;
 
 import static me.tye.cogworks.FileGui.position;
 import static me.tye.cogworks.commands.PluginCommand.modrinthSearch;
-import static me.tye.cogworks.util.Util.getKeysRecursive;
+import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
-    //TODO: Modrinth search?
     //TODO: download Lang files for version from github?
 
     //TODO: check if dependencies are already met before trying to install them?
-    //TODO: convert install modrinth dependencies to use errors, not sender
     //TODO: run install dependencies on plugins installed from auto dependency resolve
-    //TODO: add advise on how to fix errors in the error message.
     //TODO: when uninstalling plugins check if any other plugins depend on them.
     //TODO: when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
     //TODO: voice paper interactions throws error in automatic dependency resolve.
@@ -65,15 +65,6 @@ public final class CogWorks extends JavaPlugin {
 
     @Override
     public void onEnable() {
-
-        //Set up required config files
-        File configFile = new File(getDataFolder().getAbsolutePath() + File.separator + "config.yml");
-        File pluginStore = new File(getDataFolder().getAbsoluteFile() + File.separator + ".pluginStore");
-        File plugins = new File(pluginStore.getAbsolutePath() + File.separator + "pluginData.json");
-
-        File langFolder = new File(getDataFolder().getAbsoluteFile() + File.separator + "langFiles");
-        File engLang = new File(langFolder.getAbsoluteFile() + File.separator + "eng.yml");
-
         //creates the essential config files
         createFile(getDataFolder(), null, false);
         createFile(configFile, "config.yml", true);
@@ -85,19 +76,24 @@ public final class CogWorks extends JavaPlugin {
         Util.setLang(returnFileConfigs(engLang, "langFiles/"+Util.getConfig("lang")+".yml"));
 
         //creates the other files
-        createFile(pluginStore, null, false);
-        createFile(plugins, null, true);
+        createFile(dataStore, null, false);
+        createFile(pluginDataFile, null, true);
+        createFile(ADR, null, false);
 
+        //hides the dataStore for windows
+        try {
+            java.nio.file.Files.setAttribute(Path.of(dataStore.getAbsolutePath()), "dos:hidden", true);
+            java.nio.file.Files.setAttribute(Path.of(ADR.getAbsolutePath()), "dos:hidden", true);
+        } catch (Exception ignore) {}
 
-        //clears out leftover files in plugin store dir
-        for (File file : pluginStore.listFiles()) {
-            if (file.getName().equals(plugins.getName())) continue;
-            try {
+        //clears out leftover files in ADR dir
+        try {
+            for (File file : Objects.requireNonNull(ADR.listFiles())) {
                 if (file.isFile()) if (!file.delete()) throw new IOException();
                 if (file.isDirectory()) FileUtils.deleteDirectory(file);
-            } catch (IOException e) {
-                log(e, Level.WARNING, Util.getLang("exceptions.removeLeftoverFiles", "fileName", getName()));
             }
+        } catch (IOException | NullPointerException e) {
+            log(e, Level.WARNING, Util.getLang("exceptions.removeLeftoverFiles", "fileName", getName()));
         }
 
         File pluginFolder = new File(getDataFolder().getParent());
@@ -109,38 +105,41 @@ public final class CogWorks extends JavaPlugin {
         }
 
         //removes any plugin from plugin data that have been deleted
-        PluginLoop:
-        for (PluginData data : identifiers) {
+        try {
+            PluginLoop:
+            for (PluginData data : identifiers) {
+                for (File file : Objects.requireNonNull(pluginFolder.listFiles())) {
+                    if (file.isDirectory()) continue;
+                    if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
 
-            for (File file : pluginFolder.listFiles()) {
-                if (file.isDirectory()) continue;
-                if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
-
-                if (data.getFileName().equals(file.getName())) {
-                    continue PluginLoop;
+                    if (data.getFileName().equals(file.getName())) {
+                        continue PluginLoop;
+                    }
+                }
+                try {
+                    removePluginData(data.getName());
+                } catch (NoSuchPluginException e) {
+                    log(e, Level.WARNING, Util.getLang("exceptions.deletingRemovedPlugin", "fileName", data.getName()));
+                } catch (IOException e) {
+                    log(e, Level.WARNING, Util.getLang("exceptions.noAccessDeleteRemovedPlugins", "fileName", data.getName()));
                 }
             }
-            try {
-                removePluginData(data.getName());
-            } catch (NoSuchPluginException e) {
-                log(e, Level.WARNING, Util.getLang("exceptions.deletingRemovedPlugin","fileName", data.getName()));
-            } catch (IOException e) {
-                log(e, Level.WARNING,  Util.getLang("exceptions.noAccessDeleteRemovedPlugins","fileName", data.getName()));
+
+            //adds any new plugins to the pluginData
+            for (File file : Objects.requireNonNull(pluginFolder.listFiles())) {
+                if (file.isDirectory()) continue;
+                if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
+                try {
+                    appendPluginData(file);
+                } catch (IOException e) {
+                    log(e, Level.WARNING, Util.getLang("exceptions.badYmlAccess", "fileName", file.getName()));
+                }
             }
+        } catch (NullPointerException e) {
+            log(e, Level.WARNING, Util.getLang("exceptions.gettingFilesErr", "filePath", pluginFolder.getAbsolutePath()));
         }
 
-        //adds any new plugins to the pluginData
-        pluginFolder = new File(getDataFolder().getParent());
-        for (File file : pluginFolder.listFiles()) {
-            if (file.isDirectory()) continue;
-            if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
-            try {
-                appendPluginData(file);
-            } catch (IOException e) {
-                log(e, Level.WARNING, Util.getLang("exceptions.badYmlAccess","fileName", file.getName()));
-            }
-        }
-
+        //ADR
         identifiers = new ArrayList<>();
         try {
             identifiers = readPluginData();
@@ -167,14 +166,13 @@ public final class CogWorks extends JavaPlugin {
         for (DependencyInfo unmetDepInfo : unmetDependencies.keySet()) {
             new Thread(new Runnable() {
                 private DependencyInfo unmetDepInfo;
-                private File pluginStore;
+                private File ADRStore;
                 private HashMap<DependencyInfo, PluginData> unmetDependencies;
 
                 public Runnable init(DependencyInfo unmetDepInfo, File pluginStore, HashMap<DependencyInfo, PluginData> unmetDependencies) {
                     this.unmetDepInfo = unmetDepInfo;
                     //so multiple threads get their own folder.
-                    this.pluginStore = new File(pluginStore.getAbsolutePath() + File.separator + LocalDateTime.now().hashCode());
-                    this.pluginStore.mkdir();
+                    this.ADRStore = new File(pluginStore.getAbsolutePath() + File.separator + LocalDateTime.now().hashCode());
 
                     this.unmetDependencies = unmetDependencies;
                     return this;
@@ -182,6 +180,11 @@ public final class CogWorks extends JavaPlugin {
 
                 @Override
                 public void run() {
+                    if (!ADRStore.mkdir()) {
+                        log(null, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+                        return;
+                    }
+
                     String unmetDepName = this.unmetDepInfo.getName();
                     String unmetDepVersion = this.unmetDepInfo.getVersion();
                     if (unmetDepVersion != null) return;
@@ -202,20 +205,25 @@ public final class CogWorks extends JavaPlugin {
                     //gets the urls to download from
                     ArrayList<UrlFilename> downloads = new ArrayList<>();
                     for (JsonObject jo : validPluginKeys) {
-                        JsonArray ja = validPlugins.get(jo);
                         JsonObject latestValidPlugin = null;
 
                         //gets the latest version of a compatible plugin
-                        for (JsonElement je : ja) {
+                        for (JsonElement je : validPlugins.get(jo)) {
                             if (latestValidPlugin == null) {
-                                latestValidPlugin = je.getAsJsonArray().get(0).getAsJsonObject();
+                                latestValidPlugin = je.getAsJsonObject();
                             } else {
-                                LocalDateTime newDT = LocalDateTime.parse(je.getAsJsonObject().get("date_published").getAsString());
-                                LocalDateTime dt = LocalDateTime.parse(latestValidPlugin.get("date_published").getAsString());
-                                if (dt.isBefore(newDT)) {
+                                //je.getAsJsonArray().get(0).getAsJsonObject().get("date_published").getAsString()
+                                Date newDT = Date.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(je.getAsJsonObject().get("date_published").getAsString())));
+                                Date dt = Date.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(latestValidPlugin.get("date_published").getAsString())));
+                                if (dt.after(newDT)) {
                                     latestValidPlugin = je.getAsJsonObject();
                                 }
                             }
+                        }
+
+                        if (latestValidPlugin == null) {
+                            log(null, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+                            return;
                         }
 
                         JsonArray files = latestValidPlugin.get("files").getAsJsonArray();
@@ -233,7 +241,7 @@ public final class CogWorks extends JavaPlugin {
                     for (UrlFilename downloadData : downloads) {
                         executorService.execute(() -> {
                             //This seems to work correctly for accessing the var outside of the run method
-                            File file = new File(pluginStore.getAbsolutePath()+File.separator+downloadData.getFilename());
+                            File file = new File(ADRStore.getAbsolutePath()+File.separator+downloadData.getFilename());
                             try {
                                 InputStream inputStream = new URL(downloadData.getUrl()).openStream();
                                 ReadableByteChannel rbc = Channels.newChannel(inputStream);
@@ -262,55 +270,59 @@ public final class CogWorks extends JavaPlugin {
 
                     File dependency = null;
                     //gets the plugin.yml data from the plugins
-                    dependencyCheck:
-                    for (File file : pluginStore.listFiles()) {
-                        try {
-                            ZipFile zip = new ZipFile(file);
-                            for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
-                                ZipEntry entry = e.nextElement();
-                                if (!entry.getName().equals("plugin.yml")) continue;
+                    try {
+                        dependencyCheck:
+                        for (File file : Objects.requireNonNull(ADRStore.listFiles())) {
+                            try {
+                                ZipFile zip = new ZipFile(file);
+                                for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
+                                    ZipEntry entry = e.nextElement();
+                                    if (!entry.getName().equals("plugin.yml")) continue;
 
-                                StringBuilder out = new StringBuilder();
-                                BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
-                                String line;
-                                while ((line = reader.readLine()) != null) out.append(line).append("\n");
-                                reader.close();
+                                    StringBuilder out = new StringBuilder();
+                                    BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
+                                    String line;
+                                    while ((line = reader.readLine()) != null) out.append(line).append("\n");
+                                    reader.close();
 
-                                Yaml yaml = new Yaml();
-                                Map<String, Object> yamlData = yaml.load(out.toString());
-                                if (yamlData.get("name").equals(unmetDepName)) {
-                                    dependency = file;
-                                    log(null, Level.INFO, Util.getLang("ADR.success", "fileName", unmetDependencies.get(unmetDepInfo).getName(), "depName", (String) yamlData.get("name")));
-                                    zip.close();
-                                    break dependencyCheck;
+                                    Yaml yaml = new Yaml();
+                                    Map<String, Object> yamlData = yaml.load(out.toString());
+                                    if (yamlData.get("name").equals(unmetDepName)) {
+                                        dependency = file;
+                                        log(null, Level.INFO, Util.getLang("ADR.success", "fileName", unmetDependencies.get(unmetDepInfo).getName(), "depName", (String) yamlData.get("name")));
+                                        zip.close();
+                                        break dependencyCheck;
+                                    }
                                 }
+                                zip.close();
+                            } catch (Exception e) {
+                                log(e, Level.WARNING, Util.getLang("ADR.pluginYMLCheck", "fileName", file.getName()));
                             }
-                            zip.close();
-                        } catch (Exception e) {
-                            log(e, Level.WARNING, Util.getLang("ADR.pluginYMLCheck", "fileName", file.getName()));
                         }
+                    } catch (NullPointerException e) {
+                        log(e, Level.WARNING, Util.getLang("exceptions.gettingFilesErr", "filePath", pluginFolder.getAbsolutePath()));
                     }
 
                     //if one of the dependencies matched the required one it moves it to the ./plugins folder and deletes the rest of the plugins
                     try {
-                        if (dependency != null) FileUtils.moveFile(dependency, new File(Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
-                        FileUtils.deleteDirectory(pluginStore);
+                        if (dependency != null) FileUtils.moveFile(dependency, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
+                        FileUtils.deleteDirectory(ADRStore);
                     } catch (IOException e) {
-                        log(e, Level.WARNING,  Util.getLang("ADR.cleanUpPossiblePlugins", "filePath", pluginStore.getAbsolutePath()));
+                        log(e, Level.WARNING,  Util.getLang("ADR.cleanUpPossiblePlugins", "filePath", ADRStore.getAbsolutePath()));
                     }
 
                     if (dependency == null) log(null, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
                 }
-            }.init(unmetDepInfo, pluginStore, unmetDependencies)).start();
+            }.init(unmetDepInfo, ADR, unmetDependencies)).start();
         }
 
 
         //Commands
-        getCommand("plugin").setExecutor(new PluginCommand());
-        getCommand("file").setExecutor(new FileCommand());
+        Objects.requireNonNull(getCommand("plugin")).setExecutor(new PluginCommand());
+        Objects.requireNonNull(getCommand("file")).setExecutor(new FileCommand());
 
-        getCommand("plugin").setTabCompleter(new TabComplete());
-        getCommand("file").setTabCompleter(new TabComplete());
+        Objects.requireNonNull(getCommand("plugin")).setTabCompleter(new TabComplete());
+        Objects.requireNonNull(getCommand("file")).setTabCompleter(new TabComplete());
 
         //Listeners
         getServer().getPluginManager().registerEvents(new ChatManager(), this);
@@ -324,7 +336,7 @@ public final class CogWorks extends JavaPlugin {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (position.containsKey(player.getName())) {
                 player.closeInventory();
-                log(null, player, Level.WARNING, Util.getLang("info.menuClose"));
+                new Log(player, "info.menuClose").log();
             }
         }
     }
@@ -343,14 +355,14 @@ public final class CogWorks extends JavaPlugin {
                 if (!file.mkdir()) throw new IOException();
 
                 if (resourcePath != null) {
-                    String text = new String(JavaPlugin.getPlugin(CogWorks.class).getResource(resourcePath).readAllBytes());
+                    String text = new String(Objects.requireNonNull(plugin.getResource(resourcePath)).readAllBytes());
                     FileWriter fw = new FileWriter(file);
                     fw.write(text);
                     fw.close();
                 }
             }
         }
-        catch (IOException e) {
+        catch (IOException | NullPointerException e) {
             log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", file.getName(), "filePath", file.getAbsolutePath()));
         }
     }
@@ -385,7 +397,7 @@ public final class CogWorks extends JavaPlugin {
             }
 
             StringBuilder toAppend = new StringBuilder();
-            Object[] internalFileText = new String(JavaPlugin.getPlugin(CogWorks.class).getResource(resourcePath).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
+            Object[] internalFileText = new String(Objects.requireNonNull(plugin.getResource(resourcePath)).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
 
             //appends the missing keys with default values and comments that are above them in the default file.
             for (String missingKey : missing.keySet()) {
@@ -442,7 +454,7 @@ public final class CogWorks extends JavaPlugin {
      * @return The default YAML values of the resource.
      */
     public static HashMap<String, Object> getDefault(String filepath) {
-        return new Yaml().load(JavaPlugin.getPlugin(CogWorks.class).getResource(filepath));
+        return new Yaml().load(plugin.getResource(filepath));
     }
 
     /**
@@ -467,7 +479,7 @@ public final class CogWorks extends JavaPlugin {
         if (displayName != null) itemMeta.setDisplayName(displayName);
         if (lore != null) itemMeta.setLore(lore);
         if (identifier == null) identifier = "";
-        itemMeta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(CogWorks.class), "identifier"), PersistentDataType.STRING, identifier);
+        itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING, identifier);
         item.setItemMeta(itemMeta);
         return item;
     }
@@ -542,7 +554,7 @@ public final class CogWorks extends JavaPlugin {
      */
     public static ArrayList<PluginData> readPluginData() throws IOException {
         ArrayList<PluginData> pluginData = new ArrayList<>();
-        FileReader fr =  new FileReader(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath() + File.separator + ".pluginStore" + File.separator + "pluginData.json");
+        FileReader fr =  new FileReader(Util.pluginDataFile);
         JsonReader jr = new JsonReader(fr);
         JsonElement jsonElement = JsonParser.parseReader(jr);
         if (jsonElement.isJsonNull()) return pluginData;
@@ -576,10 +588,9 @@ public final class CogWorks extends JavaPlugin {
      * @throws IOException If the plugin data can't be written to the pluginData file.
      */
     public static void writePluginData(ArrayList<PluginData> pluginData) throws IOException {
-        File plugins = new File(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath() + File.separator + ".pluginStore" + File.separator + "pluginData.json");
         GsonBuilder gson = new GsonBuilder();
         gson.setPrettyPrinting();
-        FileWriter fileWriter = new FileWriter((plugins));
+        FileWriter fileWriter = new FileWriter(pluginDataFile);
         gson.create().toJson(pluginData, fileWriter);
         fileWriter.close();
     }
@@ -595,10 +606,10 @@ public final class CogWorks extends JavaPlugin {
             else if (level.getName().equals("SEVERE")) {colour = ChatColor.RED; SendErrorSummary.severe++;}
             else colour = ChatColor.GREEN;
 
-            Bukkit.getLogger().log(level, MessageFormat.format("[{0}]: {1}" ,JavaPlugin.getPlugin(CogWorks.class).getName(), message));
+            Bukkit.getLogger().log(level, MessageFormat.format("[{0}]: {1}" ,plugin.getName(), message));
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (!player.isOp()) continue;
-                String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(CogWorks.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+                String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", plugin.getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
                 if ((Boolean) Util.getConfig("showErrorTrace") && e != null) formattedMessage+=Util.getLang("exceptions.seeConsole");
                 player.sendMessage(formattedMessage);
             }
@@ -620,7 +631,7 @@ public final class CogWorks extends JavaPlugin {
         else colour = ChatColor.GREEN;
 
         if (Util.getConfig("showErrors")) {
-            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(CogWorks.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", plugin.getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
             if ((Boolean) Util.getConfig("showErrorTrace") && e != null) formattedMessage+=Util.getLang("exceptions.seeConsole");
             player.sendMessage(formattedMessage);
         }
@@ -641,7 +652,7 @@ public final class CogWorks extends JavaPlugin {
         else colour = ChatColor.GREEN;
 
         if (Util.getConfig("showErrors")) {
-            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", JavaPlugin.getPlugin(CogWorks.class).getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", plugin.getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
             if ((Boolean) Util.getConfig("showErrorTrace") && e != null) formattedMessage+=Util.getLang("exceptions.seeConsole");
             sender.sendMessage(formattedMessage);
         }

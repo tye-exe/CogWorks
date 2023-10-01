@@ -15,8 +15,8 @@
 #searchPhrase = The current phrase being searched
 
 info:
-  menuClose: "Menu closed due to reload, this is to prevent errors."
-  errorSum: "There have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
+  menuClose: "§eMenu closed due to reload, this is to prevent errors."
+  errorSum: "§eThere have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
 
 
 PluginSelect:
@@ -198,3 +198,4 @@ exceptions:
   badModrinthUrl: "Creating a url to send request to Modrinth failed. An invalid url was created."
   dataReadError: "There was an error reading the plugin names from the pluginData file."
   noExternalResponse: "Unable to get external lang response for {key}. Using internal value."
+  gettingFilesErr: "There was an error getting the files in {filePath}."

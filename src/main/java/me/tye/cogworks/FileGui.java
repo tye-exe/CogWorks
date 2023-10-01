@@ -16,7 +16,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -26,11 +25,10 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.logging.Level;
 
 import static me.tye.cogworks.CogWorks.itemProperties;
-import static me.tye.cogworks.CogWorks.log;
 import static org.bukkit.plugin.java.JavaPlugin.getPlugin;
+import static me.tye.cogworks.util.Util.plugin;
 
 public class FileGui implements Listener {
     public static HashMap<UUID, FileData> fileData = new HashMap<>();
@@ -41,7 +39,7 @@ public class FileGui implements Listener {
         if (!(e.getWhoClicked() instanceof Player)) return;
         Player player = (Player) e.getWhoClicked();
         if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null) return;
-        String identifier = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(CogWorks.class), "identifier"), PersistentDataType.STRING);
+        String identifier = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING);
 
         //Prevents stealing
         if (identifier != null) {
@@ -115,7 +113,7 @@ public class FileGui implements Listener {
 
         if (identifier.equals("goto")) {
             new AnvilGUI.Builder()
-                    .plugin(JavaPlugin.getPlugin(CogWorks.class))
+                    .plugin(plugin)
                     .preventClose()
                     .title(Util.getLang("FileGui.goto.title"))
                     .itemLeft(itemProperties(new ItemStack(Material.PAPER), String.valueOf(data.getCurrentLine()), null, null))
@@ -143,7 +141,7 @@ public class FileGui implements Listener {
                 ItemStack paper = itemProperties(new ItemStack(Material.PAPER), "\u200B", null, null);
 
                 new AnvilGUI.Builder()
-                        .plugin(JavaPlugin.getPlugin(CogWorks.class))
+                        .plugin(plugin)
                         .preventClose()
                         .title(Util.getLang("FileGui.search.title"))
                         .itemLeft(paper)
@@ -250,7 +248,7 @@ public class FileGui implements Listener {
             }
 
             new AnvilGUI.Builder()
-                    .plugin(JavaPlugin.getPlugin(CogWorks.class))
+                    .plugin(plugin)
                     .preventClose()
                     .title(Util.getLang("FileGui.createFile.title"))
                     .itemLeft(item)
@@ -323,16 +321,16 @@ public class FileGui implements Listener {
         //file editing
         if (identifier.equals("text")) {
             if (!player.hasPermission("cogworks.file.edit")) return;
-            if (Boolean.TRUE.equals(e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(CogWorks.class), "edited"), PersistentDataType.BOOLEAN))) return;
+            if (Boolean.TRUE.equals(e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "edited"), PersistentDataType.BOOLEAN))) return;
 
             ItemStack paper = e.getCurrentItem();
             ItemMeta meta = paper.getItemMeta();
-            meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(CogWorks.class), "edited"), PersistentDataType.BOOLEAN, true);
-            meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(CogWorks.class), "identifier"), PersistentDataType.STRING, "edit");
+            meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "edited"), PersistentDataType.BOOLEAN, true);
+            meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING, "edit");
             paper.setItemMeta(meta);
 
             new AnvilGUI.Builder()
-                    .plugin(JavaPlugin.getPlugin(CogWorks.class))
+                    .plugin(plugin)
                     .preventClose()
                     .title(Util.getLang("FileGui.fileEditor.title"))
                     .itemLeft(e.getCurrentItem())
@@ -346,8 +344,8 @@ public class FileGui implements Listener {
                     .onClose(stateSnapshot -> {
                         PathHolder localPathHolder = position.get(stateSnapshot.getPlayer().getName());
                         if (stateSnapshot.getOutputItem().getItemMeta() == null) return;
-                        Integer line = stateSnapshot.getOutputItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(CogWorks.class), "line"), PersistentDataType.INTEGER);
-                        Integer offset = stateSnapshot.getOutputItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(CogWorks.class), "offset"), PersistentDataType.INTEGER);
+                        Integer line = stateSnapshot.getOutputItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "line"), PersistentDataType.INTEGER);
+                        Integer offset = stateSnapshot.getOutputItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "offset"), PersistentDataType.INTEGER);
                         if (line == null|| offset == null) return;
 
                         try {
@@ -379,12 +377,12 @@ public class FileGui implements Listener {
         if (identifier.equals("fileBackground")) {
             if (!player.hasPermission("cogworks.file.edit")) return;
 
-            Integer line = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(CogWorks.class), "line"), PersistentDataType.INTEGER);
+            Integer line = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "line"), PersistentDataType.INTEGER);
             if (line == null) return;
 
             ItemStack paper = itemProperties(new ItemStack(Material.PAPER), "\u200B", null, "");
             ItemMeta meta = paper.getItemMeta();
-            meta.getPersistentDataContainer().set(new NamespacedKey(JavaPlugin.getPlugin(CogWorks.class), "line"), PersistentDataType.INTEGER, line);
+            meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "line"), PersistentDataType.INTEGER, line);
             paper.setItemMeta(meta);
 
             new AnvilGUI.Builder()
@@ -619,6 +617,6 @@ public class FileGui implements Listener {
     public static boolean checkIdentifier(ItemStack item, String identifier) {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return false;
-        return identifier.equals(meta.getPersistentDataContainer().get(new NamespacedKey(JavaPlugin.getPlugin(CogWorks.class), "identifier"), PersistentDataType.STRING));
+        return identifier.equals(meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING));
     }
 }

@@ -4,8 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import me.tye.cogworks.util.*;
-import me.tye.cogworks.util.exceptions.ModrinthAPIException;
-import me.tye.cogworks.util.exceptions.NoSuchPluginException;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -16,20 +14,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.server.ServerCommandEvent;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
-import java.util.logging.Level;
 
-import static me.tye.cogworks.FileGui.position;
-import static me.tye.cogworks.CogWorks.log;
 import static me.tye.cogworks.commands.PluginCommand.*;
+import static me.tye.cogworks.util.Util.plugin;
 
 public class ChatManager implements Listener {
 
@@ -65,7 +54,7 @@ public class ChatManager implements Listener {
                 return;
             }
             //deletePlugins method needs to be synchronous.
-            Bukkit.getScheduler().scheduleSyncDelayedTask(JavaPlugin.getPlugin(CogWorks.class), () -> {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                 deletePlugin(sender, state, params.getPluginName(), deleteConfigs);
                 response.remove(name);
             });
