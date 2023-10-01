@@ -10,7 +10,6 @@ import me.tye.cogworks.events.SendErrorSummary;
 import me.tye.cogworks.util.ModrinthSearch;
 import me.tye.cogworks.util.UrlFilename;
 import me.tye.cogworks.util.Util;
-import me.tye.cogworks.util.exceptions.ModrinthAPIException;
 import me.tye.cogworks.util.exceptions.NoSuchPluginException;
 import me.tye.cogworks.util.yamlClasses.DependencyInfo;
 import me.tye.cogworks.util.yamlClasses.PluginData;
@@ -28,7 +27,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -50,7 +48,7 @@ import static me.tye.cogworks.commands.PluginCommand.modrinthSearch;
 import static me.tye.cogworks.util.Util.getKeysRecursive;
 
 public final class CogWorks extends JavaPlugin {
-    //TODO: convert plugin to use lang file
+    //TODO: Modrinth search?
     //TODO: download Lang files for version from github?
 
     //TODO: check if dependencies are already met before trying to install them?
@@ -187,18 +185,17 @@ public final class CogWorks extends JavaPlugin {
                     String unmetDepName = this.unmetDepInfo.getName();
                     String unmetDepVersion = this.unmetDepInfo.getVersion();
                     if (unmetDepVersion != null) return;
-                    ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
-                    HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
+                    ArrayList<JsonObject> validPluginKeys;
+                    HashMap<JsonObject, JsonArray> validPlugins;
 
-                    log(null, Level.INFO, Util.getLang("info.ADR.attempting", "depName", unmetDepName, "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+                    log(null, Level.INFO, Util.getLang("ADR.attempting", "depName", unmetDepName, "fileName", unmetDependencies.get(unmetDepInfo).getName()));
 
                     //searches the dependency name on modrinth
-                    try {
-                        ModrinthSearch search = modrinthSearch(unmetDepName);
-                        validPluginKeys = search.getValidPluginKeys();
-                        validPlugins = search.getValidPlugins();
-                    } catch (MalformedURLException | ModrinthAPIException e) {
-                        log(e, Level.WARNING, Util.getLang("exceptions.ADR.ModrinthSearch")+Util.getLang("exceptions.skippingADR", "depName", unmetDepName));
+                    ModrinthSearch search = modrinthSearch(null, "ADR", unmetDepName);
+                    validPluginKeys = search.getValidPluginKeys();
+                    validPlugins = search.getValidPlugins();
+                    if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) {
+                        log(null, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
                         return;
                     }
 
@@ -234,33 +231,32 @@ public final class CogWorks extends JavaPlugin {
                     //installs possible dependencies
                     ExecutorService executorService = Executors.newCachedThreadPool();
                     for (UrlFilename downloadData : downloads) {
-                        executorService.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                //This seems to work correctly for accessing the var outside of the run method
-                                File file = new File(pluginStore.getAbsolutePath()+File.separator+downloadData.getFilename());
-                                try {
-                                    InputStream inputStream = new URL(downloadData.getUrl()).openStream();
-                                    ReadableByteChannel rbc = Channels.newChannel(inputStream);
-                                    FileOutputStream fos = new FileOutputStream(file);
-                                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-                                    fos.close();
-                                    rbc.close();
-                                    inputStream.close();
-                                } catch (IOException e) {
-                                    log(e, Level.WARNING, Util.getLang("exceptions.ADR.downloading", "fileName", file.getName()));
-                                }
+                        executorService.execute(() -> {
+                            //This seems to work correctly for accessing the var outside of the run method
+                            File file = new File(pluginStore.getAbsolutePath()+File.separator+downloadData.getFilename());
+                            try {
+                                InputStream inputStream = new URL(downloadData.getUrl()).openStream();
+                                ReadableByteChannel rbc = Channels.newChannel(inputStream);
+                                FileOutputStream fos = new FileOutputStream(file);
+                                fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                                fos.close();
+                                rbc.close();
+                                inputStream.close();
+                            } catch (IOException e) {
+                                log(e, Level.WARNING, Util.getLang("ADR.downloadingErr", "fileName", file.getName()));
                             }
                         });
                     }
                     executorService.shutdown();
                     try {
                         if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
-                            log(null, Level.WARNING, Util.getLang("exceptions.ADR.threadTime")+Util.getLang("exceptions.skippingADR", "depName", unmetDepName));
+                            log(null, Level.WARNING, Util.getLang("ADR.threadTime"));
+                            log(null, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
                             return;
                         }
                     } catch (InterruptedException e) {
-                        log(e, Level.WARNING, Util.getLang("exceptions.ADR.threadInterrupted")+Util.getLang("exceptions.skippingADR", "depName", unmetDepName));
+                        log(e, Level.WARNING, Util.getLang("ADR.threadTime"));
+                        log(e, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
                         return;
                     }
 
@@ -284,14 +280,14 @@ public final class CogWorks extends JavaPlugin {
                                 Map<String, Object> yamlData = yaml.load(out.toString());
                                 if (yamlData.get("name").equals(unmetDepName)) {
                                     dependency = file;
-                                    log(null, Level.INFO, Util.getLang("info.ADR.success", "fileName", unmetDependencies.get(unmetDepInfo).getName(), "depName", (String) yamlData.get("name")));
+                                    log(null, Level.INFO, Util.getLang("ADR.success", "fileName", unmetDependencies.get(unmetDepInfo).getName(), "depName", (String) yamlData.get("name")));
                                     zip.close();
                                     break dependencyCheck;
                                 }
                             }
                             zip.close();
                         } catch (Exception e) {
-                            log(e, Level.WARNING, Util.getLang("exceptions.ADR.pluginYMLCheck", "fileName", file.getName()));
+                            log(e, Level.WARNING, Util.getLang("ADR.pluginYMLCheck", "fileName", file.getName()));
                         }
                     }
 
@@ -300,10 +296,10 @@ public final class CogWorks extends JavaPlugin {
                         if (dependency != null) FileUtils.moveFile(dependency, new File(Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
                         FileUtils.deleteDirectory(pluginStore);
                     } catch (IOException e) {
-                        log(e, Level.WARNING,  Util.getLang("exceptions.ADR.cleanUpPossiblePlugins", "filePath", pluginStore.getAbsolutePath()));
+                        log(e, Level.WARNING,  Util.getLang("ADR.cleanUpPossiblePlugins", "filePath", pluginStore.getAbsolutePath()));
                     }
 
-                    if (dependency == null) log(null, Level.INFO, Util.getLang("info.ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+                    if (dependency == null) log(null, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
                 }
             }.init(unmetDepInfo, pluginStore, unmetDependencies)).start();
         }
@@ -612,7 +608,7 @@ public final class CogWorks extends JavaPlugin {
     /**
      * Sends log message to specified Player.
      */
-    public static void log(@Nullable Exception e, Player player, Level level, String message) {
+    public static void log(@Nullable Exception e, @Nullable Player player, Level level, String message) {
         if (player == null) {
             log(e, level, message);
             return;
@@ -633,7 +629,7 @@ public final class CogWorks extends JavaPlugin {
     /**
      * Sends log message to specified CommandSender.
      */
-    public static void log(@Nullable Exception e, CommandSender sender, Level level, String message) {
+    public static void log(@Nullable Exception e, @Nullable CommandSender sender, Level level, String message) {
         if (sender == null) {
             log(e, level, message);
             return;

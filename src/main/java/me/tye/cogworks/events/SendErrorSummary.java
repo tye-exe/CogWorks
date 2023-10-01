@@ -1,5 +1,6 @@
 package me.tye.cogworks.events;
 
+import me.tye.cogworks.util.Log;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,8 +18,9 @@ public class SendErrorSummary implements Listener {
     public void onPlayerJoin(PlayerJoinEvent e) {
         Player player = e.getPlayer();
         if (player.isOp() && (Boolean) getConfig("showOpErrorSummary")) {
-            if (severe > 0)
-                log(null, Level.WARNING, "There have been "+severe+" severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues.");
+            if (severe > 0) {
+                new Log(player, "info", "errorSum").setSevere(severe).log();
+            }
         }
     }
 

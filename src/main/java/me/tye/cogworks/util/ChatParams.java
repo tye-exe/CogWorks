@@ -19,6 +19,7 @@ public class ChatParams {
     ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
 
     ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
+    JsonObject plugin = new JsonObject();
 
     JsonArray dependencies = new JsonArray();
     JsonArray files = new JsonArray();
@@ -75,6 +76,11 @@ public class ChatParams {
         return this;
     }
 
+    public ChatParams setPlugin(JsonObject plugin) {
+        this.plugin = plugin;
+        return this;
+    }
+
     public ArrayList<JsonObject> getChooseableFiles() {
         return chooseableFiles;
     }
@@ -109,5 +115,9 @@ public class ChatParams {
 
     public int getOffset() {
         return offset;
+    }
+
+    public JsonObject getPlugin() {
+        return plugin;
     }
 }

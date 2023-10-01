@@ -1,12 +1,13 @@
 package me.tye.cogworks.util;
 
 import me.tye.cogworks.CogWorks;
+import org.bukkit.ChatColor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -81,18 +82,20 @@ public class Util {
             if (rawResponse == null || rawResponse.equals("null")) {
                 if (key.equals("exceptions.noSuchResponse"))
                     return "Unable to get key \"exceptions.noSuchResponse\" from lang file. This message is in english to prevent a stack overflow error.";
-                else getLang("exceptions.noSuchResponse", "key", key);
+                else rawResponse = getLang("exceptions.noSuchResponse", "key", key);
             }
 
             lang.put(key, defaultLang.get(key));
-            log(null, Level.WARNING, "Unable to get external lang response for \"" + key + "\". Using internal value.");
+            log(null, Level.WARNING, getLang("exceptions.noExternalResponse", "key", key));
         }
 
         for (int i = 0; i <= replace.length-1; i+=2) {
+            if (replace[i+1] == null || replace[i+1].equals("null")) continue;
             rawResponse = rawResponse.replaceAll("\\{"+replace[i]+"}", replace[i+1]);
         }
 
-        return rawResponse;
+        //the A appears for some reason?
+        return rawResponse.replaceAll("Â§", "§");
     }
 
     /**

@@ -21,7 +21,7 @@ import static me.tye.cogworks.FileGui.open;
 
 
 public class FileCommand implements CommandExecutor {
-    //TODO: redirect to terminal if you try to use the gui when in console.
+
     @Override
     public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String[] args) {
         if (!sender.hasPermission("cogworks.file.nav")) return true;

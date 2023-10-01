@@ -30,3 +30,6 @@
 - Optimized FileGui file.
 - Removed scroll limit on files.
 - Implemented ability to add end of liens & new lines by clicking on the background.
+- Reworked Logging system.
+- Text responses are got from lang file instead of being hard coded (allows for translation).
+- Lang file will automatically repair itself.

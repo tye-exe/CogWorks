@@ -1,6 +1,7 @@
 package me.tye.cogworks.commands;
 
 import me.tye.cogworks.CogWorks;
+import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.yamlClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -41,7 +42,7 @@ public class TabComplete implements TabCompleter {
                     for (PluginData data : CogWorks.readPluginData())
                         plugins.add(data.getName());
                 } catch (IOException e) {
-                    log(e, sender, Level.WARNING, "There was an error reading the plugin names from the pluginData file.");
+                    log(e, sender, Level.WARNING, Util.getLang("exceptions.dataReadError"));
                 }
 
                 StringUtil.copyPartialMatches(args[1], plugins, completions);
