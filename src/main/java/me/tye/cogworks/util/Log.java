@@ -26,12 +26,12 @@ public class Log {
     String isFile = null;
 
 
-    public Log(CommandSender sender, String state, @NonNull String event) {
+    public Log(@NonNull CommandSender sender, String state, @NonNull String event) {
         this.sender = sender;
         this.langPath = state+"."+event;
     }
 
-    public Log(CommandSender sender, @NonNull String langPath) {
+    public Log(@NonNull CommandSender sender, @NonNull String langPath) {
         this.sender = sender;
         this.langPath = langPath;
     }

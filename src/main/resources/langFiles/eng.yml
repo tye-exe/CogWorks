@@ -15,8 +15,13 @@
 #searchPhrase = The current phrase being searched
 
 info:
+  newLang: "The language file {fileName} is now available for this version of the plugin and has been automatically downloaded."
   menuClose: "§eMenu closed due to reload, this is to prevent errors."
   errorSum: "§eThere have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
+
+help:
+  plugin:
+    install:
 
 
 PluginSelect:
@@ -199,3 +204,5 @@ exceptions:
   dataReadError: "There was an error reading the plugin names from the pluginData file."
   noExternalResponse: "Unable to get external lang response for {key}. Using internal value."
   gettingFilesErr: "There was an error getting the files in {filePath}."
+  newLangCheck: "There was an error checking for new lang files."
+  newLangInstall: "There was an error installing the new lang file {fileName}. You can manually download it from \"{URL}\"."

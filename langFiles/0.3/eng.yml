@@ -15,6 +15,7 @@
 #searchPhrase = The current phrase being searched
 
 info:
+  newLang: "The language file {fileName} is now available for this version of the plugin and has been automatically downloaded."
   menuClose: "§eMenu closed due to reload, this is to prevent errors."
   errorSum: "§eThere have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
 
@@ -165,7 +166,7 @@ FileGui:
     gotoDesc: "Go to a certain line by it's line number."
     back: "Back"
     backDesc: "Exists the file."
-    
+
     readErr: "There was an error when trying to read {filePath}."
     fileCloseErr: "There was an error closing {filePath}. This file will not be able to be used until the server is restarted."
     getFilesErr: "There was an error trying to get the files in {filePath}."
@@ -199,3 +200,5 @@ exceptions:
   dataReadError: "There was an error reading the plugin names from the pluginData file."
   noExternalResponse: "Unable to get external lang response for {key}. Using internal value."
   gettingFilesErr: "There was an error getting the files in {filePath}."
+  newLangCheck: "There was an error checking for new lang files."
+  newLangInstall: "There was an error installing the new lang file {fileName}. You can manually download it from \"{URL}\"."

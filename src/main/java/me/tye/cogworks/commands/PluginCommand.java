@@ -104,7 +104,7 @@ public class PluginCommand implements CommandExecutor {
                             }
                         }.init(sender, args)).start();
                     } else {
-                        sender.sendMessage(ChatColor.RED + "Please provide a plugin name to search or an url to download from!");
+                        new Log(sender, "PluginInstall.noInput").log();
                     }
                     return true;
                 }
@@ -118,10 +118,8 @@ public class PluginCommand implements CommandExecutor {
                             PluginData data = readPluginData(args[1]);
                             if (!new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getName()).exists())
                                 deleteConfigs = false;
-                        } catch (NoSuchPluginException e) {
-                            log(e, sender, Level.WARNING, "No plugin with this name could be found on your system.");
-                        } catch (IOException e) {
-                            log(e, sender, Level.WARNING, "There was an error reading from the pluginData file.");
+                        } catch (NoSuchPluginException | IOException e) {
+                            new Log(sender, "DeletePlugin.noSuchPlugin").setException(e).setPluginName(args[1]).log();
                         }
 
                         //modifier checks

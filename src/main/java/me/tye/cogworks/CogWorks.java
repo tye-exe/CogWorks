@@ -52,7 +52,7 @@ import static me.tye.cogworks.commands.PluginCommand.modrinthSearch;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
-    //TODO: download Lang files for version from github?
+    //TODO: translate PluginCommand
 
     //TODO: check if dependencies are already met before trying to install them?
     //TODO: run install dependencies on plugins installed from auto dependency resolve
@@ -68,13 +68,13 @@ public final class CogWorks extends JavaPlugin {
     public void onEnable() {
         //creates the essential config files
         createFile(getDataFolder(), null, false);
-        createFile(configFile, "config.yml", true);
+        createFile(configFile, plugin.getResource("config.yml"), true);
         createFile(langFolder, null, false);
-        createFile(engLang, "langFiles/eng.yml", true);
+        createFile(new File(langFolder.getAbsoluteFile() + File.separator + "eng.yml"), plugin.getResource("langFiles/eng.yml"), true);
 
         //loads the essential config files
         Util.setConfig(returnFileConfigs(configFile, "config.yml"));
-        Util.setLang(returnFileConfigs(engLang, "langFiles/"+Util.getConfig("lang")+".yml"));
+        Util.setLang(returnFileConfigs(new File(langFolder.getAbsoluteFile()+File.separator+Util.getConfig("lang")+".yml"), "langFiles/"+Util.getConfig("lang")+".yml"));
 
         //creates the other files
         createFile(dataStore, null, false);
@@ -317,21 +317,34 @@ public final class CogWorks extends JavaPlugin {
             }.init(unmetDepInfo, ADR, unmetDependencies)).start();
         }
 
-
+        //checks for new lang files & installs them.
         try {
             HashMap<String, Object> pluginMap = getKeysRecursive(new Yaml().load(new String(getResource("plugin.yml").readAllBytes())));
-
             String indexText = new String(new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/index.yml").openStream().readAllBytes());
             HashMap<String, Object> indexMap = getKeysRecursive(new Yaml().load(indexText));
 
-            System.out.println(indexMap.get(String.valueOf(pluginMap.get("version"))));
+            String files = String.valueOf(indexMap.get(String.valueOf(pluginMap.get("version"))));
+            System.out.println(files);
+            files = files.substring(0, files.length()-1).substring(1);
+            String[] filesNames = files.split(", ");
+            for (String fileName : filesNames) {
+                System.out.println(fileName);
+            }
 
+            for (String fileName : filesNames) {
+                File langFile = new File(langFolder.getAbsolutePath() + File.separator + fileName);
+                if (langFile.exists()) continue;
 
-            //indexMap.get()
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
+                try {
+                    createFile(langFile, new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).openStream(), true);
+                    log(null, Level.INFO, Util.getLang("info.newLang", "fileName", fileName));
+                } catch (IOException e) {
+                    log(e, Level.WARNING, Util.getLang("exceptions.newLangInstall", "fileName", langFile.getName(), "URL", "https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName));
+                }
+            }
+
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log(e, Level.WARNING, Util.getLang("exceptions.newLangCheck"));
         }
 
 
@@ -362,9 +375,9 @@ public final class CogWorks extends JavaPlugin {
     /**
      * Copies the content of an internal file to an external one.
      * @param file External file destination
-     * @param resourcePath Internal path to resource, or null if target is an empty file/dir.
+     * @param resource Input stream for the data to write, or null if target is an empty file/dir.
      */
-    public static void createFile(File file, @Nullable String resourcePath, boolean isFile) {
+    public static void createFile(File file, @Nullable InputStream resource, boolean isFile) {
         try {
             if (!file.exists()) {
                 if (isFile) {
@@ -372,8 +385,8 @@ public final class CogWorks extends JavaPlugin {
                 } else
                 if (!file.mkdir()) throw new IOException();
 
-                if (resourcePath != null) {
-                    String text = new String(Objects.requireNonNull(plugin.getResource(resourcePath)).readAllBytes());
+                if (resource != null) {
+                    String text = new String(Objects.requireNonNull(resource).readAllBytes());
                     FileWriter fw = new FileWriter(file);
                     fw.write(text);
                     fw.close();
@@ -415,7 +428,9 @@ public final class CogWorks extends JavaPlugin {
             }
 
             StringBuilder toAppend = new StringBuilder();
-            Object[] internalFileText = new String(Objects.requireNonNull(plugin.getResource(resourcePath)).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
+            InputStream is = plugin.getResource(resourcePath);
+            if (is == null) return new HashMap<>();
+            Object[] internalFileText = new String(Objects.requireNonNull(is).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
 
             //appends the missing keys with default values and comments that are above them in the default file.
             for (String missingKey : missing.keySet()) {
@@ -464,7 +479,9 @@ public final class CogWorks extends JavaPlugin {
      * @return The default YAML values of the resource.
      */
     public static HashMap<String, Object> getDefault(String filepath) {
-        return new Yaml().load(plugin.getResource(filepath));
+        InputStream is = plugin.getResource(filepath);
+        if (is != null) return new Yaml().load(is);
+        return new HashMap<>();
     }
 
     /**
@@ -619,7 +636,7 @@ public final class CogWorks extends JavaPlugin {
             Bukkit.getLogger().log(level, MessageFormat.format("[{0}]: {1}" ,plugin.getName(), message));
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (!player.isOp()) continue;
-                String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", plugin.getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+                String formattedMessage = MessageFormat.format("[{0}]: {1}{2}" ,plugin.getName(), colour, message);
                 if ((Boolean) Util.getConfig("showErrorTrace") && e != null) formattedMessage+=Util.getLang("exceptions.seeConsole");
                 player.sendMessage(formattedMessage);
             }
@@ -641,7 +658,7 @@ public final class CogWorks extends JavaPlugin {
         else colour = ChatColor.GREEN;
 
         if (Util.getConfig("showErrors")) {
-            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", plugin.getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}" ,plugin.getName(), colour, message);
             if ((Boolean) Util.getConfig("showErrorTrace") && e != null) formattedMessage+=Util.getLang("exceptions.seeConsole");
             player.sendMessage(formattedMessage);
         }
@@ -662,7 +679,7 @@ public final class CogWorks extends JavaPlugin {
         else colour = ChatColor.GREEN;
 
         if (Util.getConfig("showErrors")) {
-            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}: {3}", plugin.getName(), colour, level.getLocalizedName().toLowerCase(Locale.getDefault()), message);
+            String formattedMessage = MessageFormat.format("[{0}]: {1}{2}" ,plugin.getName(), colour, message);
             if ((Boolean) Util.getConfig("showErrorTrace") && e != null) formattedMessage+=Util.getLang("exceptions.seeConsole");
             sender.sendMessage(formattedMessage);
         }

@@ -5,6 +5,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -85,7 +86,12 @@ public class Util {
         String rawResponse = String.valueOf(lang.get(key));
         //if config doesn't contain the key it checks if it is present in default config files.
         if (rawResponse == null || rawResponse.equals("null")) {
-            HashMap<String, Object> defaultLang = getKeysRecursive(new Yaml().load(plugin.getResource("langFiles/" + getConfig("lang") + ".yml")));
+            InputStream is = plugin.getResource("langFiles/" + getConfig("lang") + ".yml");
+            HashMap<String, Object> defaultLang;
+
+            if (is != null) defaultLang = getKeysRecursive(new Yaml().load(is));
+            else defaultLang = getKeysRecursive(new Yaml().load(plugin.getResource("langFiles/eng.yml")));
+
             rawResponse = String.valueOf(defaultLang.get(key));
 
             if (rawResponse == null || rawResponse.equals("null")) {
