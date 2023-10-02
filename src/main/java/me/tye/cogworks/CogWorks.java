@@ -28,6 +28,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -317,6 +318,23 @@ public final class CogWorks extends JavaPlugin {
         }
 
 
+        try {
+            HashMap<String, Object> pluginMap = getKeysRecursive(new Yaml().load(new String(getResource("plugin.yml").readAllBytes())));
+
+            String indexText = new String(new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/index.yml").openStream().readAllBytes());
+            HashMap<String, Object> indexMap = getKeysRecursive(new Yaml().load(indexText));
+
+            System.out.println(indexMap.get(String.valueOf(pluginMap.get("version"))));
+
+
+            //indexMap.get()
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
         //Commands
         Objects.requireNonNull(getCommand("plugin")).setExecutor(new PluginCommand());
         Objects.requireNonNull(getCommand("file")).setExecutor(new FileCommand());
@@ -403,23 +421,15 @@ public final class CogWorks extends JavaPlugin {
             for (String missingKey : missing.keySet()) {
                 toAppend.append("\n");
 
-                //splits the key into subkeys
-                String[] missingKeySequence = missingKey.split("\\.");
-                for (int key = 0; key < missingKeySequence.length; key++) {
-                    missingKeySequence[key] = "  ".repeat(key)+missingKeySequence[key];
-                }
-
-                //searches though internal file to retrieve subkeys, values,  & comments
-                int key = 0;
-                for (int i = 0; i < internalFileText.length; i++) {
-                    if (internalFileText[i].toString().startsWith(missingKeySequence[key])) {
-                        if (key+1 < missingKeySequence.length) {
-                            key++;
-                            continue;
-                        }
+                if (missingKey.contains(".")) {
+                    toAppend.append(missingKey).append(": \"").append(defaultValues.get(missingKey).toString().replace("\"", "\\\"")).append("\"");
+                } else {
+                    //searches though internal file to retrieve keys, values,  & comments
+                    for (int i = 0; i < internalFileText.length; i++) {
+                        if (!internalFileText[i].toString().startsWith(missingKey)) continue;
                         //search up for start of comments
                         int ii = 0;
-                        while (i + ii-1 > 0 && internalFileText[i + ii-1].toString().startsWith("#")) {
+                        while (i + ii - 1 > 0 && internalFileText[i + ii - 1].toString().startsWith("#")) {
                             ii--;
                         }
                         //appends all of the comments in correct order
@@ -427,7 +437,7 @@ public final class CogWorks extends JavaPlugin {
                             toAppend.append(internalFileText[i + ii]).append("\n");
                             ii++;
                         }
-                        toAppend.append(missingKey).append(internalFileText[i].toString().replaceAll(missingKeySequence[key], ""));
+                        toAppend.append(missingKey).append(" :").append(internalFileText[i].toString());
 
                     }
                 }
