@@ -9,7 +9,6 @@ import me.tye.cogworks.commands.TabComplete;
 import me.tye.cogworks.events.SendErrorSummary;
 import me.tye.cogworks.util.Log;
 import me.tye.cogworks.util.ModrinthSearch;
-import me.tye.cogworks.util.UrlFilename;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.exceptions.NoSuchPluginException;
 import me.tye.cogworks.util.yamlClasses.DependencyInfo;
@@ -28,7 +27,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
