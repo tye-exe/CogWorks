@@ -76,16 +76,16 @@ public class PluginCommand implements CommandExecutor {
                                     if (!Files.getFileExtension(fileName).equals("jar")) {
                                         fileName += ".jar";
                                     }
-                                    installPluginURL(sender, "PluginInstall", url, fileName, true);
+                                    installPluginURL(sender, "pluginInstall", url, fileName, true);
 
                                 } catch (MalformedURLException ignore) {
-                                    ModrinthSearch search = modrinthSearch(sender, "PluginInstall", args[1]);
+                                    ModrinthSearch search = modrinthSearch(sender, "pluginInstall", args[1]);
                                     HashMap<JsonObject, JsonArray> validPlugins = search.getValidPlugins();
                                     ArrayList<JsonObject> validPluginKeys = search.getValidPluginKeys();
 
                                     if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) return;
 
-                                    new Log(sender, "PluginInstall", "pluginSelect").log();
+                                    new Log(sender, "pluginInstall", "pluginSelect").log();
                                     for (int i = 0; 10 > i; i++) {
                                         if (validPluginKeys.size() <= i) break;
                                         JsonObject project = validPluginKeys.get(i);
@@ -96,7 +96,7 @@ public class PluginCommand implements CommandExecutor {
                                         sender.spigot().sendMessage(projectName);
                                     }
 
-                                    ChatParams newParams = new ChatParams(sender, "PluginSelect").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys);
+                                    ChatParams newParams = new ChatParams(sender, "pluginSelect").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys);
                                     if (sender instanceof Player) response.put(sender.getName(), newParams);
                                     else response.put("~", newParams);
 
@@ -104,7 +104,7 @@ public class PluginCommand implements CommandExecutor {
                             }
                         }.init(sender, args)).start();
                     } else {
-                        new Log(sender, "PluginInstall.noInput").log();
+                        new Log(sender, "pluginInstall.noInput").log();
                     }
                     return true;
                 }
@@ -119,7 +119,7 @@ public class PluginCommand implements CommandExecutor {
                             if (!new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getName()).exists())
                                 deleteConfigs = false;
                         } catch (NoSuchPluginException | IOException e) {
-                            new Log(sender, "DeletePlugin.noSuchPlugin").setException(e).setPluginName(args[1]).log();
+                            new Log(sender, "deletePlugin.noSuchPlugin").setException(e).setPluginName(args[1]).log();
                         }
 
                         //modifier checks
@@ -133,18 +133,20 @@ public class PluginCommand implements CommandExecutor {
                         }
 
                         if (deleteConfigs != null) {
-                            deletePlugin(sender, "DeletePlugin", args[1], deleteConfigs);
+                            deletePlugin(sender, "deletePlugin", args[1], deleteConfigs);
                             return true;
                         }
 
                         //prompt to delete config files
-                        sender.sendMessage(ChatColor.YELLOW + "Do you wish to delete the " + args[1] + " config files?\nSend y or n in chat to choose.\nNote: You can add -y to the end of the command to confirm or -n to decline.");
-                        ChatParams newParams = new ChatParams(sender, "DeletePlugin").setPluginName(args[1]);
+                        new Log(sender, "deletePlugin.deleteConfigs.0").setPluginName(args[1]).log();
+                        new Log(sender, "deletePlugin.deleteConfigs.1").log();
+                        new Log(sender, "deletePlugin.deleteConfigs.2").log();
+                        ChatParams newParams = new ChatParams(sender, "deletePlugin").setPluginName(args[1]);
                         if (sender instanceof Player) response.put(sender.getName(), newParams);
                         else response.put("~", newParams);
 
                     } else {
-                        sender.sendMessage(ChatColor.RED + "Please provide a plugin name!");
+                        new Log(sender, "deletePlugin.provideName").log();
                     }
                     return true;
                 }
@@ -163,13 +165,13 @@ public class PluginCommand implements CommandExecutor {
 
                         @Override
                         public void run() {
-                            ModrinthSearch modrinthSearch = modrinthBrowse(sender, "PluginBrowse", offset);
+                            ModrinthSearch modrinthSearch = modrinthBrowse(sender, "pluginBrowse", offset);
                             ArrayList<JsonObject> validPluginKeys = modrinthSearch.getValidPluginKeys();
                             HashMap<JsonObject, JsonArray> validPlugins = modrinthSearch.getValidPlugins();
 
                             if (validPluginKeys.isEmpty() || validPlugins.isEmpty()) return;
 
-                            new Log(sender, "PluginBrowse.pluginSelect").log();
+                            new Log(sender, "pluginBrowse.pluginSelect").log();
                             int i = 0;
 
                             if (offset >= 1) {
@@ -189,7 +191,7 @@ public class PluginCommand implements CommandExecutor {
 
                             sender.sendMessage(ChatColor.GREEN + String.valueOf(i + 1) + ": v");
 
-                            ChatParams newParams = new ChatParams(sender, "PluginBrowse").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys).setOffset(offset);
+                            ChatParams newParams = new ChatParams(sender, "pluginBrowse").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys).setOffset(offset);
                             if (sender instanceof Player) response.put(sender.getName(), newParams);
                             else response.put("~", newParams);
 
@@ -200,15 +202,13 @@ public class PluginCommand implements CommandExecutor {
             }
         }
 
-        StringBuilder message = new StringBuilder(ChatColor.AQUA+"/plugin help -"+ChatColor.GREEN+" Shows this message."+ChatColor.GRAY);
+        new Log(sender, "help.plugin.help").log();
+        if (sender.hasPermission("cogworks.plugin.ins")) {
+            new Log(sender, "help.plugin.install").log();
+            new Log(sender, "help.plugin.browse").log();
+        }
+        if (sender.hasPermission("cogworks.plugin.rm")) new Log(sender, "help.plugin.remove").log();
 
-        if (sender.hasPermission("cogworks.plugin.ins")) message.append("\n").append(ChatColor.AQUA).
-                append("/plugin install <Plugin Name | URL> -").append(ChatColor.GREEN).append(" If a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download.")
-                .append(ChatColor.GRAY).append("\n").append(ChatColor.AQUA).append("/plugin browse -").append(ChatColor.GREEN).append(" Allows the user to search though the most popular plugins on modrinth that are compatible with your server type and install them with the press of a button.").append(ChatColor.GRAY);
-
-        if (sender.hasPermission("cogworks.plugin.rm")) message.append("\n").append(ChatColor.AQUA).append("/plugin remove <Plugin Name> -").append(ChatColor.GREEN).append(" Disables and uninstalls the given plugin.");
-
-        sender.sendMessage(message.toString());
         return true;
     }
 

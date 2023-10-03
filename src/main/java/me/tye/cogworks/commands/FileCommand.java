@@ -3,6 +3,7 @@ package me.tye.cogworks.commands;
 import me.tye.cogworks.FileGui;
 import me.tye.cogworks.util.ChatParams;
 import me.tye.cogworks.util.FileData;
+import me.tye.cogworks.util.Log;
 import me.tye.cogworks.util.PathHolder;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -14,8 +15,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.nio.file.Path;
 
 import static me.tye.cogworks.ChatManager.response;
-import static me.tye.cogworks.FileGui.fileData;
-import static me.tye.cogworks.FileGui.open;
+import static me.tye.cogworks.FileGui.*;
 import static me.tye.cogworks.util.Util.plugin;
 
 
@@ -29,13 +29,14 @@ public class FileCommand implements CommandExecutor {
             if (sender instanceof Player) FileGui.position.put(sender.getName(), new PathHolder(serverFolder, serverFolder));
             else FileGui.position.put("~", new PathHolder(serverFolder, serverFolder));
 
-            ChatParams newParams = new ChatParams(sender, "Terminal");
+            ChatParams newParams = new ChatParams(sender, "terminal");
             if (sender instanceof Player) response.put(sender.getName(), newParams);
             else response.put("~", newParams);
 
-            sender.sendMessage(ChatColor.GREEN+"You've entered the CogWorks terminal.\nType \"help\" in chat for help or \"exit\" to leave the terminal.\n");
-            sender.sendMessage(ChatColor.RED + "WARNING: THIS A VERY MUCH A WIP AND NOT YET IMPLEMENTED");
-            sender.sendMessage(ChatColor.GOLD+"-----------------"+ChatColor.BLUE+new PathHolder(serverFolder, serverFolder).getRelativePath()+ChatColor.GOLD+" $");
+            new Log(sender, "terminal.init.0").log();
+            new Log(sender, "terminal.init.1").log();
+            new Log(sender, "terminal.WIP").log();
+            new Log(sender, "terminal.path").setFilePath(position.get("~").getRelativePath()).log();
 
         } else if (args.length == 0 || args[0].equals("gui")) {
             if (sender instanceof Player player) {
@@ -44,21 +45,22 @@ public class FileCommand implements CommandExecutor {
                 fileData.put(player.getUniqueId(), new FileData(1, null, 1, false));
                 open(player);
             } else {
-                sender.sendMessage(ChatColor.YELLOW + "This command is only available to online players, being redirected to terminal.");
+                new Log(sender, "info.onlyPlayersFile");
 
                 String serverFolder = Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().getParent().toString();
                 FileGui.position.put("~", new PathHolder(serverFolder, serverFolder));
-                response.put("~", new ChatParams(sender, "Terminal"));
+                response.put("~", new ChatParams(sender, "terminal"));
 
-                sender.sendMessage(ChatColor.GREEN+"You've entered the CogWorks terminal.\nType \"help\" in chat for help or \"exit\" to leave the terminal.\n");
-                sender.sendMessage(ChatColor.RED + "WARNING: THIS A VERY MUCH A WIP AND NOT YET IMPLEMENTED");
-                sender.sendMessage(ChatColor.GOLD+"-----------------"+ChatColor.BLUE+new PathHolder(serverFolder, serverFolder).getRelativePath()+ChatColor.GOLD+" $");
+                new Log(sender, "terminal.init.0").log();
+                new Log(sender, "terminal.init.1").log();
+                new Log(sender, "terminal.WIP").log();
+                new Log(sender, "terminal.path").setFilePath(position.get("~").getRelativePath()).log();
             }
 
         } else {
-            sender.sendMessage(ChatColor.BLUE+"/file help -"+ChatColor.GREEN+" Shows this list."+ChatColor.GRAY+"\n" + ChatColor.BLUE +
-                    "/file chat -"+ChatColor.GREEN+" (WIP) Turns your chat into a mock command line which lets you interact with files on the server."+ChatColor.GRAY+"\n" + ChatColor.BLUE +
-                    "/file gui -"+ChatColor.GREEN+" Opens an inventory that lets you interact with the files on the server visually.");
+            new Log(sender, "help.file.help").log();
+            new Log(sender, "help.file.chat").log();
+            new Log(sender, "help.file.gui").log();
         }
         return true;
     }

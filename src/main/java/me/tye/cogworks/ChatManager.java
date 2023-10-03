@@ -9,14 +9,19 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.server.ServerCommandEvent;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
+import static me.tye.cogworks.FileGui.position;
 import static me.tye.cogworks.commands.PluginCommand.*;
 import static me.tye.cogworks.util.Util.plugin;
 
@@ -43,7 +48,7 @@ public class ChatManager implements Listener {
         ChatParams params = response.get(name);
         String state = params.getModifier();
         if (message.startsWith("plugin")) return;
-        if (state.equals("DeletePlugin")) {
+        if (state.equals("deletePlugin")) {
             CommandSender sender = params.getSender();
 
             boolean deleteConfigs;
@@ -73,7 +78,7 @@ public class ChatManager implements Listener {
 
                 @Override
                 public void run() {
-                    if (state.equals("PluginSelect")) {
+                    if (state.equals("pluginSelect")) {
                         HashMap<JsonObject, JsonArray> validPlugins = params.getValidPlugins();
                         ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
                         CommandSender sender = params.getSender();
@@ -130,14 +135,14 @@ public class ChatManager implements Listener {
                                 sender.spigot().sendMessage(projectName);
                                 i++;
                             }
-                            ChatParams newParams = new ChatParams(sender, "PluginFileSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
+                            ChatParams newParams = new ChatParams(sender, "pluginFileSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
                             if (sender instanceof Player) response.put(sender.getName(), newParams);
                             else response.put("~", newParams);
                             return;
                         }
                         response.remove(name);
                     }
-                    if (state.equals("PluginFileSelect")) {
+                    if (state.equals("pluginFileSelect")) {
                         ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
                         JsonObject plugin = params.getPlugin();
                         CommandSender sender = params.getSender();
@@ -177,7 +182,7 @@ public class ChatManager implements Listener {
                         new Log(sender, state, "finish").setPluginName(title).log();
                         response.remove(name);
                     }
-                    if (state.equals("PluginBrowse")) {
+                    if (state.equals("pluginBrowse")) {
                         CommandSender sender = params.getSender();
                         HashMap<JsonObject, JsonArray> validPlugins = params.getValidPlugins();
                         ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
@@ -210,7 +215,7 @@ public class ChatManager implements Listener {
                             HashMap<JsonObject, JsonArray> newValidPlugins = modrinthSearch.getValidPlugins();
                             if (newValidPluginKeys.isEmpty() || newValidPlugins.isEmpty()) return;
 
-                            new Log(sender, "PluginBrowse.pluginBrowse").log();
+                            new Log(sender, "pluginBrowse.pluginBrowse").log();
                             int i = 0;
 
                             if (nextOffset >= 1) {
@@ -229,7 +234,7 @@ public class ChatManager implements Listener {
 
                             sender.sendMessage(ChatColor.GREEN + String.valueOf(i + 1) + ": v");
 
-                            ChatParams newParams = new ChatParams(sender, "PluginBrowse").setValidPlugins(newValidPlugins).setValidPluginKeys(newValidPluginKeys).setOffset(nextOffset);
+                            ChatParams newParams = new ChatParams(sender, "pluginBrowse").setValidPlugins(newValidPlugins).setValidPluginKeys(newValidPluginKeys).setOffset(nextOffset);
                             if (sender instanceof Player) response.put(sender.getName(), newParams);
                             else response.put("~", newParams);
 
@@ -271,7 +276,7 @@ public class ChatManager implements Listener {
                                     i++;
                                 }
 
-                                ChatParams newParams = new ChatParams(sender, "PluginFileSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
+                                ChatParams newParams = new ChatParams(sender, "pluginFileSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
                                 if (sender instanceof Player) response.put(sender.getName(), newParams);
                                 else response.put("~", newParams);
                                 return;
@@ -280,43 +285,44 @@ public class ChatManager implements Listener {
                         }
                     }
 
-                    if (state.equals("Terminal")) {
-//                        CommandSender sender = params.getSender();
-//                        sender.sendMessage(ChatColor.GOLD + "-----------------");
-//                        sender.sendMessage(ChatColor.BLUE + position.get(name).getRelativePath() + ChatColor.GOLD + " $");
-//                        if (message.equals("help")) {
-//                            sender.sendMessage(ChatColor.AQUA + "help - Shows this message.\n" +
-//                                    "exit - Leaves the terminal.\n" +
-//                                    "say - Passes the following text into the chat like normal. The \"say\" is removed.\n" +
-//                                    "ls - Lists the current folders and files that are in a folder.\n" +
-//                                    "cd - Changes the current folder to the one specified. Input \"..\" to go back a folder.\n");
-//                        }
-//                        if (message.equals("exit")) {
-//                            sender.sendMessage(ChatColor.YELLOW + "Exited terminal.");
-//                            response.remove(name);
-//                        }
-//                        if (message.startsWith("say")) {
-//                            if (sender instanceof Player player) {
-//                                String string = "<" + player.getName() + "> " + message.substring(3).trim();
-//                                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) onlinePlayer.sendMessage(string);
-//                                Bukkit.getConsoleSender().sendMessage(string);
-//                            }
-//                        }
-//                        if (message.equals("ls")) {
-//                            try {
-//                                List<Path> paths = Files.list(Path.of(position.get(name).getCurrentPath())).toList();
-//                                StringBuilder files = new StringBuilder();
-//                                int length = position.get(name).getServerPath().length();
-//                                for (Path path : paths) files.append(path.toString().substring(length + 1)).append("\n");
-//                                sender.sendMessage(ChatColor.AQUA + files.toString());
-//                            } catch (Exception e) {
-//                                log(e, sender, Level.WARNING, "Error trying to get files from current folder.");
-//                            }
-//                        }
-//                        if (message.startsWith("cd")) {
-//                            PathHolder pathHolder = position.get(name);
-//                            pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + message.split(" ")[1]);
-//                        }
+                    if (state.equals("terminal")) {
+                        CommandSender sender = params.getSender();
+                        PathHolder pathHolder =  position.get(name);
+
+                        new Log(sender, state, "path").setFilePath(pathHolder.getRelativePath());
+                        if (message.equals("help")) {
+                            new Log(sender, state, "help").log();
+                            new Log(sender, state, "exit").log();
+                            new Log(sender, state, "say").log();
+                            new Log(sender, state, "ls").log();
+                            new Log(sender, state, "cd").log();
+                        }
+                        if (message.equals("exit")) {
+                            new Log(sender, state, "exit").log();
+                            response.remove(name);
+                        }
+                        if (message.startsWith("say")) {
+                            if (sender instanceof Player player) {
+                                String string = "<" + player.getName() + "> " + message.substring(3).trim();
+                                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) onlinePlayer.sendMessage(string);
+                                Bukkit.getConsoleSender().sendMessage(string);
+                            }
+                        }
+                        if (message.equals("ls")) {
+                            try {
+                                List<Path> paths = Files.list(Path.of(position.get(name).getCurrentPath())).toList();
+                                StringBuilder files = new StringBuilder();
+                                int length = position.get(name).getServerPath().length();
+                                for (Path path : paths) files.append(path.toString().substring(length + 1)).append("\n");
+                                sender.sendMessage(ChatColor.AQUA + files.toString());
+                            } catch (Exception e) {
+                                new Log(sender, state, "ls.error").setException(e).log();
+                            }
+                        }
+                        if (message.startsWith("cd")) {
+                            pathHolder.setCurrentPath(pathHolder.getCurrentPath() + File.separator + message.split(" ")[1]);
+                        }
+                        position.put(name, pathHolder);
                     }
                 }
             }.init(name, message)).start();

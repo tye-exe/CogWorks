@@ -18,9 +18,29 @@ info:
   newLang: "The language file {fileName} is now available for this version of the plugin and has been automatically downloaded."
   menuClose: "§eMenu closed due to reload, this is to prevent errors."
   errorSum: "§eThere have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
+  onlyPlayersFile: "§eThis command is only available to online players, being redirected to terminal."
 
 
-PluginSelect:
+help:
+  #Don't translate anything after the "-" in this section.
+  #E.G "§9/plugin help - §a{translated text}."
+  plugin:
+    help: "§9/plugin help - §aShows this message."
+    install: "§9/plugin install <Plugin Name | URL> - §aIf a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download."
+    browse: "§9/plugin browse - §aAllows the user to search though the most popular plugins on modrinth that are compatible with your server type and install them with the press of a button."
+    remove: "§9/plugin remove - §aDisables and uninstalls the given plugin."
+  file:
+    help: "§9/file help - §aShows this message."
+    chat: "§9/file chat - §a(WIP) Turns your chat into a mock command line which lets you interact with files on the server."
+    gui: "§9/file gui - §aOpens an inventory that lets you interact with the files on the server visually."
+
+
+tabComplete:
+  plugin:
+    install: "<pluginName | URL>"
+
+
+pluginSelect:
   start: "§aInstalling {pluginName}."
   installingDep: "§aInstalling dependencies for {pluginName}."
   downloading: "§aDownloading {fileName}."
@@ -39,7 +59,7 @@ PluginSelect:
   cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
 
 
-PluginFileSelect:
+pluginFileSelect:
   start: "§aInstalling {pluginName}."
   installingDep: "§aInstalling dependencies for {pluginName}."
   downloading: "§aDownloading {fileName}."
@@ -57,7 +77,7 @@ PluginFileSelect:
   cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
 
 
-PluginBrowse:
+pluginBrowse:
   pluginBrowse: "§aSend the number corresponding to the plugin to install it in chat, or the number next to an arrow to scroll, or send q to quit."
   pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
   start: "§aInstalling {pluginName}."
@@ -79,17 +99,22 @@ PluginBrowse:
   cleanUp: "§eThere was an error trying to delete {filePath} after failed install. Please manually delete this at your earliest convince."
 
 
-DeletePlugin:
+deletePlugin:
   confirm: "§ePlease enter either \"y\" or \"n\"."
   configRemove: "§aConfig files for {pluginName} deleted."
   pluginDelete: "§a{pluginName} deleted."
   reloadWarn: "§eImmediately reload or restart to avoid errors."
+  provideName: "§ePlease provide a plugin name!"
+  deleteConfig:
+    0: "§eDo you wish to delete the {pluginName} config files?"
+    1: "§eSend y or n in chat to choose."
+    3: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
 
   noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
   deleteError: "§ePlugin {pluginName} couldn't be deleted."
 
 
-PluginInstall:
+pluginInstall:
   noFiles: "§eFailed to find compatible file to download."
   alreadyExists: "§eThat {fileName} is already installed on your system."
   pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
@@ -106,7 +131,7 @@ ModrinthAPI:
   empty: "§eNone matching found on Modrinth."
 
 
-FileGui:
+fileGui:
   confirmDel:
     title: "Confirm Deletion"
     deny: "§cDeny"
@@ -170,6 +195,27 @@ FileGui:
     readErr: "There was an error when trying to read {filePath}."
     fileCloseErr: "There was an error closing {filePath}. This file will not be able to be used until the server is restarted."
     getFilesErr: "There was an error trying to get the files in {filePath}."
+
+
+terminal:
+  init:
+    0: "§aYou've entered the CogWorks terminal."
+    1: "§aType \"help\" in chat for help or \"exit\" to leave the terminal."
+  WIP: "§cWARNING: THIS A VERY MUCH A WIP AND NOT YET IMPLEMENTED"
+  blank: ""
+  path: "§9{filePath} §6$"
+
+  #Don't translate anything after the "-" in this section.
+  #E.G "§9help - §a{translated text}."
+  help:
+    help: "§9help - §aShows this message."
+    exit: "§9exit - §aLeaves the terminal."
+    say: "§9say - §aPasses the following text into the chat like normal. The \"say\" is removed."
+    ls: "§9ls - §aLists the current folders and files that are in a folder."
+    cd: "§9cd - §aChanges the current folder to the one specified. Input \"..\" to go back a folder."
+
+  exit: "§eExited terminal."
+  ls.error: "Error trying to get files from current folder."
 
 
 ADR:

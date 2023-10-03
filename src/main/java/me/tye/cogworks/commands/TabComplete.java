@@ -33,7 +33,7 @@ public class TabComplete implements TabCompleter {
                 if (!completions.isEmpty()) StringUtil.copyPartialMatches(args[0], List.of("help"), completions);
             }
             if (args.length == 2 && args[0].equals("install") && args[1].isEmpty()) {
-                return List.of("<pluginName | URL>");
+                return List.of(Util.getLang("tabComplete.plugins.install"));
             }
             if (args.length == 2 && args[0].equals("remove")) {
                 ArrayList<String> plugins = new ArrayList<>();

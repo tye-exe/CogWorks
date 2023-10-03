@@ -74,17 +74,17 @@ public class FileGui implements Listener {
         if (identifier.equals("file")) {
             if (data.getDeleteMode()) {
                 if (!player.hasPermission("cogworks.file.rm")) return;
-                Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, Util.getLang("FileGui.confirmDel.title"));
+                Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, Util.getLang("fileGui.confirmDel.title"));
 
                 ArrayList<ItemStack> content = new ArrayList<>();
                 for (int i = 0; i <= 8; i++) {
                     if (i == 3) {
-                        content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), Util.getLang("FileGui.confirmDel.deny"), null, "up"));
+                        content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), Util.getLang("fileGui.confirmDel.deny"), null, "up"));
                     } else if (i == 5) {
                         String newIdentifier = "confirmedDelete";
                         if (lastFileClicked.isDirectory() && (lastFileClicked.list() == null || lastFileClicked.list().length != 0)) newIdentifier = "confirmDirDelete";
 
-                        content.add(itemProperties(new ItemStack(Material.GREEN_CONCRETE), Util.getLang("FileGui.confirmDel.confirm"), null, newIdentifier));
+                        content.add(itemProperties(new ItemStack(Material.GREEN_CONCRETE), Util.getLang("fileGui.confirmDel.confirm"), null, newIdentifier));
                     } else {
                         content.add(itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, null));
                     }
@@ -115,7 +115,7 @@ public class FileGui implements Listener {
             new AnvilGUI.Builder()
                     .plugin(plugin)
                     .preventClose()
-                    .title(Util.getLang("FileGui.goto.title"))
+                    .title(Util.getLang("fileGui.goto.title"))
                     .itemLeft(itemProperties(new ItemStack(Material.PAPER), String.valueOf(data.getCurrentLine()), null, null))
                     .onClick((slot, stateSnapshot) -> {
                         if (slot == AnvilGUI.Slot.OUTPUT) {
@@ -143,7 +143,7 @@ public class FileGui implements Listener {
                 new AnvilGUI.Builder()
                         .plugin(plugin)
                         .preventClose()
-                        .title(Util.getLang("FileGui.search.title"))
+                        .title(Util.getLang("fileGui.search.title"))
                         .itemLeft(paper)
                         .itemOutput(paper)
                         .onClick((slot, stateSnapshot) -> {
@@ -207,7 +207,7 @@ public class FileGui implements Listener {
                     open(player);
 
                 } catch (IOException ex) {
-                    new Log(player, "FileGui.search.readingErr").setFilePath(position.get(player.getName()).getCurrentPath()).log();
+                    new Log(player, "fileGui.search.readingErr").setFilePath(position.get(player.getName()).getCurrentPath()).log();
                 }
             }
         }
@@ -216,14 +216,14 @@ public class FileGui implements Listener {
         if (identifier.equals("createFileMenu")) {
             if (!player.hasPermission("cogworks.file.mk")) return;
             player.closeInventory();
-            Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, Util.getLang("FileGui.createFileMenu.title"));
+            Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, Util.getLang("fileGui.createFileMenu.title"));
 
             ArrayList<ItemStack> content = new ArrayList<>();
             for (int i = 0; i <= 8; i++) {
                 if (i == 3) {
-                    content.add(itemProperties(new ItemStack(Material.WHITE_WOOL), Util.getLang("FileGui.createFileMenu.file"), null, "createFile"));
+                    content.add(itemProperties(new ItemStack(Material.WHITE_WOOL), Util.getLang("fileGui.createFileMenu.file"), null, "createFile"));
                 } else if (i == 5) {
-                    content.add(itemProperties(new ItemStack(Material.YELLOW_WOOL), Util.getLang("FileGui.createFileMenu.folder"), null, "createFolder"));
+                    content.add(itemProperties(new ItemStack(Material.YELLOW_WOOL), Util.getLang("fileGui.createFileMenu.folder"), null, "createFolder"));
                 } else {
                     content.add(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE));
                 }
@@ -250,7 +250,7 @@ public class FileGui implements Listener {
             new AnvilGUI.Builder()
                     .plugin(plugin)
                     .preventClose()
-                    .title(Util.getLang("FileGui.createFile.title"))
+                    .title(Util.getLang("fileGui.createFile.title"))
                     .itemLeft(item)
                     .onClick((slot, stateSnapshot) -> {
                         if (slot == AnvilGUI.Slot.OUTPUT) {
@@ -269,9 +269,9 @@ public class FileGui implements Listener {
                                 return;
                             }
                         } catch (FileAlreadyExistsException ex) {
-                            new Log(player, "FileGui.createFile.fileExists").setException(ex).isFile(checkIdentifier(stateSnapshot.getOutputItem(), "confirmCreateFile")).log();
+                            new Log(player, "fileGui.createFile.fileExists").setException(ex).isFile(checkIdentifier(stateSnapshot.getOutputItem(), "confirmCreateFile")).log();
                         } catch (IOException ex) {
-                            new Log(player, "FileGui.createFile.creationErr").setException(ex).isFile(checkIdentifier(stateSnapshot.getOutputItem(), "confirmCreateFile")).log();
+                            new Log(player, "fileGui.createFile.creationErr").setException(ex).isFile(checkIdentifier(stateSnapshot.getOutputItem(), "confirmCreateFile")).log();
                         }
                         open(stateSnapshot.getPlayer());
                     })
@@ -291,7 +291,7 @@ public class FileGui implements Listener {
                 if (lastFileClicked.isFile()) FileUtils.delete(lastFileClicked);
                 if (lastFileClicked.isDirectory()) FileUtils.deleteDirectory(lastFileClicked);
             } catch (IOException ex) {
-                new Log(player, "FileGui.confirmedDelete.error").setFileName(lastFileClicked.getName()).log();
+                new Log(player, "fileGui.confirmedDelete.error").setFileName(lastFileClicked.getName()).log();
             }
             pathHolder.setCurrentPath(Path.of(pathHolder.getCurrentPath()).getParent().toString());
             open(player);
@@ -300,15 +300,15 @@ public class FileGui implements Listener {
         if (identifier.equals("confirmDirDelete")) {
             if (!player.hasPermission("cogworks.file.rm")) return;
             player.closeInventory();
-            Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, Util.getLang("FileGui.confirmDirDelete.title"));
+            Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, Util.getLang("fileGui.confirmDirDelete.title"));
             ArrayList<ItemStack> content = new ArrayList<>();
             for (int i = 0; i <= 8; i++) {
                 if (i == 1) {
-                    content.add(itemProperties(new ItemStack(Material.OAK_SIGN), Util.getLang("FileGui.confirmDirDelete.sign"), null, null));
+                    content.add(itemProperties(new ItemStack(Material.OAK_SIGN), Util.getLang("fileGui.confirmDirDelete.sign"), null, null));
                 }else if (i == 3) {
-                    content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), Util.getLang("FileGui.confirmDirDelete.no"), null, "up"));
+                    content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), Util.getLang("fileGui.confirmDirDelete.no"), null, "up"));
                 } else if (i == 5) {
-                    content.add(itemProperties(new ItemStack(Material.GREEN_CONCRETE), Util.getLang("FileGui.confirmDirDelete.yes"), null, "confirmedDelete"));
+                    content.add(itemProperties(new ItemStack(Material.GREEN_CONCRETE), Util.getLang("fileGui.confirmDirDelete.yes"), null, "confirmedDelete"));
                 } else {
                     content.add(itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, null));
                 }
@@ -332,7 +332,7 @@ public class FileGui implements Listener {
             new AnvilGUI.Builder()
                     .plugin(plugin)
                     .preventClose()
-                    .title(Util.getLang("FileGui.fileEditor.title"))
+                    .title(Util.getLang("fileGui.fileEditor.title"))
                     .itemLeft(e.getCurrentItem())
                     .itemOutput(paper)
                     .onClick((slot, stateSnapshot) -> {
@@ -367,7 +367,7 @@ public class FileGui implements Listener {
                             br.close();
                             Files.writeString(Path.of(localPathHolder.getCurrentPath()), content.toString());
                         } catch (IOException ex) {
-                            new Log(player, "FileGui.fileEditor.editingErr").setFilePath(position.get(player.getName()).getRelativePath()).log();
+                            new Log(player, "fileGui.fileEditor.editingErr").setFilePath(position.get(player.getName()).getRelativePath()).log();
                         }
                         open(stateSnapshot.getPlayer());
                     })
@@ -388,7 +388,7 @@ public class FileGui implements Listener {
             new AnvilGUI.Builder()
                     .plugin(getPlugin(CogWorks.class))
                     .preventClose()
-                    .title(Util.getLang("FileGui.fileEditor.title"))
+                    .title(Util.getLang("fileGui.fileEditor.title"))
                     .itemLeft(paper)
                     .onClick((slot, stateSnapshot) -> {
                         if (slot == AnvilGUI.Slot.OUTPUT) {
@@ -435,7 +435,7 @@ public class FileGui implements Listener {
                             br.close();
                             Files.writeString(Path.of(localPathHolder.getCurrentPath()), content.toString());
                         } catch (IOException ex) {
-                            new Log(player, "FileGui.fileEditor.editingErr").setFilePath(position.get(player.getName()).getRelativePath()).log();
+                            new Log(player, "fileGui.fileEditor.editingErr").setFilePath(position.get(player.getName()).getRelativePath()).log();
                         }
                         open(stateSnapshot.getPlayer());
                     })
@@ -469,7 +469,7 @@ public class FileGui implements Listener {
             try {
                 paths = Files.list(Path.of(pathHolder.getCurrentPath())).toList();
             } catch (Exception e) {
-                new Log(player, "FileGui.open.getFilesErr").setFilePath(file.getAbsolutePath()).log();
+                new Log(player, "fileGui.open.getFilesErr").setFilePath(file.getAbsolutePath()).log();
                 return;
             }
 
@@ -480,25 +480,25 @@ public class FileGui implements Listener {
                 if (Files.isDirectory(path)) {
                     ItemStack item = new ItemStack(Material.YELLOW_WOOL);
                     if (data.getDeleteMode()) item = new ItemStack(Material.RED_WOOL);
-                    folders.add(itemProperties(item, ChatColor.YELLOW + path.getFileName().toString(), List.of(Util.getLang("FileGui.open.folder")), "file"));
+                    folders.add(itemProperties(item, ChatColor.YELLOW + path.getFileName().toString(), List.of(Util.getLang("fileGui.open.folder")), "file"));
                 }
                 else {
                     ItemStack item = new ItemStack(Material.WHITE_WOOL);
                     if (data.getDeleteMode()) item = new ItemStack(Material.ORANGE_WOOL);
-                    files.add(itemProperties(item, path.getFileName().toString(), List.of(Util.getLang("FileGui.open.file")), "file"));
+                    files.add(itemProperties(item, path.getFileName().toString(), List.of(Util.getLang("fileGui.open.file")), "file"));
                 }
             }
             folders.addAll(files);
 
             for (int i = 0; i <= 53; i++) {
                 if (i == 0) {
-                    content.add(itemProperties(new ItemStack(Material.ARROW), Util.getLang("FileGui.open.up"), List.of(Util.getLang("FileGui.open.upDesc")), "up"));
+                    content.add(itemProperties(new ItemStack(Material.ARROW), Util.getLang("fileGui.open.up"), List.of(Util.getLang("fileGui.open.upDesc")), "up"));
                 } else if (i == 4) {
-                    content.add(itemProperties(new ItemStack(Material.BARRIER), Util.getLang("FileGui.open.exit"), List.of(Util.getLang("FileGui.open.exitDesc")), "exit"));
+                    content.add(itemProperties(new ItemStack(Material.BARRIER), Util.getLang("fileGui.open.exit"), List.of(Util.getLang("fileGui.open.exitDesc")), "exit"));
                 } else if (i == 7 && player.hasPermission("cogworks.file.rm")) {
-                    content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), Util.getLang("FileGui.open.delete"), List.of(Util.getLang("FileGui.open.deleteDesc")), "deleteFileToggle"));
+                    content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), Util.getLang("fileGui.open.delete"), List.of(Util.getLang("fileGui.open.deleteDesc")), "deleteFileToggle"));
                 } else if (i == 8 && player.hasPermission("cogworks.file.mk")) {
-                    content.add(itemProperties(new ItemStack(Material.GREEN_CONCRETE), Util.getLang("FileGui.open.create"), List.of(Util.getLang("FileGui.open.createDesc")), "createFileMenu"));
+                    content.add(itemProperties(new ItemStack(Material.GREEN_CONCRETE), Util.getLang("fileGui.open.create"), List.of(Util.getLang("fileGui.open.createDesc")), "createFileMenu"));
                 } else if (i > 8 && folders.size() > i-9) {
                     content.add(folders.get(i-9));
                 } else {
@@ -521,12 +521,12 @@ public class FileGui implements Listener {
                     lines.add(text);
 
             } catch (IOException e) {
-                new Log(player, "FileGui.open.readErr").setFilePath(position.get(player.getName()).getRelativePath()).setException(e).log();
+                new Log(player, "fileGui.open.readErr").setFilePath(position.get(player.getName()).getRelativePath()).setException(e).log();
                 try {
                     assert fileReader != null;
                     fileReader.close();
                 } catch (Exception ex) {
-                    new Log(player, "FileGui.open.fileCloseErr").setFilePath(position.get(player.getName()).getRelativePath()).setException(e).log();
+                    new Log(player, "fileGui.open.fileCloseErr").setFilePath(position.get(player.getName()).getRelativePath()).setException(e).log();
                     return;
                 }
                 return;
@@ -534,32 +534,32 @@ public class FileGui implements Listener {
             try {
                 fileReader.close();
             } catch (IOException e) {
-                new Log(player, "FileGui.open.fileCloseErr").setFilePath(position.get(player.getName()).getRelativePath()).setException(e).log();
+                new Log(player, "fileGui.open.fileCloseErr").setFilePath(position.get(player.getName()).getRelativePath()).setException(e).log();
             }
 
             if (lineNumber < 1) lineNumber = 1;
 
             for (int i = 0; i <= 8; i++) {
                 if (i == 0) {
-                    content.add(itemProperties(new ItemStack(Material.TIPPED_ARROW), Util.getLang("FileGui.open.scrollDown"), List.of(Util.getLang("FileGui.open.scrollDownDesc")), "scrollDown"));
+                    content.add(itemProperties(new ItemStack(Material.TIPPED_ARROW), Util.getLang("fileGui.open.scrollDown"), List.of(Util.getLang("fileGui.open.scrollDownDesc")), "scrollDown"));
                 }
                 else if (i == 1) {
-                    content.add(itemProperties(new ItemStack(Material.TIPPED_ARROW), Util.getLang("FileGui.open.scrollUp"), List.of(Util.getLang("FileGui.open.scrollUpDesc")), "scrollUp"));
+                    content.add(itemProperties(new ItemStack(Material.TIPPED_ARROW), Util.getLang("fileGui.open.scrollUp"), List.of(Util.getLang("fileGui.open.scrollUpDesc")), "scrollUp"));
                 }
                 else if (i == 2) {
-                    content.add(itemProperties(new ItemStack(Material.OAK_SIGN), Util.getLang("FileGui.open.lineNum", "lineNum", String.valueOf(lineNumber)), List.of(Util.getLang("FileGui.open.lineNumDesc")), null));
+                    content.add(itemProperties(new ItemStack(Material.OAK_SIGN), Util.getLang("fileGui.open.lineNum", "lineNum", String.valueOf(lineNumber)), List.of(Util.getLang("fileGui.open.lineNumDesc")), null));
                 }
                 else if (i == 3) {
-                    content.add(itemProperties(new ItemStack(Material.WRITABLE_BOOK), Util.getLang("FileGui.open.search"), List.of(Util.getLang("FileGui.open.searchDesc0"), Util.getLang("FileGui.open.searchDesc1"), Util.getLang("FileGui.open.searchDesc2")), "search"));
+                    content.add(itemProperties(new ItemStack(Material.WRITABLE_BOOK), Util.getLang("fileGui.open.search"), List.of(Util.getLang("fileGui.open.searchDesc0"), Util.getLang("fileGui.open.searchDesc1"), Util.getLang("fileGui.open.searchDesc2")), "search"));
                 }
                 else if (i == 4) {
-                    content.add(itemProperties(new ItemStack(Material.SPECTRAL_ARROW), Util.getLang("FileGui.open.goto"), List.of(Util.getLang("FileGui.open.gotoDesc")), "goto"));
+                    content.add(itemProperties(new ItemStack(Material.SPECTRAL_ARROW), Util.getLang("fileGui.open.goto"), List.of(Util.getLang("fileGui.open.gotoDesc")), "goto"));
                 }
                 else if (i == 7) {
-                    content.add(itemProperties(new ItemStack(Material.ARROW), Util.getLang("FileGui.open.back"), List.of(Util.getLang("FileGui.open.backDesc")), "up"));
+                    content.add(itemProperties(new ItemStack(Material.ARROW), Util.getLang("fileGui.open.back"), List.of(Util.getLang("fileGui.open.backDesc")), "up"));
                 }
                 else if (i == 8) {
-                    content.add(itemProperties(new ItemStack(Material.BARRIER), Util.getLang("FileGui.open.exit"), List.of(Util.getLang("FileGui.open.exitDesc")), "exit"));
+                    content.add(itemProperties(new ItemStack(Material.BARRIER), Util.getLang("fileGui.open.exit"), List.of(Util.getLang("fileGui.open.exitDesc")), "exit"));
                 }
                 else {
                     content.add(itemProperties(new ItemStack(Material.GRAY_STAINED_GLASS_PANE), " ", null, null));
