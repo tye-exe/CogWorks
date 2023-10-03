@@ -138,9 +138,9 @@ public class PluginCommand implements CommandExecutor {
                         }
 
                         //prompt to delete config files
-                        new Log(sender, "deletePlugin.deleteConfigs.0").setPluginName(args[1]).log();
-                        new Log(sender, "deletePlugin.deleteConfigs.1").log();
-                        new Log(sender, "deletePlugin.deleteConfigs.2").log();
+                        new Log(sender, "deletePlugin.deleteConfig.0").setPluginName(args[1]).log();
+                        new Log(sender, "deletePlugin.deleteConfig.1").log();
+                        new Log(sender, "deletePlugin.deleteConfig.2").log();
                         ChatParams newParams = new ChatParams(sender, "deletePlugin").setPluginName(args[1]);
                         if (sender instanceof Player) response.put(sender.getName(), newParams);
                         else response.put("~", newParams);

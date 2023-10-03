@@ -39,26 +39,27 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import static me.tye.cogworks.FileGui.position;
-import static me.tye.cogworks.commands.PluginCommand.modrinthSearch;
+import static me.tye.cogworks.commands.PluginCommand.*;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
-    //TODO: translate PluginCommand
 
     //TODO: check if dependencies are already met before trying to install them?
     //TODO: run install dependencies on plugins installed from auto dependency resolve
     //TODO: when uninstalling plugins check if any other plugins depend on them.
     //TODO: when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
     //TODO: voice paper interactions throws error in automatic dependency resolve.
+    //TODO: check if lang file exists for string the user entered
+    //TODO: edit lang options based on available lang files.
+    //TODO: add configs options for ADR
+    //TODO: add command to force stop ADR?
 
     //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
     //TODO: allow to delete multiple plugins at once - separate by ","?
@@ -182,7 +183,7 @@ public final class CogWorks extends JavaPlugin {
                 @Override
                 public void run() {
                     if (!ADRStore.mkdir()) {
-                        log(null, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+                        log(null, Level.INFO, getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
                         return;
                     }
 
@@ -192,19 +193,21 @@ public final class CogWorks extends JavaPlugin {
                     ArrayList<JsonObject> validPluginKeys;
                     HashMap<JsonObject, JsonArray> validPlugins;
 
-                    log(null, Level.INFO, Util.getLang("ADR.attempting", "depName", unmetDepName, "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+                    log(null, Level.INFO, getLang("ADR.attempting", "depName", unmetDepName, "fileName", unmetDependencies.get(unmetDepInfo).getName()));
 
                     //searches the dependency name on modrinth
                     ModrinthSearch search = modrinthSearch(null, "ADR", unmetDepName);
                     validPluginKeys = search.getValidPluginKeys();
                     validPlugins = search.getValidPlugins();
                     if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) {
-                        log(null, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+                        log(null, Level.INFO, getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
                         return;
                     }
 
                     //gets the urls to download from
-                    ArrayList<UrlFilename> downloads = new ArrayList<>();
+                    ExecutorService executorService = Executors.newCachedThreadPool();
+                    ArrayList<Future<JsonObject>> match = new ArrayList<>();
+
                     for (JsonObject jo : validPluginKeys) {
                         JsonObject latestValidPlugin = null;
 
@@ -213,7 +216,6 @@ public final class CogWorks extends JavaPlugin {
                             if (latestValidPlugin == null) {
                                 latestValidPlugin = je.getAsJsonObject();
                             } else {
-                                //je.getAsJsonArray().get(0).getAsJsonObject().get("date_published").getAsString()
                                 Date newDT = Date.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(je.getAsJsonObject().get("date_published").getAsString())));
                                 Date dt = Date.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(latestValidPlugin.get("date_published").getAsString())));
                                 if (dt.after(newDT)) {
@@ -223,7 +225,7 @@ public final class CogWorks extends JavaPlugin {
                         }
 
                         if (latestValidPlugin == null) {
-                            log(null, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+                            log(null, Level.INFO, getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
                             return;
                         }
 
@@ -234,48 +236,28 @@ public final class CogWorks extends JavaPlugin {
                             if (je.getAsJsonObject().get("primary").getAsBoolean()) primaryIndex = i;
                             i++;
                         }
-                        downloads.add(new UrlFilename(files.get(primaryIndex).getAsJsonObject().get("url").getAsString(), files.get(primaryIndex).getAsJsonObject().get("filename").getAsString()));
-                    }
 
-                    //installs possible dependencies
-                    ExecutorService executorService = Executors.newCachedThreadPool();
-                    for (UrlFilename downloadData : downloads) {
-                        executorService.execute(() -> {
-                            //This seems to work correctly for accessing the var outside of the run method
-                            File file = new File(ADRStore.getAbsolutePath()+File.separator+downloadData.getFilename());
+                        final int givenIndex = primaryIndex;
+                        final JsonObject versionInfo = latestValidPlugin;
+
+                        //installs possible dependencies & checks if they resolve the missing dependency.
+                        match.add(executorService.submit(() -> {
+                            JsonObject downloadInfo = files.get(givenIndex).getAsJsonObject();
+                            File dependecyFile = new File(ADRStore.getAbsolutePath() + File.separator + downloadInfo.get("filename").getAsString());
                             try {
-                                InputStream inputStream = new URL(downloadData.getUrl()).openStream();
+                                InputStream inputStream = new URL(downloadInfo.get("url").getAsString()).openStream();
                                 ReadableByteChannel rbc = Channels.newChannel(inputStream);
-                                FileOutputStream fos = new FileOutputStream(file);
+                                FileOutputStream fos = new FileOutputStream(dependecyFile);
                                 fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
                                 fos.close();
                                 rbc.close();
                                 inputStream.close();
                             } catch (IOException e) {
-                                log(e, Level.WARNING, Util.getLang("ADR.downloadingErr", "fileName", file.getName()));
+                                log(e, Level.WARNING, getLang("ADR.downloadingErr", "fileName", dependecyFile.getName()));
                             }
-                        });
-                    }
-                    executorService.shutdown();
-                    try {
-                        if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
-                            log(null, Level.WARNING, Util.getLang("ADR.threadTime"));
-                            log(null, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
-                            return;
-                        }
-                    } catch (InterruptedException e) {
-                        log(e, Level.WARNING, Util.getLang("ADR.threadTime"));
-                        log(e, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
-                        return;
-                    }
 
-                    File dependency = null;
-                    //gets the plugin.yml data from the plugins
-                    try {
-                        dependencyCheck:
-                        for (File file : Objects.requireNonNull(ADRStore.listFiles())) {
                             try {
-                                ZipFile zip = new ZipFile(file);
+                                ZipFile zip = new ZipFile(dependecyFile);
                                 for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
                                     ZipEntry entry = e.nextElement();
                                     if (!entry.getName().equals("plugin.yml")) continue;
@@ -289,30 +271,58 @@ public final class CogWorks extends JavaPlugin {
                                     Yaml yaml = new Yaml();
                                     Map<String, Object> yamlData = yaml.load(out.toString());
                                     if (yamlData.get("name").equals(unmetDepName)) {
-                                        dependency = file;
-                                        log(null, Level.INFO, Util.getLang("ADR.success", "fileName", unmetDependencies.get(unmetDepInfo).getName(), "depName", (String) yamlData.get("name")));
                                         zip.close();
-                                        break dependencyCheck;
+                                        FileUtils.moveFile(dependecyFile, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependecyFile.getName()));
+                                        log(null, Level.INFO, getLang("ADR.success.0", "fileName", unmetDependencies.get(unmetDepInfo).getName(), "depName", (String) yamlData.get("name")));
+                                        log(null, Level.INFO, getLang("ADR.success.1"));
+                                        return versionInfo;
                                     }
                                 }
                                 zip.close();
                             } catch (Exception e) {
-                                log(e, Level.WARNING, Util.getLang("ADR.pluginYMLCheck", "fileName", file.getName()));
+                                log(e, Level.WARNING, getLang("ADR.pluginYMLCheck", "fileName", dependecyFile.getName()));
                             }
-                        }
-                    } catch (NullPointerException e) {
-                        log(e, Level.WARNING, Util.getLang("exceptions.gettingFilesErr", "filePath", pluginFolder.getAbsolutePath()));
+                            return null;
+                        }));
+
                     }
 
-                    //if one of the dependencies matched the required one it moves it to the ./plugins folder and deletes the rest of the plugins
+                    executorService.shutdown();
                     try {
-                        if (dependency != null) FileUtils.moveFile(dependency, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString() + File.separator + dependency.getName()));
+                        if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
+                            log(null, Level.WARNING, getLang("ADR.threadTime"));
+                            log(null, Level.INFO, getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+                            return;
+                        }
+                    } catch (InterruptedException e) {
+                        log(e, Level.WARNING, getLang("ADR.threadTime"));
+                        log(e, Level.INFO, getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+                        return;
+                    }
+
+                    //gets dependencies for the dependency installed
+                    for (Future<JsonObject> future : match) {
+                        try {
+                            JsonObject dependency = future.get();
+                            if (dependency == null) continue;
+
+                            HashMap<String, JsonArray> depDeps = getModrinthDependencies(null, "ADR", dependency);
+                            if (!depDeps.isEmpty()) {
+                                for (JsonArray plugins : depDeps.values()) {
+                                    if (plugins.isEmpty()) continue;
+                                    installModrinthPlugin(null, null, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray());
+                                }
+                            }
+                        } catch (InterruptedException | ExecutionException e) {
+                            log(e, Level.WARNING, getLang("ADR.getErr"));
+                        }
+                    }
+
+                    try {
                         FileUtils.deleteDirectory(ADRStore);
                     } catch (IOException e) {
-                        log(e, Level.WARNING,  Util.getLang("ADR.cleanUpPossiblePlugins", "filePath", ADRStore.getAbsolutePath()));
+                        log(e, Level.WARNING,  getLang("ADR.cleanUpPossiblePlugins", "filePath", ADRStore.getAbsolutePath()));
                     }
-
-                    if (dependency == null) log(null, Level.INFO, Util.getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
                 }
             }.init(unmetDepInfo, ADR, unmetDependencies)).start();
         }
@@ -324,12 +334,8 @@ public final class CogWorks extends JavaPlugin {
             HashMap<String, Object> indexMap = getKeysRecursive(new Yaml().load(indexText));
 
             String files = String.valueOf(indexMap.get(String.valueOf(pluginMap.get("version"))));
-            System.out.println(files);
             files = files.substring(0, files.length()-1).substring(1);
             String[] filesNames = files.split(", ");
-            for (String fileName : filesNames) {
-                System.out.println(fileName);
-            }
 
             for (String fileName : filesNames) {
                 File langFile = new File(langFolder.getAbsolutePath() + File.separator + fileName);
@@ -418,7 +424,7 @@ public final class CogWorks extends JavaPlugin {
             HashMap<String, Object> defaultValues = getKeysRecursive(getDefault(resourcePath));
 
             //checks if there is a key missing in the file
-            if (loadedValues.keySet().containsAll(defaultValues.keySet())) return loadedValues;
+            if (defaultValues.keySet().containsAll(loadedValues.keySet())) return loadedValues;
 
             //gets the missing keys
             HashMap<String, Object> missing = new HashMap<>();
@@ -431,6 +437,7 @@ public final class CogWorks extends JavaPlugin {
             InputStream is = plugin.getResource(resourcePath);
             if (is == null) return new HashMap<>();
             Object[] internalFileText = new String(Objects.requireNonNull(is).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
+
 
             //appends the missing keys with default values and comments that are above them in the default file.
             for (String missingKey : missing.keySet()) {

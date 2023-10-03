@@ -291,11 +291,11 @@ public class ChatManager implements Listener {
 
                         new Log(sender, state, "path").setFilePath(pathHolder.getRelativePath());
                         if (message.equals("help")) {
-                            new Log(sender, state, "help").log();
-                            new Log(sender, state, "exit").log();
-                            new Log(sender, state, "say").log();
-                            new Log(sender, state, "ls").log();
-                            new Log(sender, state, "cd").log();
+                            new Log(sender, "terminal.help.help").log();
+                            new Log(sender, "terminal.help.exit").log();
+                            new Log(sender, "terminal.help.say").log();
+                            new Log(sender, "terminal.help.ls").log();
+                            new Log(sender, "terminal.help.cd").log();
                         }
                         if (message.equals("exit")) {
                             new Log(sender, state, "exit").log();

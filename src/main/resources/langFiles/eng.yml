@@ -108,7 +108,7 @@ deletePlugin:
   deleteConfig:
     0: "§eDo you wish to delete the {pluginName} config files?"
     1: "§eSend y or n in chat to choose."
-    3: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
+    2: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
 
   noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
   deleteError: "§ePlugin {pluginName} couldn't be deleted."
@@ -220,9 +220,12 @@ terminal:
 
 ADR:
   attempting: "Attempting to automatically resolve missing dependency \"{depName}\" for \"{fileName}\"."
-  success: "Unmet dependency for \"{fileName}\" successfully resolved by installing \"{depName}\"."
+  success:
+    0: "Unmet dependency for \"{fileName}\" successfully resolved by installing \"{depName}\"."
+    1: "Reload or restart for this to take effect."
   fail: "Unmet dependency for \"{fileName}}\" could not be automatically resolved."
 
+  getErr: "Error checking if the installed dependency has any dependencies."
   ModrinthSearchErr: "Error querying Modrinth for automatic dependency resolution."
   downloadingErr: "Error downloading \"{fileName}\" to check plugin as possible dependency."
   threadTime: "Plugins took too long to download."

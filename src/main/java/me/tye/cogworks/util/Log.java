@@ -25,26 +25,37 @@ public class Log {
     String severe = null;
     String isFile = null;
 
-
-    public Log(@NonNull CommandSender sender, String state, @NonNull String event) {
-        this.sender = sender;
-        this.langPath = state+"."+event;
+    /**
+     * Creates an object which can be used for logging. If any param is null, no message will be sent.
+     * @param sender Sender to output the log to.
+     * @param state First part of the lang path for the response, useful for methods.
+     * @param event Last part of the lang path fot the response.
+     */
+    public Log(CommandSender sender, String state, String event) {
+        if (sender == null || state == null || event == null) {
+            this.langPath = null;
+        } else {
+            this.sender = sender;
+            this.langPath = state + "." + event;
+        }
     }
 
-    public Log(@NonNull CommandSender sender, @NonNull String langPath) {
+    /**
+     * Creates an object which can be used for logging. If any param is null, no message will be sent.
+     * @param sender Sender to output the log to.
+     * @param langPath The lang path for the response.
+     */
+    public Log(CommandSender sender, @NonNull String langPath) {
         this.sender = sender;
         this.langPath = langPath;
     }
 
     public void log() {
-
         if (langPath == null) return;
 
         String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile);
 
-        if (sender != null)
-            sender.sendMessage("[CogWorks] "+message);
-
+        if (sender != null) sender.sendMessage("[CogWorks] "+message);
     }
 
     public Log setDepName(String depName) {
