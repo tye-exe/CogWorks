@@ -22,8 +22,8 @@ public class Util {
     public static final File dataStore = new File(plugin.getDataFolder().getAbsoluteFile() + File.separator + ".data");
     public static final File pluginDataFile = new File(dataStore.getAbsolutePath() + File.separator + "pluginData.json");
     public static final File langFolder = new File(plugin.getDataFolder().getAbsoluteFile() + File.separator + "langFiles");
-    public static final File engLang = new File(langFolder.getAbsoluteFile() + File.separator + "eng.yml");
-    public static final File ADR = new File(plugin.getDataFolder() + File.separator + ".ADR");
+    public static final File temp = new File(plugin.getDataFolder() + File.separator + ".temp");
+    public static final File ADR = new File(temp.getAbsolutePath() + File.separator + "ADR");
 
 
     //lang & config

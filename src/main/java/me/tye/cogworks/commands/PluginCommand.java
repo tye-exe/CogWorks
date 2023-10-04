@@ -44,6 +44,7 @@ import java.util.logging.Level;
 import static me.tye.cogworks.ChatManager.response;
 import static me.tye.cogworks.CogWorks.*;
 import static me.tye.cogworks.util.Util.plugin;
+import static me.tye.cogworks.util.Util.temp;
 
 public class PluginCommand implements CommandExecutor {
 
@@ -76,7 +77,9 @@ public class PluginCommand implements CommandExecutor {
                                     if (!Files.getFileExtension(fileName).equals("jar")) {
                                         fileName += ".jar";
                                     }
-                                    installPluginURL(sender, "pluginInstall", url, fileName, true);
+                                    if (installPluginURL(sender, "pluginInstall", url, fileName, true)) {
+                                        new Log(sender, "pluginInstall.finish").setFileName(fileName).log();
+                                    }
 
                                 } catch (MalformedURLException ignore) {
                                     ModrinthSearch search = modrinthSearch(sender, "pluginInstall", args[1]);
@@ -218,30 +221,38 @@ public class PluginCommand implements CommandExecutor {
      * @param fileName Name of the file to download. Sometimes the file is stored under a name different to the desired file name.
      * @param addFileHash If downloading from a non api source the file hash can be added to the end of the file, as many downloads have generic names such as "download".
      */
-    public static void installPluginURL(@Nullable CommandSender sender, String state, URL Url, String fileName, Boolean addFileHash) {
-        File file = new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().getParent().toString()+File.separator+fileName);
+    public static boolean installPluginURL(@Nullable CommandSender sender, String state, URL Url, String fileName, Boolean addFileHash) {
+        File newPlugin = new File(temp.getAbsolutePath() + File.separator + fileName);
         File destination = null;
-
-        if (file.exists()) {
-            new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
-            return;
-        }
+        boolean installed = false;
 
         try {
+            if (new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+fileName).exists()) {
+                new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
+                throw new Exception();
+            }
+            System.out.println(newPlugin.getAbsolutePath());
+
             //downloads the file
             new Log(sender, state, "downloading").setFileName(fileName).log();
             ReadableByteChannel rbc = Channels.newChannel(Url.openStream());
-            //has to downloaded to a generic places before the hash can be generated from the file.
-            FileOutputStream fos = new FileOutputStream(fileName);
+            FileOutputStream fos = new FileOutputStream(newPlugin);
             fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
             fos.close();
             rbc.close();
 
 
+            if (Plugins.registered(newPlugin)) {
+                new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
+                throw new Exception();
+            }
+
+            addFileHash = true;
+
             //adds the file hash to the name since alot of urls just have a generic filename like "download"
             String hash = "";
             if (addFileHash) {
-                InputStream is = new FileInputStream(file);
+                InputStream is = new FileInputStream(newPlugin);
                 DigestInputStream dis = new DigestInputStream(is, MessageDigest.getInstance("MD5"));
                 dis.readAllBytes();
                 dis.close();
@@ -250,21 +261,30 @@ public class PluginCommand implements CommandExecutor {
                 hash += String.format("%032X", new BigInteger(1, dis.getMessageDigest().digest()));
             }
 
-            //moves the file to plugin folder
             destination = new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
-            Files.move(file, destination);
+
+            if (destination.exists()) {
+                new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
+                throw new Exception();
+            }
+
+            //moves the file to plugin folder
+            Files.move(newPlugin, destination);
 
             appendPluginData(destination);
-            return;
+            installed = true;
 
         } catch (FileNotFoundException noFile) {
             new Log(sender, state, "noFile").setLevel(Level.WARNING).setUrl(Url.toExternalForm()).log();
         } catch (IOException | NoSuchAlgorithmException e) {
             new Log(sender, state, "installError").setLevel(Level.WARNING).setUrl(Url.toExternalForm()).log();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (newPlugin.exists()) if (!newPlugin.delete()) new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(newPlugin.getAbsolutePath()).log();
+            if (destination != null && destination.exists()) if (!destination.delete()) new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(destination.getAbsolutePath()).log();
         }
-
-        if (file.exists()) if (!file.delete()) new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(file.getAbsolutePath()).log();
-        if (destination != null && destination.exists()) if (!destination.delete()) new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(destination.getAbsolutePath()).log();
+        return installed;
     }
 
     /**
@@ -272,12 +292,10 @@ public class PluginCommand implements CommandExecutor {
      * @param pluginName Name of the plugin to delete. (The name specified in the plugin.yml file).
      * @param deleteConfig Whether to delete the plugins configs alongside the jar.
      */
-    public static void deletePlugin(@Nullable CommandSender sender, String state, String pluginName, boolean deleteConfig) {
+    public static boolean deletePlugin(@Nullable CommandSender sender, String state, String pluginName, boolean deleteConfig) {
         try {
-            //pops the plugins data
-            PluginData data = readPluginData(pluginName);
-            removePluginData(pluginName);
 
+            PluginData data = readPluginData(pluginName);
             File pluginDataFolder = new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getName());
 
             //disables the plugin so that the file can be deleted
@@ -301,14 +319,17 @@ public class PluginCommand implements CommandExecutor {
             }
 
             FileUtils.delete(new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getFileName()));
-
+            removePluginData(pluginName);
             new Log(sender, state, "pluginDelete").setPluginName(pluginName).log();
             new Log(sender, state, "reloadWarn").log();
+            return true;
+
         } catch (NoSuchPluginException e) {
             new Log(sender, state, "noSuchPlugin").setLevel(Level.WARNING).setException(e).setPluginName(pluginName).log();
         } catch (IOException e) {
             new Log(sender, state, "deleteError").setLevel(Level.WARNING).setException(e).setPluginName(pluginName).log();
         }
+        return false;
     }
 
     /**
@@ -494,12 +515,14 @@ public class PluginCommand implements CommandExecutor {
         }
     }
 
-    public static void installModrinthPlugin(@Nullable CommandSender sender, String state, JsonArray files) {
-         if (files.size() == 1) {
+    public static boolean installModrinthPlugin(@Nullable CommandSender sender, String state, JsonArray files) {
+        ArrayList<Boolean> installed = new ArrayList<>();
+
+        if (files.size() == 1) {
             JsonObject file = files.get(0).getAsJsonObject();
             String fileName = file.get("filename").getAsString();
             try {
-                installPluginURL(sender, state, new URL(file.get("url").getAsString()), fileName, false);
+                installed.add(installPluginURL(sender, state, new URL(file.get("url").getAsString()), fileName, false));
 
             } catch (MalformedURLException e) {
                 new Log(sender, state, "badUrl").setLevel(Level.WARNING).setFileName(fileName).log();
@@ -510,7 +533,7 @@ public class PluginCommand implements CommandExecutor {
                 JsonObject file = je.getAsJsonObject();
                 if (file.get("primary").getAsBoolean()) {
                     try {
-                    installPluginURL(sender, state, new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false);
+                        installed.add(installPluginURL(sender, state, new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false));
 
                     } catch (MalformedURLException e) {
                         new Log(sender, state, "badUrl").setLevel(Level.WARNING).setFileName(file.get("filename").getAsString()).log();
@@ -521,13 +544,14 @@ public class PluginCommand implements CommandExecutor {
             JsonObject file = files.get(0).getAsJsonObject();
             String fileName = file.get("filename").getAsString();
             try {
-                installPluginURL(sender, state, new URL(file.get("url").getAsString()), fileName, false);
+                installed.add(installPluginURL(sender, state, new URL(file.get("url").getAsString()), fileName, false));
 
             } catch (MalformedURLException e) {
                 new Log(sender, state, "badUrl").setLevel(Level.WARNING).setFileName(fileName).log();
             }
 
         }
+        return !installed.contains(false);
     }
 
     public static HashMap<String, JsonArray> getModrinthDependencies(@Nullable CommandSender sender, String state, JsonObject pluginVersion) {

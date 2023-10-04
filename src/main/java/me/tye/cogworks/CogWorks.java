@@ -77,18 +77,41 @@ public final class CogWorks extends JavaPlugin {
 
         //creates the other files
         createFile(dataStore, null, false);
-        createFile(pluginDataFile, null, true);
+        createFile(temp, null, false);
         createFile(ADR, null, false);
 
-        //hides the dataStore for windows
+        createFile(pluginDataFile, null, true);
+
+        //hides non-config files
         try {
             java.nio.file.Files.setAttribute(Path.of(dataStore.getAbsolutePath()), "dos:hidden", true);
-            java.nio.file.Files.setAttribute(Path.of(ADR.getAbsolutePath()), "dos:hidden", true);
+            java.nio.file.Files.setAttribute(Path.of(temp.getAbsolutePath()), "dos:hidden", true);
         } catch (Exception ignore) {}
 
         //clears out leftover files in ADR dir
+        for (File file : Objects.requireNonNull(ADR.listFiles())) {
+            try {
+                if (file.isFile()) if (!file.delete()) throw new IOException();
+                if (file.isDirectory()) FileUtils.deleteDirectory(file);
+            } catch (IOException e) {
+                log(e, Level.WARNING, Util.getLang("exceptions.removeLeftoverFiles", "filePath", file.getAbsolutePath()));
+            }
+        }
+
+        //clears out leftover files in ADR dir
+        for (File file : Objects.requireNonNull(temp.listFiles())) {
+            try {
+                if (file.isFile()) if (!file.delete()) throw new IOException();
+                if (file.isDirectory()) FileUtils.deleteDirectory(file);
+            } catch (IOException e) {
+                log(e, Level.WARNING, Util.getLang("exceptions.removeLeftoverFiles", "filePath", file.getAbsolutePath()));
+            }
+        }
+
+
+        //clears out leftover files in .temp dir
         try {
-            for (File file : Objects.requireNonNull(ADR.listFiles())) {
+            for (File file : Objects.requireNonNull(temp.listFiles())) {
                 if (file.isFile()) if (!file.delete()) throw new IOException();
                 if (file.isDirectory()) FileUtils.deleteDirectory(file);
             }

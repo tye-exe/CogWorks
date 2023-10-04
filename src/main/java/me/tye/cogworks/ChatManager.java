@@ -110,17 +110,18 @@ public class ChatManager implements Listener {
                             new Log(sender, state, "start").setPluginName(title).log();
 
                             HashMap<String, JsonArray> dependencies  = getModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject());
+                            ArrayList<Boolean> installed = new ArrayList<>();
                             if (!dependencies.isEmpty()) {
                                 new Log(sender, state, "installingDep").setPluginName(title).log();
                                 for (JsonArray plugins : dependencies.values()) {
                                     if (plugins.isEmpty()) continue;
-                                    installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray());
+                                    installed.add(installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()));
                                 }
                                 new Log(sender, state, "installedDep").log();
                             }
 
-                            installModrinthPlugin(sender, state, compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray());
-                            new Log(sender, state, "finish").setPluginName(title).log();
+                            installed.add(installModrinthPlugin(sender, state, compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray()));
+                            if (!installed.contains(false)) new Log(sender, state, "finish").setPluginName(title).log();
 
                         } else {
                             new Log(sender, state, "pluginSelect").log();
@@ -169,17 +170,18 @@ public class ChatManager implements Listener {
                         new Log(sender, state, "start").setPluginName(title).log();
 
                         HashMap<String, JsonArray> dependencies  = getModrinthDependencies(sender, state, chosen);
+                        ArrayList<Boolean> installed = new ArrayList<>();
                         if (!dependencies.isEmpty()) {
                             new Log(sender, state, "installingDep").setPluginName(title).log();
                             for (JsonArray plugins : dependencies.values()) {
                                 if (plugins.isEmpty()) continue;
-                                installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray());
+                                installed.add(installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()));
                             }
                             new Log(sender, state, "installedDep").log();
                         }
 
-                        installModrinthPlugin(sender, state, chosen.get("files").getAsJsonArray());
-                        new Log(sender, state, "finish").setPluginName(title).log();
+                        installed.add(installModrinthPlugin(sender, state, chosen.get("files").getAsJsonArray()));
+                        if (!installed.contains(false)) new Log(sender, state, "finish").setPluginName(title).log();
                         response.remove(name);
                     }
                     if (state.equals("pluginBrowse")) {
@@ -250,17 +252,18 @@ public class ChatManager implements Listener {
                                 new Log(sender, state, "start").setPluginName(title).log();
 
                                 HashMap<String, JsonArray> dependencies  = getModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject());
+                                ArrayList<Boolean> installed = new ArrayList<>();
                                 if (!dependencies.isEmpty()) {
                                     new Log(sender, state, "installingDep").setPluginName(title).log();
                                     for (JsonArray plugins : dependencies.values()) {
                                         if (plugins.isEmpty()) continue;
-                                        installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray());
+                                        installed.add(installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()));
                                     }
                                     new Log(sender, state, "installedDep").log();
                                 }
 
-                                installModrinthPlugin(sender, state, compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray());
-                                new Log(sender, state, "finish").setPluginName(title).log();
+                                installed.add(installModrinthPlugin(sender, state, compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray()));
+                                if (!installed.contains(false)) new Log(sender, state, "finish").setPluginName(title).log();
 
                             } else {
                                 new Log(sender, state, "pluginSelect").log();
