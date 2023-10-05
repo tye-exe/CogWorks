@@ -65,6 +65,16 @@ public final class CogWorks extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        try {
+            ReadableByteChannel rbc = Channels.newChannel(new URL("https://cdn.modrinth.com/data/fALzjamp/versions/B0xkCkk4/Chunky-1.3.92.jar").openStream());
+            FileOutputStream fos = new FileOutputStream("/home/tak/Desktop/paper-1.20.1/plugins/CogWorks/Chunky-1.3.92.jar");
+            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+            fos.close();
+            rbc.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         //creates the essential config files
         createFile(getDataFolder(), null, false);
         createFile(configFile, plugin.getResource("config.yml"), true);
@@ -88,6 +98,7 @@ public final class CogWorks extends JavaPlugin {
             java.nio.file.Files.setAttribute(Path.of(temp.getAbsolutePath()), "dos:hidden", true);
         } catch (Exception ignore) {}
 
+
         //clears out leftover files in ADR dir
         for (File file : Objects.requireNonNull(ADR.listFiles())) {
             try {
@@ -98,7 +109,7 @@ public final class CogWorks extends JavaPlugin {
             }
         }
 
-        //clears out leftover files in ADR dir
+        //clears out leftover files in the .temp dir
         for (File file : Objects.requireNonNull(temp.listFiles())) {
             try {
                 if (file.isFile()) if (!file.delete()) throw new IOException();
@@ -108,16 +119,6 @@ public final class CogWorks extends JavaPlugin {
             }
         }
 
-
-        //clears out leftover files in .temp dir
-        try {
-            for (File file : Objects.requireNonNull(temp.listFiles())) {
-                if (file.isFile()) if (!file.delete()) throw new IOException();
-                if (file.isDirectory()) FileUtils.deleteDirectory(file);
-            }
-        } catch (IOException | NullPointerException e) {
-            log(e, Level.WARNING, Util.getLang("exceptions.removeLeftoverFiles", "fileName", getName()));
-        }
 
         File pluginFolder = new File(getDataFolder().getParent());
         ArrayList<PluginData> identifiers = new ArrayList<>();

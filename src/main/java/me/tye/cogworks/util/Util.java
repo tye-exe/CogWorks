@@ -19,10 +19,10 @@ public class Util {
     public static final JavaPlugin plugin = JavaPlugin.getPlugin(CogWorks.class);
 
     public static final File configFile = new File(plugin.getDataFolder().getAbsolutePath() + File.separator + "config.yml");
-    public static final File dataStore = new File(plugin.getDataFolder().getAbsoluteFile() + File.separator + ".data");
+    public static final File dataStore = new File(plugin.getDataFolder().getAbsolutePath() + File.separator + ".data");
     public static final File pluginDataFile = new File(dataStore.getAbsolutePath() + File.separator + "pluginData.json");
-    public static final File langFolder = new File(plugin.getDataFolder().getAbsoluteFile() + File.separator + "langFiles");
-    public static final File temp = new File(plugin.getDataFolder() + File.separator + ".temp");
+    public static final File langFolder = new File(plugin.getDataFolder().getAbsolutePath() + File.separator + "langFiles");
+    public static final File temp = new File(plugin.getDataFolder().getAbsolutePath() + File.separator + ".temp");
     public static final File ADR = new File(temp.getAbsolutePath() + File.separator + "ADR");
 
 

@@ -222,16 +222,16 @@ public class PluginCommand implements CommandExecutor {
      * @param addFileHash If downloading from a non api source the file hash can be added to the end of the file, as many downloads have generic names such as "download".
      */
     public static boolean installPluginURL(@Nullable CommandSender sender, String state, URL Url, String fileName, Boolean addFileHash) {
+        //fos doesn't work with temp folder for some reason?
         File newPlugin = new File(temp.getAbsolutePath() + File.separator + fileName);
-        File destination = null;
+        File destination;
         boolean installed = false;
 
         try {
-            if (new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+fileName).exists()) {
+            if (newPlugin.exists()) {
                 new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
                 throw new Exception();
             }
-            System.out.println(newPlugin.getAbsolutePath());
 
             //downloads the file
             new Log(sender, state, "downloading").setFileName(fileName).log();
@@ -240,14 +240,6 @@ public class PluginCommand implements CommandExecutor {
             fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
             fos.close();
             rbc.close();
-
-
-            if (Plugins.registered(newPlugin)) {
-                new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
-                throw new Exception();
-            }
-
-            addFileHash = true;
 
             //adds the file hash to the name since alot of urls just have a generic filename like "download"
             String hash = "";
@@ -269,20 +261,19 @@ public class PluginCommand implements CommandExecutor {
             }
 
             //moves the file to plugin folder
-            Files.move(newPlugin, destination);
+            FileUtils.moveFile(newPlugin, destination);
 
             appendPluginData(destination);
             installed = true;
 
         } catch (FileNotFoundException noFile) {
-            new Log(sender, state, "noFile").setLevel(Level.WARNING).setUrl(Url.toExternalForm()).log();
+            new Log(sender, state, "noFile").setLevel(Level.WARNING).setUrl(Url.toExternalForm()).setException(noFile).log();
         } catch (IOException | NoSuchAlgorithmException e) {
-            new Log(sender, state, "installError").setLevel(Level.WARNING).setUrl(Url.toExternalForm()).log();
+            new Log(sender, state, "installError").setLevel(Level.WARNING).setUrl(Url.toExternalForm()).setException(e).log();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             if (newPlugin.exists()) if (!newPlugin.delete()) new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(newPlugin.getAbsolutePath()).log();
-            if (destination != null && destination.exists()) if (!destination.delete()) new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(destination.getAbsolutePath()).log();
         }
         return installed;
     }
