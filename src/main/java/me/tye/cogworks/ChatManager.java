@@ -111,12 +111,16 @@ public class ChatManager implements Listener {
 
                             HashMap<String, JsonArray> dependencies  = getModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject());
                             ArrayList<Boolean> installed = new ArrayList<>();
+
                             if (!dependencies.isEmpty()) {
                                 new Log(sender, state, "installingDep").setPluginName(title).log();
+                                ArrayList<Boolean> installedDeps = new ArrayList<>();
                                 for (JsonArray plugins : dependencies.values()) {
                                     if (plugins.isEmpty()) continue;
-                                    installed.add(installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()));
+                                    installedDeps.add(installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()));
+                                    //TODO: working on dependency already isntalled text
                                 }
+                                if (installedDeps.contains(false))
                                 new Log(sender, state, "installedDep").log();
                             }
 

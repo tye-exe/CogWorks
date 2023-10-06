@@ -18,6 +18,7 @@ public class Util {
     //constants
     public static final JavaPlugin plugin = JavaPlugin.getPlugin(CogWorks.class);
 
+    public static final File pluginFolder = new File(plugin.getDataFolder().getParent());
     public static final File configFile = new File(plugin.getDataFolder().getAbsolutePath() + File.separator + "config.yml");
     public static final File dataStore = new File(plugin.getDataFolder().getAbsolutePath() + File.separator + ".data");
     public static final File pluginDataFile = new File(dataStore.getAbsolutePath() + File.separator + "pluginData.json");

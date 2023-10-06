@@ -43,8 +43,7 @@ import java.util.logging.Level;
 
 import static me.tye.cogworks.ChatManager.response;
 import static me.tye.cogworks.CogWorks.*;
-import static me.tye.cogworks.util.Util.plugin;
-import static me.tye.cogworks.util.Util.temp;
+import static me.tye.cogworks.util.Util.*;
 
 public class PluginCommand implements CommandExecutor {
 
@@ -228,9 +227,9 @@ public class PluginCommand implements CommandExecutor {
         boolean installed = false;
 
         try {
-            if (newPlugin.exists()) {
+            if (newPlugin.exists() || new File(pluginFolder + File.separator + fileName).exists()) {
                 new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
-                throw new Exception();
+                return installed;
             }
 
             //downloads the file
@@ -240,6 +239,11 @@ public class PluginCommand implements CommandExecutor {
             fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
             fos.close();
             rbc.close();
+
+            if (Plugins.registered(newPlugin)) {
+                new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
+                return installed;
+            }
 
             //adds the file hash to the name since alot of urls just have a generic filename like "download"
             String hash = "";
@@ -257,7 +261,7 @@ public class PluginCommand implements CommandExecutor {
 
             if (destination.exists()) {
                 new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
-                throw new Exception();
+                return installed;
             }
 
             //moves the file to plugin folder
@@ -270,8 +274,6 @@ public class PluginCommand implements CommandExecutor {
             new Log(sender, state, "noFile").setLevel(Level.WARNING).setUrl(Url.toExternalForm()).setException(noFile).log();
         } catch (IOException | NoSuchAlgorithmException e) {
             new Log(sender, state, "installError").setLevel(Level.WARNING).setUrl(Url.toExternalForm()).setException(e).log();
-        } catch (Exception e) {
-            e.printStackTrace();
         } finally {
             if (newPlugin.exists()) if (!newPlugin.delete()) new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(newPlugin.getAbsolutePath()).log();
         }

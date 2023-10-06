@@ -33,3 +33,4 @@
 - Reworked Logging system.
 - Text responses are got from lang file instead of being hard coded (allows for translation).
 - Lang file will automatically repair itself.
+- Before installing a plugin it will be checked if it is already installed.

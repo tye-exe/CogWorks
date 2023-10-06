@@ -54,7 +54,7 @@ pluginSelect:
   badUrl: "§eSkipping {fileName}. Invalid download URL."
   getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
   allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
-  alreadyExists: "§{fileName} is already installed on your system."
+  alreadyExists: "§e{fileName} is already installed on your system."
   installError: "§eThere was an error installing {fileName}."
   cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
 
