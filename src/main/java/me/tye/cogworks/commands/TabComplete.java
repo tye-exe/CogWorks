@@ -1,6 +1,6 @@
 package me.tye.cogworks.commands;
 
-import me.tye.cogworks.CogWorks;
+import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.yamlClasses.PluginData;
 import org.bukkit.command.Command;
@@ -33,13 +33,13 @@ public class TabComplete implements TabCompleter {
                 if (!completions.isEmpty()) StringUtil.copyPartialMatches(args[0], List.of("help"), completions);
             }
             if (args.length == 2 && args[0].equals("install") && args[1].isEmpty()) {
-                return List.of(Util.getLang("tabComplete.plugins.install"));
+                return List.of(Util.getLang("tabComplete.plugin.install"));
             }
             if (args.length == 2 && args[0].equals("remove")) {
                 ArrayList<String> plugins = new ArrayList<>();
 
                 try {
-                    for (PluginData data : CogWorks.readPluginData())
+                    for (PluginData data : Plugins.readPluginData())
                         plugins.add(data.getName());
                 } catch (IOException e) {
                     log(e, sender, Level.WARNING, Util.getLang("exceptions.dataReadError"));
