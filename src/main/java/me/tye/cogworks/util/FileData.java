@@ -56,8 +56,7 @@ public class FileData {
     }
 
     /**
-     * @param searchInstance Sets the instance of the phrase that the player is searching for.
-     *                     default: 1
+     * @param searchInstance Sets the instance of the phrase that the player is searching for. Default: 1
      * @return Modified FileData object.
      */
     public FileData setSearchInstance(int searchInstance) {
