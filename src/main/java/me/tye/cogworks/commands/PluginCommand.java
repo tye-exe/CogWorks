@@ -35,6 +35,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -113,15 +114,18 @@ public class PluginCommand implements CommandExecutor {
                 case "remove" -> {
                     if (!sender.hasPermission("cogworks.plugin.rm")) return true;
                     if (args.length >= 2) {
-                        Boolean deleteConfigs = null;
+                        Boolean deleteConfig = null;
+                        String pluginName = args[1];
 
-                        //checks if the plugin exists
+                        //checks if the plugin & config folders exist
+                        PluginData pluginData;
                         try {
-                            PluginData data = readPluginData(args[1]);
-                            if (!new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getName()).exists())
-                                deleteConfigs = false;
+                            pluginData = Plugins.readPluginData(pluginName);
+                            if (!new File(pluginFolder + File.separator + pluginData.getName()).exists())
+                                deleteConfig = false;
                         } catch (NoSuchPluginException | IOException e) {
-                            new Log(sender, "deletePlugin.noSuchPlugin").setException(e).setPluginName(args[1]).log();
+                            new Log(sender, "deletePlugin.noSuchPlugin").setException(e).setPluginName(pluginName).log();
+                            return true;
                         }
 
                         //modifier checks
@@ -129,23 +133,45 @@ public class PluginCommand implements CommandExecutor {
                             if (!arg.startsWith("-")) continue;
                             String modifiers = arg.substring(1);
                             for (char letter : modifiers.toCharArray()) {
-                                if (letter == 'y') deleteConfigs = true;
-                                if (letter == 'n') deleteConfigs = false;
+                                if (letter == 'y') deleteConfig = true;
+                                if (letter == 'n') deleteConfig = false;
                             }
                         }
 
-                        if (deleteConfigs != null) {
-                            deletePlugin(sender, "deletePlugin", args[1], deleteConfigs);
+                        //schedules plugins that depend on for deletion
+                        List<PluginData> whatDepends = Plugins.getWhatDependsOn(pluginName);
+                        ArrayList<PluginData> deleteEval = new ArrayList<>(whatDepends);
+                        deleteEval.add(0, pluginData);
+
+                        //prompt to delete config files
+                        if (deleteConfig == null) {
+                            new Log(sender, "deletePlugin.deleteConfig.0").setPluginName(pluginName).log();
+                            new Log(sender, "deletePlugin.deleteConfig.1").log();
+                            new Log(sender, "deletePlugin.deleteConfig.2").log();
+                            ChatParams params = new ChatParams(sender, "deletePlugin").setDeleteQueue(new DeleteQueue(sender, "deletePlugin")).setToDeleteEval(deleteEval);
+                            if (sender instanceof Player) response.put(sender.getName(), params);
+                            else response.put("~", params);
                             return true;
                         }
 
-                        //prompt to delete config files
-                        new Log(sender, "deletePlugin.deleteConfig.0").setPluginName(args[1]).log();
-                        new Log(sender, "deletePlugin.deleteConfig.1").log();
-                        new Log(sender, "deletePlugin.deleteConfig.2").log();
-                        ChatParams newParams = new ChatParams(sender, "deletePlugin").setPluginName(args[1]);
-                        if (sender instanceof Player) response.put(sender.getName(), newParams);
-                        else response.put("~", newParams);
+                        //checks what depends on this plugin
+                        if (!whatDepends.isEmpty()) {
+                            String[] names = new String[whatDepends.size()];
+                            for (int i = 0; i < whatDepends.size(); i++) names[i] = whatDepends.get(i).getName();
+
+                            new Log(sender, "deletePlugin.dependsOn.0").setPluginNames(names).setPluginName(pluginName).log();
+                            new Log(sender, "deletePlugin.dependsOn.1").setPluginName(pluginName).log();
+                            new Log(sender, "deletePlugin.dependsOn.2").setPluginNames(names).setPluginName(pluginName).log();
+                            new Log(sender, "deletePlugin.dependsOn.3").log();
+
+                            ChatParams params = new ChatParams(sender, "pluginsDeleteEval").setDeleteQueue(new DeleteQueue(sender, "deletePlugin")).setToDeleteEval(deleteEval).setDeleteConfigs(deleteConfig);
+                            if (sender instanceof Player) response.put(sender.getName(), params);
+                            else response.put("~", params);
+                            return true;
+                        }
+
+                        deletePlugin(sender ,"deletePlugin", pluginName, deleteConfig);
+                        new Log(sender, "deletePlugin.reloadWarn").log();
 
                     } else {
                         new Log(sender, "deletePlugin.provideName").log();
@@ -216,20 +242,21 @@ public class PluginCommand implements CommandExecutor {
 
     /**
      * Installs a plugin from a given url. There are NO restriction on the url used, however ".jar" will always be appended.
+     * @param sender The sender to send the log messages to.
+     * @param state The path to get the lang responses from.
      * @param Url Url to download thew file from.
      * @param fileName Name of the file to download. Sometimes the file is stored under a name different to the desired file name.
      * @param addFileHash If downloading from a non api source the file hash can be added to the end of the file, as many downloads have generic names such as "download".
+     * @return True if and only if the file installed successfully.
      */
     public static boolean installPluginURL(@Nullable CommandSender sender, String state, URL Url, String fileName, Boolean addFileHash) {
-        //fos doesn't work with temp folder for some reason?
         File newPlugin = new File(temp.getAbsolutePath() + File.separator + fileName);
         File destination;
-        boolean installed = false;
 
         try {
             if (newPlugin.exists() || new File(pluginFolder + File.separator + fileName).exists()) {
                 new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
-                return installed;
+                return false;
             }
 
             //downloads the file
@@ -242,7 +269,8 @@ public class PluginCommand implements CommandExecutor {
 
             if (Plugins.registered(newPlugin)) {
                 new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
-                return installed;
+                newPlugin.delete();
+                return false;
             }
 
             //adds the file hash to the name since alot of urls just have a generic filename like "download"
@@ -261,14 +289,15 @@ public class PluginCommand implements CommandExecutor {
 
             if (destination.exists()) {
                 new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
-                return installed;
+                newPlugin.delete();
+                return false;
             }
 
             //moves the file to plugin folder
             FileUtils.moveFile(newPlugin, destination);
 
-            appendPluginData(destination);
-            installed = true;
+            Plugins.appendPluginData(destination);
+            return true;
 
         } catch (FileNotFoundException noFile) {
             new Log(sender, state, "noFile").setLevel(Level.WARNING).setUrl(Url.toExternalForm()).setException(noFile).log();
@@ -277,19 +306,25 @@ public class PluginCommand implements CommandExecutor {
         } finally {
             if (newPlugin.exists()) if (!newPlugin.delete()) new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(newPlugin.getAbsolutePath()).log();
         }
-        return installed;
+        return false;
     }
 
     /**
      * Deletes the given plugin from the plugins folder & its configs if requested.
+     * @param sender The sender to send the log messages to.
+     * @param state The path to get the lang responses from.
      * @param pluginName Name of the plugin to delete. (The name specified in the plugin.yml file).
-     * @param deleteConfig Whether to delete the plugins configs alongside the jar.
+     * @param deleteConfig Whether to delete the plugins configs alongside the jar. If null & no sender is specified the config folder will be preserved.
+     * @return
+     * True - Returned if the file installed successfully.<br>
+     * False - Returned if the deletion failed for whatever reason.
      */
     public static boolean deletePlugin(@Nullable CommandSender sender, String state, String pluginName, boolean deleteConfig) {
+
         try {
 
-            PluginData data = readPluginData(pluginName);
-            File pluginDataFolder = new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getName());
+            PluginData data = Plugins.readPluginData(pluginName);
+            File pluginDataFolder = new File(pluginFolder + File.separator + data.getName());
 
             //disables the plugin so that the file can be deleted
             Plugin removePlugin = plugin.getServer().getPluginManager().getPlugin(pluginName);
@@ -312,9 +347,8 @@ public class PluginCommand implements CommandExecutor {
             }
 
             FileUtils.delete(new File(Bukkit.getServer().getWorldContainer().getAbsolutePath() + File.separator + "plugins" + File.separator + data.getFileName()));
-            removePluginData(pluginName);
+            Plugins.removePluginData(pluginName);
             new Log(sender, state, "pluginDelete").setPluginName(pluginName).log();
-            new Log(sender, state, "reloadWarn").log();
             return true;
 
         } catch (NoSuchPluginException e) {
@@ -327,6 +361,8 @@ public class PluginCommand implements CommandExecutor {
 
     /**
      * Finds compatible plugins on modrinth for your server.
+     * @param sender The sender to send the log messages to.
+     * @param state The path to get the lang responses from.
      * @param searchQuery the name of the plugin to search Modrinth for.
      * @return A ModrinthSearch object.
      */
@@ -420,6 +456,13 @@ public class PluginCommand implements CommandExecutor {
         return new ModrinthSearch(validPluginKeys, validPlugins);
     }
 
+    /**
+     * Gets the most 10 popular plugins from modrinth with the specified offset
+     * @param sender The sender to send the log messages to.
+     * @param state The path to get the lang responses from.
+     * @param offset The offset to get the plugins from.
+     * @return The plugins at that offset in a ModrinthSearch object.
+     */
     public static ModrinthSearch modrinthBrowse(@Nullable CommandSender sender, String state, int offset) {
         ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
         HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
@@ -474,6 +517,16 @@ public class PluginCommand implements CommandExecutor {
         return new ModrinthSearch(validPluginKeys, validPlugins);
     }
 
+    /**
+     *
+     * @param sender The sender to send the log messages to.
+     * @param state The path to get the lang responses from.
+     * @param URL The url to send the request to.
+     * @param requestMethod The request method to use.
+     * @return The response from Modrinth.
+     * @throws MalformedURLException If the Url is invalid.
+     * @throws ModrinthAPIException If there was a problem getting the response from Modrinth.
+     */
     public static JsonElement modrinthAPI(@Nullable CommandSender sender, String state, String URL, String requestMethod) throws MalformedURLException, ModrinthAPIException {
         URL url = new URL(URL);
         try {
@@ -508,6 +561,13 @@ public class PluginCommand implements CommandExecutor {
         }
     }
 
+    /**
+     * Installed plugins & their dependencies from modrinth.
+     * @param sender The command sender performing this action.
+     * @param state The lang path to get the responses from.
+     * @param files The files to install.
+     * @return True if all of the plugins installed successfully
+     */
     public static boolean installModrinthPlugin(@Nullable CommandSender sender, String state, JsonArray files) {
         ArrayList<Boolean> installed = new ArrayList<>();
 
@@ -547,6 +607,13 @@ public class PluginCommand implements CommandExecutor {
         return !installed.contains(false);
     }
 
+    /**
+     * Gets the compatible dependencies for a version from Modrinth
+     * @param sender The command sender performing this action.
+     * @param state The lang path to get the responses from.
+     * @param pluginVersion The plugin version to get the dependencies from
+     * @return A HashMap with the pluginId as a key and the compatible files to download in a json array.
+     */
     public static HashMap<String, JsonArray> getModrinthDependencies(@Nullable CommandSender sender, String state, JsonObject pluginVersion) {
         HashMap<String, JsonArray> compatibleFiles = new HashMap<>();
         JsonArray pluginDependencies = pluginVersion.get("dependencies").getAsJsonArray();

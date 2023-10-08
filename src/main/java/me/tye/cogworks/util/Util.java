@@ -1,11 +1,13 @@
 package me.tye.cogworks.util;
 
 import me.tye.cogworks.CogWorks;
+import me.tye.cogworks.util.yamlClasses.PluginData;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;

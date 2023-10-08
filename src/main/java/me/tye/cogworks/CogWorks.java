@@ -2,13 +2,13 @@ package me.tye.cogworks;
 
 import com.google.common.io.Files;
 import com.google.gson.*;
-import com.google.gson.stream.JsonReader;
 import me.tye.cogworks.commands.FileCommand;
 import me.tye.cogworks.commands.PluginCommand;
 import me.tye.cogworks.commands.TabComplete;
 import me.tye.cogworks.events.SendErrorSummary;
 import me.tye.cogworks.util.Log;
 import me.tye.cogworks.util.ModrinthSearch;
+import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.exceptions.NoSuchPluginException;
 import me.tye.cogworks.util.yamlClasses.DependencyInfo;
@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import static me.tye.cogworks.FileGui.position;
@@ -49,32 +48,21 @@ import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
 
-    //TODO: check if dependencies are already met before trying to install them?
-    //TODO: run install dependencies on plugins installed from auto dependency resolve
-    //TODO: when uninstalling plugins check if any other plugins depend on them.
+    //TODO: mark if plugins were installed by user or as a dependency
+    //TODO: allow to delete multiple plugins at once - separate by ","?
     //TODO: when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
     //TODO: voice paper interactions throws error in automatic dependency resolve.
     //TODO: check if lang file exists for string the user entered
     //TODO: edit lang options based on available lang files.
     //TODO: add configs options for ADR
     //TODO: add command to force stop ADR?
-
+    //TODO: lang version check
+    //TODO: instead of deleting files, have them be moved to the .temp folder & either deleted upon reload | after a set time
     //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
-    //TODO: allow to delete multiple plugins at once - separate by ","?
     //TODO: allow to install multiple plugins at once when using a url.
 
     @Override
     public void onEnable() {
-        try {
-            ReadableByteChannel rbc = Channels.newChannel(new URL("https://cdn.modrinth.com/data/fALzjamp/versions/B0xkCkk4/Chunky-1.3.92.jar").openStream());
-            FileOutputStream fos = new FileOutputStream("/home/tak/Desktop/paper-1.20.1/plugins/CogWorks/Chunky-1.3.92.jar");
-            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-            fos.close();
-            rbc.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
         //creates the essential config files
         createFile(getDataFolder(), null, false);
         createFile(configFile, plugin.getResource("config.yml"), true);
@@ -84,6 +72,13 @@ public final class CogWorks extends JavaPlugin {
         //loads the essential config files
         Util.setConfig(returnFileConfigs(configFile, "config.yml"));
         Util.setLang(returnFileConfigs(new File(langFolder.getAbsoluteFile()+File.separator+Util.getConfig("lang")+".yml"), "langFiles/"+Util.getConfig("lang")+".yml"));
+
+        //deletes temp if present
+        try {
+            FileUtils.deleteDirectory(temp);
+        } catch (IOException e) {
+            new Log(null, "exceptions.tempClear");
+        }
 
         //creates the other files
         createFile(dataStore, null, false);
@@ -99,31 +94,10 @@ public final class CogWorks extends JavaPlugin {
         } catch (Exception ignore) {}
 
 
-        //clears out leftover files in ADR dir
-        for (File file : Objects.requireNonNull(ADR.listFiles())) {
-            try {
-                if (file.isFile()) if (!file.delete()) throw new IOException();
-                if (file.isDirectory()) FileUtils.deleteDirectory(file);
-            } catch (IOException e) {
-                log(e, Level.WARNING, Util.getLang("exceptions.removeLeftoverFiles", "filePath", file.getAbsolutePath()));
-            }
-        }
-
-        //clears out leftover files in the .temp dir
-        for (File file : Objects.requireNonNull(temp.listFiles())) {
-            try {
-                if (file.isFile()) if (!file.delete()) throw new IOException();
-                if (file.isDirectory()) FileUtils.deleteDirectory(file);
-            } catch (IOException e) {
-                log(e, Level.WARNING, Util.getLang("exceptions.removeLeftoverFiles", "filePath", file.getAbsolutePath()));
-            }
-        }
-
-
         File pluginFolder = new File(getDataFolder().getParent());
         ArrayList<PluginData> identifiers = new ArrayList<>();
         try {
-            identifiers = readPluginData();
+            identifiers = Plugins.readPluginData();
         } catch (IOException e) {
             log(e, Level.SEVERE, Util.getLang("exceptions.noAccessPluginYML"));
         }
@@ -141,7 +115,7 @@ public final class CogWorks extends JavaPlugin {
                     }
                 }
                 try {
-                    removePluginData(data.getName());
+                    Plugins.removePluginData(data.getName());
                 } catch (NoSuchPluginException e) {
                     log(e, Level.WARNING, Util.getLang("exceptions.deletingRemovedPlugin", "fileName", data.getName()));
                 } catch (IOException e) {
@@ -154,7 +128,7 @@ public final class CogWorks extends JavaPlugin {
                 if (file.isDirectory()) continue;
                 if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
                 try {
-                    appendPluginData(file);
+                    Plugins.appendPluginData(file);
                 } catch (IOException e) {
                     log(e, Level.WARNING, Util.getLang("exceptions.badYmlAccess", "fileName", file.getName()));
                 }
@@ -166,7 +140,7 @@ public final class CogWorks extends JavaPlugin {
         //ADR
         identifiers = new ArrayList<>();
         try {
-            identifiers = readPluginData();
+            identifiers = Plugins.readPluginData();
         } catch (IOException e) {
             log(e, Level.SEVERE, Util.getLang("exceptions.noAccessPluginYML"));
         }
@@ -446,7 +420,7 @@ public final class CogWorks extends JavaPlugin {
             HashMap<String, Object> defaultValues = getKeysRecursive(getDefault(resourcePath));
 
             //checks if there is a key missing in the file
-            if (defaultValues.keySet().containsAll(loadedValues.keySet())) return loadedValues;
+            if (loadedValues.keySet().containsAll(defaultValues.keySet())) return loadedValues;
 
             //gets the missing keys
             HashMap<String, Object> missing = new HashMap<>();
@@ -481,8 +455,7 @@ public final class CogWorks extends JavaPlugin {
                             toAppend.append(internalFileText[i + ii]).append("\n");
                             ii++;
                         }
-                        toAppend.append(missingKey).append(" :").append(internalFileText[i].toString());
-
+                        toAppend.append(internalFileText[i].toString());
                     }
                 }
 
@@ -538,117 +511,6 @@ public final class CogWorks extends JavaPlugin {
         itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING, identifier);
         item.setItemMeta(itemMeta);
         return item;
-    }
-
-
-    /**
-     * Removes a plugin from plugin data.
-     * @param pluginName The name of the plugin to remove.
-     * @throws NoSuchPluginException Thrown if the plugin cannot be found in the plugin data.
-     * @throws IOException Thrown if the pluginData file can't be read from/written to.
-     */
-    public static void removePluginData(String pluginName) throws NoSuchPluginException, IOException {
-        ArrayList<PluginData> pluginData = readPluginData();
-        PluginData pluginToRemove = null;
-
-        for (PluginData data : pluginData) {
-            if (data.getName().equals(pluginName)) pluginToRemove = data;
-        }
-
-        if (pluginToRemove == null) {
-            throw new NoSuchPluginException(Util.getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
-        }
-
-        pluginData.remove(pluginToRemove);
-        writePluginData(pluginData);
-    }
-
-    /**
-     * Adds a plugin to pluginData.
-     * @param newPlugin The new plugin file to be added.
-     * @throws IOException Thrown if there is an error accessing the pluginData file, or if there is an error accessing the plugin.yml file of the new plugin.
-     */
-    public static void appendPluginData(File newPlugin) throws IOException {
-        ArrayList<PluginData> identifiers = readPluginData();
-
-        //reads data from new plugin
-        try {
-            ZipFile zip = new ZipFile(newPlugin);
-            for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
-                ZipEntry entry = e.nextElement();
-                if (!entry.getName().equals("plugin.yml")) continue;
-
-                StringBuilder out = new StringBuilder();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
-                String line;
-                while ((line = reader.readLine()) != null) out.append(line).append("\n");
-                reader.close();
-
-                Yaml yaml = new Yaml();
-                PluginData newPluginData = new PluginData(newPlugin.getName(), yaml.load(out.toString()));
-                //uses the plugin name to check if it is a copy of an already installed plugin
-                for (PluginData data : identifiers) {
-                    if (data.getName().equals(newPluginData.getName())) {
-                        zip.close();
-                        return;
-                    }
-                }
-                identifiers.add(newPluginData);
-            }
-            zip.close();
-        } catch (ZipException e) {
-            throw new IOException(e.getMessage(), e.getCause());
-        }
-
-        writePluginData(identifiers);
-    }
-
-    /**
-     * Reads the data from the pluginData.json file
-     * @return The data of all the plugins in the pluginData.json file.
-     * @throws IOException Thrown if there is an error reading from the pluginData file.
-     */
-    public static ArrayList<PluginData> readPluginData() throws IOException {
-        ArrayList<PluginData> pluginData = new ArrayList<>();
-        FileReader fr =  new FileReader(Util.pluginDataFile);
-        JsonReader jr = new JsonReader(fr);
-        JsonElement jsonElement = JsonParser.parseReader(jr);
-        if (jsonElement.isJsonNull()) return pluginData;
-        Gson gsonReader = new Gson();
-        for (JsonElement je : jsonElement.getAsJsonArray()) {
-            pluginData.add(gsonReader.fromJson(je, PluginData.class));
-        }
-        jr.close();
-        fr.close();
-        return pluginData;
-    }
-
-    /**
-     * Gets the data of a specified plugin.
-     * @param pluginName Name of the plugin to get data for.
-     * @return Data of the plugin.
-     * @throws NoSuchPluginException Thrown if the plugin couldn't be found in the pluginData file.
-     * @throws IOException Thrown if there was an error reading from the pluginData file.
-     */
-    public static PluginData readPluginData(String pluginName) throws NoSuchPluginException, IOException {;
-        for (PluginData data : readPluginData()) {
-            if (data.getName().equals(pluginName)) return data;
-        }
-        throw new NoSuchPluginException(Util.getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
-    }
-
-    /**
-     * WARNING: this method will overwrite any data stored in the pluginData.json file!<br>
-     * If you want to append data use appendPluginData().
-     * @param pluginData Plugin data to write to the file.
-     * @throws IOException If the plugin data can't be written to the pluginData file.
-     */
-    public static void writePluginData(ArrayList<PluginData> pluginData) throws IOException {
-        GsonBuilder gson = new GsonBuilder();
-        gson.setPrettyPrinting();
-        FileWriter fileWriter = new FileWriter(pluginDataFile);
-        gson.create().toJson(pluginData, fileWriter);
-        fileWriter.close();
     }
 
 

@@ -1,5 +1,6 @@
 package me.tye.cogworks.util;
 
+import me.tye.cogworks.CogWorks;
 import org.bukkit.command.CommandSender;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -20,10 +21,12 @@ public class Log {
     String fileName = null;
     String depName = null;
     String pluginName = null;
+    String pluginNames = null;
     String key = null;
     String Url = null;
     String severe = null;
     String isFile = null;
+    String state = null;
 
     /**
      * Creates an object which can be used for logging. If any param is null, no message will be sent.
@@ -53,9 +56,10 @@ public class Log {
     public void log() {
         if (langPath == null) return;
 
-        String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile);
+        String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile, "pluginNames", pluginNames, "state", state);
 
         if (sender != null) sender.sendMessage("[CogWorks] "+message);
+        else CogWorks.log(e, level, message);
     }
 
     public Log setDepName(String depName) {
@@ -100,6 +104,31 @@ public class Log {
 
     public Log isFile(boolean isFile) {
         this.isFile = isFile ? "File" : "Folder";
+        return this;
+    }
+
+    /**
+     * Takes a string array & formats it into a string for the lang.
+     */
+    public Log setPluginNames(String[] pluginNames) {
+        StringBuilder names = new StringBuilder();
+        for (String pluginName : pluginNames) {
+            names.append(pluginName).append(", ");
+        }
+        this.pluginNames = names.substring(0,  names.length()-2);
+        return this;
+    }
+
+    public Log setPluginNames(String pluginNames) {
+        this.pluginNames = pluginNames;
+        return this;
+    }
+
+    /**
+     * Sets the key value for state, not the state for the lang path
+     */
+    public Log setState(String state) {
+        this.state = state;
         return this;
     }
 }

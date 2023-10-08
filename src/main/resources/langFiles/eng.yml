@@ -7,12 +7,14 @@
 #filePath = The path to the file.
 #depName = The name of the dependency.
 #pluginName = The name of the plugin.
+#pluginNames = The name of multiple plugins.
 #key = The value used to retrieve an element from a group.
 #URL = The URL.
 #isFile = Whether
 #errors = Amount of severe errors that have occurred since last reload/restart.
 #lineNum = The number of the line inside a file.
-#searchPhrase = The current phrase being searched
+#searchPhrase = The current phrase being searched.
+#state = The current chat state that the user is in.
 
 info:
   newLang: "The language file {fileName} is now available for this version of the plugin and has been automatically downloaded."
@@ -44,6 +46,7 @@ pluginSelect:
   start: "§aInstalling {pluginName}."
   installingDep: "§aInstalling dependencies for {pluginName}."
   downloading: "§aDownloading {fileName}."
+  installed: "§e{fileName} is already installed."
   installedDep: "§aDependencies installed."
   finish: "§aFinished installing {pluginName}. Reload or restart for {pluginName} to activate."
 
@@ -54,7 +57,7 @@ pluginSelect:
   badUrl: "§eSkipping {fileName}. Invalid download URL."
   getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
   allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
-  alreadyExists: "§e{fileName} is already installed on your system."
+  alreadyExists: "§{fileName} is already installed on your system."
   installError: "§eThere was an error installing {fileName}."
   cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
 
@@ -63,6 +66,7 @@ pluginFileSelect:
   start: "§aInstalling {pluginName}."
   installingDep: "§aInstalling dependencies for {pluginName}."
   downloading: "§aDownloading {fileName}."
+  installed: "§e{fileName} is already installed."
   installedDep: "§aDependencies installed."
   finish: "§aFinished installing {pluginName}. Reload or restart for {pluginName} to activate."
 
@@ -83,6 +87,7 @@ pluginBrowse:
   start: "§aInstalling {pluginName}."
   installingDep: "§aInstalling dependencies for {pluginName}."
   downloading: "§aDownloading {fileName}."
+  installed: "§e{fileName} is already installed."
   installedDep: "§aDependencies installed."
   finish: "§aFinished installing {pluginName}. Reload or restart for {pluginName} to activate."
 
@@ -99,21 +104,6 @@ pluginBrowse:
   cleanUp: "§eThere was an error trying to delete {filePath} after failed install. Please manually delete this at your earliest convince."
 
 
-deletePlugin:
-  confirm: "§ePlease enter either \"y\" or \"n\"."
-  configRemove: "§aConfig files for {pluginName} deleted."
-  pluginDelete: "§a{pluginName} deleted."
-  reloadWarn: "§eImmediately reload or restart to avoid errors."
-  provideName: "§ePlease provide a plugin name!"
-  deleteConfig:
-    0: "§eDo you wish to delete the {pluginName} config files?"
-    1: "§eSend y or n in chat to choose."
-    2: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
-
-  noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
-  deleteError: "§ePlugin {pluginName} couldn't be deleted."
-
-
 pluginInstall:
   noFiles: "§eFailed to find compatible file to download."
   alreadyExists: "§eThat {fileName} is already installed on your system."
@@ -123,6 +113,49 @@ pluginInstall:
   noInput: "§ePlease provide a plugin name to search or an url to download from."
   modrinthSearchErr: "§eThere was an error getting plugins with that name from Modrinth."
   finish: "§aFinished installing {fileName}. Reload or restart for {fileName} to activate."
+
+
+deletePlugin:
+  dependsOn:
+    0: "§e{pluginNames} depend(s) on {pluginName} to function."
+    1: "§a1: Force delete {pluginName}."
+    2: "§a2: Delete {pluginName} & {pluginNames}."
+    3: "§a3: Do nothing (exit)."
+  deleteConfig:
+    0: "§eDo you wish to delete the {pluginName} config files?"
+    1: "§eSend y or n in chat to choose."
+    2: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
+
+  confirm: "§ePlease enter either \"y\" or \"n\"."
+  configRemove: "§aConfig files for {pluginName} deleted."
+  pluginDelete: "§a{pluginName} deleted."
+  reloadWarn: "§eImmediately reload or restart to avoid errors."
+  provideName: "§ePlease provide a plugin name!"
+
+  noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
+  deleteError: "§ePlugin {pluginName} couldn't be deleted."
+
+
+pluginsDeleteEval:
+   dependsOn:
+     0: "§e{pluginNames} depend on {pluginName} to function."
+     1: "1: Force delete {pluginName}."
+     2: "2: Delete {pluginName} & {pluginNames}."
+     3: "3: Do nothing (exit)."
+   deleteConfig:
+     0: "§eDo you wish to delete the {pluginName} config files?"
+     1: "§eSend y or n in chat to choose."
+     2: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
+
+   quit: "§eQuitting."
+   NAN: "§ePlease enter a listed number."
+   configRemove: "§aConfig files for {pluginName} deleted."
+   pluginDelete: "§a{pluginName} deleted."
+   reloadWarn: "§eImmediately reload or restart to avoid errors."
+   provideName: "§ePlease provide a plugin name!"
+
+   noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
+   deleteError: "§ePlugin {pluginName} couldn't be deleted."
 
 
 ModrinthAPI:
@@ -224,7 +257,7 @@ ADR:
   success:
     0: "Unmet dependency for \"{fileName}\" successfully resolved by installing \"{depName}\"."
     1: "Reload or restart for this to take effect."
-  fail: "Unmet dependency for \"{fileName}}\" could not be automatically resolved."
+  fail: "Unmet dependency for \"{fileName}\" could not be automatically resolved."
 
   getErr: "Error checking if the installed dependency has any dependencies."
   ModrinthSearchErr: "Error querying Modrinth for automatic dependency resolution."
@@ -238,17 +271,23 @@ exceptions:
   seeConsole: " Please see the console for stack trace."
   noSuchResponse: "No lang response could be found for {key}. Please inform the devs about this."
 
-  fileCreation: "Unable to create {fileName} file in {filePath}."
-  removeLeftoverFiles: "Unable to clean up unused file {filePath}. Please manually delete this file at your earliest convenience."
+  fileCreation: "Unable to create {fileName} file in \"{filePath}\"."
+  removeLeftoverFiles: "Unable to clean up unused file \"{filePath}\". Please manually delete this file at your earliest convenience."
   noAccessPluginYML: "Unable to access plugin.yml file, many features of this plugin WILL break."
   deletingRemovedPlugin: "Error deleting removed plugin {fileName} from pluginData."
   noAccessDeleteRemovedPlugins: "Unable to access pluginData file to remove {fileName}. This will cause the plugin to appear present when interacting with CogWorks."
   badYmlAccess: "Unable to access plugin.yml file for {fileName}. {fileName} won't work for many features of this plugin."
-  errorWritingConfigs: "Error writing configurations to {filePath} file. Reverting to default settings."
+  errorWritingConfigs: "Error writing configurations to \"{filePath}\". Reverting to default settings."
   pluginNotRegistered: "Plugin {pluginName} either not installed or not indexed by CogWorks."
   badModrinthUrl: "Creating a url to send request to Modrinth failed. An invalid url was created."
   dataReadError: "There was an error reading the plugin names from the pluginData file."
   noExternalResponse: "Unable to get external lang response for {key}. Using internal value."
-  gettingFilesErr: "There was an error getting the files in {filePath}."
+  gettingFilesErr: "There was an error getting the files in \"{filePath}\"."
   newLangCheck: "There was an error checking for new lang files."
   newLangInstall: "There was an error installing the new lang file {fileName}. You can manually download it from \"{URL}\"."
+  clearTemp: "There was an error clearing the temp folder - \"{filePath}\". This folder might fill up with unused files."
+  stateNotFound: "There was an error matching the state your in. Please report this to the devs. State: \"{state}\"."
+
+
+#DO NOT CHANGE!
+langVer: 0.3.0.1
