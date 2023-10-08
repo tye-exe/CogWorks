@@ -8,19 +8,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ModrinthSearch {
-    ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
-    HashMap<JsonObject, JsonArray> validPlugins = new HashMap<>();
+ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
+HashMap<JsonObject,JsonArray> validPlugins = new HashMap<>();
 
-    public ModrinthSearch(@Nullable ArrayList<JsonObject> validPluginKeys, @Nullable HashMap<JsonObject, JsonArray> validPlugins) {
-        if (validPluginKeys != null) this.validPluginKeys = validPluginKeys;
-        if (validPlugins != null) this.validPlugins = validPlugins;
-    }
+public ModrinthSearch(@Nullable ArrayList<JsonObject> validPluginKeys, @Nullable HashMap<JsonObject,JsonArray> validPlugins) {
+  if (validPluginKeys != null) this.validPluginKeys = validPluginKeys;
+  if (validPlugins != null) this.validPlugins = validPlugins;
+}
 
-    public ArrayList<JsonObject> getValidPluginKeys() {
-        return validPluginKeys;
-    }
+public ArrayList<JsonObject> getValidPluginKeys() {
+  return validPluginKeys;
+}
 
-    public HashMap<JsonObject, JsonArray> getValidPlugins() {
-        return validPlugins;
-    }
+public HashMap<JsonObject,JsonArray> getValidPlugins() {
+  return validPlugins;
+}
 }

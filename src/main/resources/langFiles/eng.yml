@@ -137,25 +137,25 @@ deletePlugin:
 
 
 pluginsDeleteEval:
-   dependsOn:
-     0: "§e{pluginNames} depend on {pluginName} to function."
-     1: "1: Force delete {pluginName}."
-     2: "2: Delete {pluginName} & {pluginNames}."
-     3: "3: Do nothing (exit)."
-   deleteConfig:
-     0: "§eDo you wish to delete the {pluginName} config files?"
-     1: "§eSend y or n in chat to choose."
-     2: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
+  dependsOn:
+    0: "§e{pluginNames} depend on {pluginName} to function."
+    1: "1: Force delete {pluginName}."
+    2: "2: Delete {pluginName} & {pluginNames}."
+    3: "3: Do nothing (exit)."
+  deleteConfig:
+    0: "§eDo you wish to delete the {pluginName} config files?"
+    1: "§eSend y or n in chat to choose."
+    2: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
 
-   quit: "§eQuitting."
-   NAN: "§ePlease enter a listed number."
-   configRemove: "§aConfig files for {pluginName} deleted."
-   pluginDelete: "§a{pluginName} deleted."
-   reloadWarn: "§eImmediately reload or restart to avoid errors."
-   provideName: "§ePlease provide a plugin name!"
+  quit: "§eQuitting."
+  NAN: "§ePlease enter a listed number."
+  configRemove: "§aConfig files for {pluginName} deleted."
+  pluginDelete: "§a{pluginName} deleted."
+  reloadWarn: "§eImmediately reload or restart to avoid errors."
+  provideName: "§ePlease provide a plugin name!"
 
-   noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
-   deleteError: "§ePlugin {pluginName} couldn't be deleted."
+  noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
+  deleteError: "§ePlugin {pluginName} couldn't be deleted."
 
 
 ModrinthAPI:
