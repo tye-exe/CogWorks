@@ -21,6 +21,7 @@ info:
   menuClose: "§eMenu closed due to reload, this is to prevent errors."
   errorSum: "§eThere have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
   onlyPlayersFile: "§eThis command is only available to online players, being redirected to terminal."
+  primary: "Primary"
 
 
 help:
@@ -49,6 +50,11 @@ pluginSelect:
   installed: "§e{fileName} is already installed."
   installedDep: "§aDependencies installed."
   finish: "§aFinished installing {pluginName}. Reload or restart for {pluginName} to activate."
+  versionFiles:
+    0: "§aSend the number corresponding to the version file to install it."
+    #Do translate the world (Primary)
+    1: "§aThe file labeled (Primary) is the main file."
+    2: "§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
 
   quit: "§eQuitting."
   NAN: "§ePlease enter a listed number."
@@ -62,7 +68,7 @@ pluginSelect:
   cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
 
 
-pluginFileSelect:
+pluginVersionSelect:
   start: "§aInstalling {pluginName}."
   installingDep: "§aInstalling dependencies for {pluginName}."
   downloading: "§aDownloading {fileName}."

@@ -49,6 +49,7 @@ import static me.tye.cogworks.commands.PluginCommand.*;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
+//TODO: if there are more than one file for that version you get prompted to choose which one(s) to install
 
 //TODO: mark if plugins were installed by user or as a dependency
 //TODO: allow to delete multiple plugins at once - separate by ","?

@@ -1,6 +1,7 @@
 package me.tye.cogworks.util;
 
 import me.tye.cogworks.CogWorks;
+import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
+import static me.tye.cogworks.ChatManager.response;
 import static me.tye.cogworks.CogWorks.log;
 
 
@@ -143,4 +145,32 @@ public static <T> T getConfig(String key) {
   log(null, Level.WARNING, "Unable to find match for request config, returning true");
   return (T) Boolean.TRUE;
 }
+
+
+/**
+ * @return -1 if there was an error. Else the value parsed.
+ */
+public static int parseNumInput(CommandSender sender, String state, String message, String name, int max, int min) {
+  if (message.equals("q")) {
+    response.remove(name);
+    new Log(sender, state, "quit").log();
+    return -1;
+  }
+
+  int chosen;
+  try {
+    chosen = Integer.parseInt(message);
+  } catch (NumberFormatException e) {
+    new Log(sender, state, "NAN").log();
+    return -1;
+  }
+  if (chosen > max || chosen < min) {
+    new Log(sender, state, "NAN").log();
+    return -1;
+  }
+  return chosen;
+}
+
+
+
 }

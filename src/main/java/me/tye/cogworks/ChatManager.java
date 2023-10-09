@@ -25,6 +25,7 @@ import java.util.List;
 
 import static me.tye.cogworks.FileGui.position;
 import static me.tye.cogworks.commands.PluginCommand.*;
+import static me.tye.cogworks.util.Util.parseNumInput;
 import static me.tye.cogworks.util.Util.pluginFolder;
 
 public class ChatManager implements Listener {
@@ -73,22 +74,8 @@ public static void checks(String name, String message) {
         case "pluginSelect": {
           HashMap<JsonObject,JsonArray> validPlugins = params.getValidPlugins();
           ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
-          if (message.equals("q")) {
-            response.remove(name);
-            new Log(sender, state, "quit").log();
-            return;
-          }
-          int chosenPlugin;
-          try {
-            chosenPlugin = Integer.parseInt(message);
-          } catch (NumberFormatException e) {
-            new Log(sender, state, "NAN").log();
-            return;
-          }
-          if (chosenPlugin > validPluginKeys.size() || chosenPlugin < 1) {
-            new Log(sender, state, "NAN").log();
-            return;
-          }
+          int chosenPlugin = parseNumInput(sender, state, message, name, validPluginKeys.size(), 1);
+          if (chosenPlugin == -1) return;
 
           JsonObject plugin = validPluginKeys.get(chosenPlugin-1);
           JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosenPlugin-1));
@@ -118,9 +105,26 @@ public static void checks(String name, String message) {
               installed.add(installModrinthPlugin(sender, state, files));
               if (!installed.contains(false))
                 new Log(sender, state, "finish").setPluginName(title).log();
+
               // if there are more than one file for that version you get prompted to choose which one(s) to install
             } else {
+              new Log(sender, state, "versionFiles.0").log();
+              new Log(sender, state, "versionFiles.1").log();
+              new Log(sender, state, "versionFiles.2").log();
 
+              int i = 1;
+              for (JsonElement je : files) {
+                JsonObject jo = je.getAsJsonObject();
+                chooseableFiles.add(jo);
+                TextComponent projectName = new TextComponent(i+": "+jo.get("filename").getAsString());
+                projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
+                sender.spigot().sendMessage(projectName);
+                i++;
+              }
+              ChatParams newParams = new ChatParams(sender, "pluginFileSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
+              if (sender instanceof Player) response.put(sender.getName(), newParams);
+              else response.put("~", newParams);
+              return;
             }
 
           } else {
@@ -136,7 +140,7 @@ public static void checks(String name, String message) {
               sender.spigot().sendMessage(projectName);
               i++;
             }
-            ChatParams newParams = new ChatParams(sender, "pluginFileSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
+            ChatParams newParams = new ChatParams(sender, "pluginVersionSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
             if (sender instanceof Player) response.put(sender.getName(), newParams);
             else response.put("~", newParams);
             return;
@@ -145,26 +149,11 @@ public static void checks(String name, String message) {
           break;
         }
 
-        case "pluginFileSelect": {
+        case "pluginVersionSelect": {
           ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
           JsonObject plugin = params.getPlugin();
-          if (message.equals("q")) {
-            response.remove(name);
-            new Log(sender, state, "quit").log();
-            return;
-          }
-
-          int chosenVersion;
-          try {
-            chosenVersion = Integer.parseInt(message);
-          } catch (NumberFormatException e) {
-            new Log(sender, state, "NAN").log();
-            return;
-          }
-          if (chosenVersion > chooseableFiles.size() || chosenVersion < 1) {
-            new Log(sender, state, "NAN").log();
-            return;
-          }
+          int chosenVersion = parseNumInput(sender, state, message, name, chooseableFiles.size(), 1);
+          if (chosenVersion == -1) return;
 
           JsonObject chosen = chooseableFiles.get(chosenVersion).getAsJsonObject();
           String title = plugin.get("title").getAsString();
@@ -187,6 +176,16 @@ public static void checks(String name, String message) {
           if (!installed.contains(false))
             new Log(sender, state, "finish").setPluginName(title).log();
           response.remove(name);
+          break;
+        }
+
+        case "pluginFileSelect": {
+          ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
+
+          //allow multiple inpuits for parse
+
+
+
           break;
         }
 
@@ -287,7 +286,7 @@ public static void checks(String name, String message) {
                 i++;
               }
 
-              ChatParams newParams = new ChatParams(sender, "pluginFileSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
+              ChatParams newParams = new ChatParams(sender, "pluginVersionSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
               if (sender instanceof Player) response.put(sender.getName(), newParams);
               else response.put("~", newParams);
               return;
@@ -343,23 +342,8 @@ public static void checks(String name, String message) {
           String pluginName = deleteEval.get(0).getName();
           List<PluginData> whatDependsOn = Plugins.getWhatDependsOn(pluginName);
 
-          if (message.equals("q")) {
-            response.remove(name);
-            new Log(sender, state, "quit").log();
-            return;
-          }
-
-          int chosen;
-          try {
-            chosen = Integer.parseInt(message);
-          } catch (NumberFormatException e) {
-            new Log(sender, state, "NAN").log();
-            return;
-          }
-          if (chosen < 1 || chosen > 3) {
-            new Log(sender, state, "NAN").log();
-            return;
-          }
+          int chosen = parseNumInput(sender, state, message, name, 3, 1);
+          if (chosen == -1) return;
 
           if (chosen == 3) {
             response.remove(name);
@@ -472,6 +456,7 @@ public static void checks(String name, String message) {
           new Log(sender, "exceptions.stateNotFound").setState(state).log();
           response.remove(name);
         }
+
         }
       } catch (Exception e) {
         response.remove(name);

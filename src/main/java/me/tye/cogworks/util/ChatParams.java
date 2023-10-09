@@ -48,7 +48,7 @@ public ChatParams setState(String state) {
 }
 
 /**
- Sets the files that are able to be chosen during pluginFileSelect.
+ Sets the files that are able to be chosen during pluginVersionSelect & pluginFileSelect.
  @param chooseableFiles Files that can be chosen from.
  @return Edited ChatParams object. */
 public ChatParams setChooseableFiles(ArrayList<JsonObject> chooseableFiles) {
@@ -132,7 +132,7 @@ public ChatParams setDeleteQueue(DeleteQueue deleteQueue) {
 
 
 /**
- /@return Gets the files that are able to be chosen during pluginFileSelect. */
+ /@return Gets the files that are able to be chosen during pluginVersionSelect. */
 public ArrayList<JsonObject> getChooseableFiles() {
   return chooseableFiles;
 }
