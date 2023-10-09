@@ -45,6 +45,7 @@ public static void setConfig(HashMap<String,Object> config) {
  @return The formatted Map. */
 public static HashMap<String,Object> getKeysRecursive(Map<?,?> baseMap) {
   HashMap<String,Object> map = new HashMap<>();
+  if (baseMap == null) return map;
   for (Object key : baseMap.keySet()) {
     Object value = baseMap.get(key);
     if (value instanceof Map<?,?> subMap) {

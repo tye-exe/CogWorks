@@ -333,18 +333,20 @@ public void onEnable() {
     HashMap<String,Object> indexMap = getKeysRecursive(new Yaml().load(indexText));
 
     String files = String.valueOf(indexMap.get(String.valueOf(pluginMap.get("version"))));
-    files = files.substring(0, files.length()-1).substring(1);
-    String[] filesNames = files.split(", ");
+    if (!files.equals("null")) {
+      files = files.substring(0, files.length()-1).substring(1);
+      String[] filesNames = files.split(", ");
 
-    for (String fileName : filesNames) {
-      File langFile = new File(langFolder.getAbsolutePath()+File.separator+fileName);
-      if (langFile.exists()) continue;
+      for (String fileName : filesNames) {
+        File langFile = new File(langFolder.getAbsolutePath()+File.separator+fileName);
+        if (langFile.exists()) continue;
 
-      try {
-        createFile(langFile, new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).openStream(), true);
-        log(null, Level.INFO, Util.getLang("info.newLang", "fileName", fileName));
-      } catch (IOException e) {
-        log(e, Level.WARNING, Util.getLang("exceptions.newLangInstall", "fileName", langFile.getName(), "URL", "https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName));
+        try {
+          createFile(langFile, new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).openStream(), true);
+          log(null, Level.INFO, Util.getLang("info.newLang", "fileName", fileName));
+        } catch (IOException e) {
+          log(e, Level.WARNING, Util.getLang("exceptions.newLangInstall", "fileName", langFile.getName(), "URL", "https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName));
+        }
       }
     }
 
