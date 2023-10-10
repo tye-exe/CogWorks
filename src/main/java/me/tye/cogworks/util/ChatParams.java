@@ -21,6 +21,7 @@ ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
 
 ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
 JsonObject plugin = new JsonObject();
+JsonObject pluginVersion = new JsonObject();
 
 JsonArray dependencies = new JsonArray();
 JsonArray files = new JsonArray();
@@ -51,7 +52,7 @@ public ChatParams setState(String state) {
  Sets the files that are able to be chosen during pluginVersionSelect & pluginFileSelect.
  @param chooseableFiles Files that can be chosen from.
  @return Edited ChatParams object. */
-public ChatParams setChooseableFiles(ArrayList<JsonObject> chooseableFiles) {
+public ChatParams setChooseable(ArrayList<JsonObject> chooseableFiles) {
   this.chooseableFiles = chooseableFiles;
   return this;
 }
@@ -130,6 +131,11 @@ public ChatParams setDeleteQueue(DeleteQueue deleteQueue) {
   return this;
 }
 
+public ChatParams setPluginVersion(JsonObject pluginVersion) {
+  this.pluginVersion = pluginVersion;
+  return this;
+}
+
 
 /**
  /@return Gets the files that are able to be chosen during pluginVersionSelect. */
@@ -204,5 +210,9 @@ public Boolean getDeleteConfigs() {
  @return The plugins scheduled for deletion. */
 public DeleteQueue getDeleteQueue() {
   return deleteQueue;
+}
+
+public JsonObject getPluginVersion() {
+  return pluginVersion;
 }
 }

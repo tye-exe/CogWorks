@@ -56,8 +56,17 @@ public void log() {
 
   String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile, "pluginNames", pluginNames, "state", state);
 
-  if (sender != null) sender.sendMessage("[CogWorks] "+message);
-  else CogWorks.log(e, level, message);
+  if (sender != null) {
+    message = message.replaceAll("\n", "\n§f[CogWorks] ");
+    System.out.println(message);
+    sender.sendMessage("[CogWorks] "+message);
+  }
+  else {
+    for (String line : message.split("\n")) {
+      CogWorks.log(e, level, line);
+      e = null;
+    }
+  }
 }
 
 public Log setDepName(String depName) {

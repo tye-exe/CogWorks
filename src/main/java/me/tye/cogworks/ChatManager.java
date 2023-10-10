@@ -80,10 +80,13 @@ public static void checks(String name, String message) {
           JsonObject plugin = validPluginKeys.get(chosenPlugin-1);
           JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosenPlugin-1));
           ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
+
           if (compatibleFiles.isEmpty()) {
             new Log(sender, state, "noFiles").log();
-          } else if (compatibleFiles.size() == 1) {
+            return;
+          }
 
+          if (compatibleFiles.size() == 1) {
             String title = plugin.get("title").getAsString();
             new Log(sender, state, "start").setPluginName(title).log();
 
@@ -101,16 +104,19 @@ public static void checks(String name, String message) {
             }
 
             JsonArray files = compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray();
-            if (files.size() > 1) {
+            if (files.isEmpty()) {
+              new Log(sender, state, "noFiles").log();
+              return;
+            }
+
+            if (files.size() == 1) {
               installed.add(installModrinthPlugin(sender, state, files));
               if (!installed.contains(false))
                 new Log(sender, state, "finish").setPluginName(title).log();
 
               // if there are more than one file for that version you get prompted to choose which one(s) to install
             } else {
-              new Log(sender, state, "versionFiles.0").log();
-              new Log(sender, state, "versionFiles.1").log();
-              new Log(sender, state, "versionFiles.2").log();
+              new Log(sender, state, "versionFiles").log();
 
               int i = 1;
               for (JsonElement je : files) {
@@ -121,11 +127,12 @@ public static void checks(String name, String message) {
                 sender.spigot().sendMessage(projectName);
                 i++;
               }
-              ChatParams newParams = new ChatParams(sender, "pluginFileSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
+              ChatParams newParams = new ChatParams(sender, "pluginFileSelect").setChooseable(chooseableFiles).setPlugin(plugin).setPluginVersion(compatibleFiles.get(0).getAsJsonObject());
               if (sender instanceof Player) response.put(sender.getName(), newParams);
               else response.put("~", newParams);
               return;
             }
+
 
           } else {
             new Log(sender, state, "pluginSelect").log();
@@ -140,11 +147,12 @@ public static void checks(String name, String message) {
               sender.spigot().sendMessage(projectName);
               i++;
             }
-            ChatParams newParams = new ChatParams(sender, "pluginVersionSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
+            ChatParams newParams = new ChatParams(sender, "pluginVersionSelect").setChooseable(chooseableFiles).setPlugin(plugin);
             if (sender instanceof Player) response.put(sender.getName(), newParams);
             else response.put("~", newParams);
             return;
           }
+
           response.remove(name);
           break;
         }
@@ -173,20 +181,61 @@ public static void checks(String name, String message) {
           }
 
           installed.add(installModrinthPlugin(sender, state, chosen.get("files").getAsJsonArray()));
-          if (!installed.contains(false))
-            new Log(sender, state, "finish").setPluginName(title).log();
+          if (!installed.contains(false)) new Log(sender, state, "finish").setPluginName(title).log();
           response.remove(name);
           break;
         }
 
         case "pluginFileSelect": {
           ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
+          JsonObject plugin = params.getPlugin();
+          JsonObject pluginVersion = params.getPluginVersion();
+
+          if (message.equals("q")) {
+            response.remove(name);
+            new Log(sender, state, "quit").log();
+            return;
+          }
+
+          JsonArray toInstall = new JsonArray();
 
           //allow multiple inpuits for parse
+          for (String file : message.split(",")) {
+            file = file.strip();
+            if (file.isEmpty()) continue;
+
+            try {
+              toInstall.add(chooseableFiles.get(Integer.parseInt(message)));
+            } catch (NumberFormatException e) {
+              new Log(sender, state, "NAN").log();
+            }
+          }
+
+          String title = plugin.get("title").getAsString();
+          new Log(sender, state, "start").setPluginName(title).log();
+
+          HashMap<String,JsonArray> dependencies = getModrinthDependencies(sender, state, pluginVersion);
+          ArrayList<Boolean> installed = new ArrayList<>();
+
+          if (!dependencies.isEmpty()) {
+            new Log(sender, state, "installingDep").setPluginName(title).log();
+            for (JsonArray plugins : dependencies.values()) {
+              if (plugins.isEmpty()) continue;
+              if (!installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()))
+                new Log(sender, state, "installed").setFileName(plugins.get(0).getAsJsonObject().get("files").getAsJsonArray().get(0).getAsJsonObject().get("filename").getAsString());
+            }
+            new Log(sender, state, "installedDep").log();
+          }
+
+          installed.add(installModrinthPlugin(sender, state, toInstall));
+          if (!installed.contains(false)) new Log(sender, state, "finish").setPluginName(title).log();
 
 
 
-          break;
+          installModrinthPlugin(sender, state, );
+
+          response.remove(name);
+          return;
         }
 
         case "pluginBrowse": {
@@ -286,7 +335,7 @@ public static void checks(String name, String message) {
                 i++;
               }
 
-              ChatParams newParams = new ChatParams(sender, "pluginVersionSelect").setChooseableFiles(chooseableFiles).setPlugin(plugin);
+              ChatParams newParams = new ChatParams(sender, "pluginVersionSelect").setChooseable(chooseableFiles).setPlugin(plugin);
               if (sender instanceof Player) response.put(sender.getName(), newParams);
               else response.put("~", newParams);
               return;
