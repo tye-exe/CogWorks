@@ -5,9 +5,6 @@
 lang: eng
 
 
-#Displays custom error messages to inform exactly what went wrong.
-showErrors: true
-
 #Displays stack trace to help with debugging.
 #Turn this on before reporting a bug.
 #This will be enabled by default until release.

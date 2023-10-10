@@ -33,6 +33,7 @@
 - Reworked Logging system.
 - Text responses are got from lang file instead of being hard coded (allows for translation).
 - Lang file will automatically repair itself.
-- Will install new language lang files from github if new ones are published for a version.
+- Will install new language lang files from GitHub if new ones are published for a version.
 - Before installing a plugin it will be checked if it is already installed.
 - When deleting a plugin that other plugins depend on, it will prompt you if you want to delete those as well.
+- Removed "showErrors" config option. A warning/error message will always display. However, you can disable the java errors with "showErrorTrace".
