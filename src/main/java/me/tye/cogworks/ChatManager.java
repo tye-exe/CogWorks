@@ -25,8 +25,7 @@ import java.util.List;
 
 import static me.tye.cogworks.FileGui.position;
 import static me.tye.cogworks.commands.PluginCommand.*;
-import static me.tye.cogworks.util.Util.parseNumInput;
-import static me.tye.cogworks.util.Util.pluginFolder;
+import static me.tye.cogworks.util.Util.*;
 
 public class ChatManager implements Listener {
 
@@ -122,7 +121,7 @@ public static void checks(String name, String message) {
               for (JsonElement je : files) {
                 JsonObject jo = je.getAsJsonObject();
                 chooseableFiles.add(jo);
-                TextComponent projectName = new TextComponent(i+": "+jo.get("filename").getAsString());
+                TextComponent projectName = new TextComponent(i+": "+(jo.get("primary").getAsBoolean() ? net.md_5.bungee.api.ChatColor.BLUE+getLang("pluginFileSelect.primary")+net.md_5.bungee.api.ChatColor.GREEN+" " : "")+jo.get("filename").getAsString());
                 projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
                 sender.spigot().sendMessage(projectName);
                 i++;
@@ -180,8 +179,36 @@ public static void checks(String name, String message) {
             new Log(sender, state, "installedDep").log();
           }
 
-          installed.add(installModrinthPlugin(sender, state, chosen.get("files").getAsJsonArray()));
-          if (!installed.contains(false)) new Log(sender, state, "finish").setPluginName(title).log();
+          JsonArray files = chosen.get("files").getAsJsonArray();
+          if (files.isEmpty()) {
+            new Log(sender, state, "noFiles").log();
+            return;
+          }
+
+          if (files.size() == 1) {
+            installed.add(installModrinthPlugin(sender, state, files));
+            if (!installed.contains(false))
+              new Log(sender, state, "finish").setPluginName(title).log();
+
+            // if there are more than one file for that version you get prompted to choose which one(s) to install
+          } else {
+            new Log(sender, state, "versionFiles").log();
+
+            int i = 1;
+            for (JsonElement je : files) {
+              JsonObject jo = je.getAsJsonObject();
+              chooseableFiles.add(jo);
+              TextComponent projectName = new TextComponent(i+": "+(jo.get("primary").getAsBoolean() ? net.md_5.bungee.api.ChatColor.BLUE+getLang("pluginFileSelect.primary")+net.md_5.bungee.api.ChatColor.GREEN+" " : "")+jo.get("filename").getAsString());
+              projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
+              sender.spigot().sendMessage(projectName);
+              i++;
+            }
+            ChatParams newParams = new ChatParams(sender, "pluginFileSelect").setChooseable(chooseableFiles).setPlugin(plugin).setPluginVersion(chosen);
+            if (sender instanceof Player) response.put(sender.getName(), newParams);
+            else response.put("~", newParams);
+            return;
+          }
+
           response.remove(name);
           break;
         }
@@ -205,17 +232,20 @@ public static void checks(String name, String message) {
             if (file.isEmpty()) continue;
 
             try {
-              toInstall.add(chooseableFiles.get(Integer.parseInt(message)));
+              toInstall.add(chooseableFiles.get(Integer.parseInt(file)-1));
             } catch (NumberFormatException e) {
               new Log(sender, state, "NAN").log();
             }
           }
 
-          String title = plugin.get("title").getAsString();
-          new Log(sender, state, "start").setPluginName(title).log();
+          if (toInstall.isEmpty()) {
+            new Log(sender, state, "noneSelected").log();
+            return;
+          }
 
           HashMap<String,JsonArray> dependencies = getModrinthDependencies(sender, state, pluginVersion);
           ArrayList<Boolean> installed = new ArrayList<>();
+          String title = plugin.get("title").getAsString();
 
           if (!dependencies.isEmpty()) {
             new Log(sender, state, "installingDep").setPluginName(title).log();
@@ -227,12 +257,33 @@ public static void checks(String name, String message) {
             new Log(sender, state, "installedDep").log();
           }
 
-          installed.add(installModrinthPlugin(sender, state, toInstall));
-          if (!installed.contains(false)) new Log(sender, state, "finish").setPluginName(title).log();
 
+          ArrayList<String> fileNames = new ArrayList<>();
+          for (JsonElement file : toInstall) {
+            String fileName = file.getAsJsonObject().get("filename").getAsString();
+            fileNames.add(fileName);
+          }
 
+          new Log(sender, state, "start").setFileNames(fileNames).log();
 
-          installModrinthPlugin(sender, state, );
+          for (JsonElement file : toInstall) {
+            JsonArray array = new JsonArray();
+            array.add(file);
+            installed.add(installModrinthPlugin(sender, state, array));
+          }
+
+          if (fileNames.size() != installed.size()) {
+            new Log(sender, state, "finish").setFileNames(fileNames).log();
+            new Log(sender, state, "restart").setFileNames(fileNames).log();
+          } else {
+            //removes the filenames that didn't install successfully from the log
+            for (int i = 0; i < installed.size(); i++) {
+              if (!installed.get(i)) fileNames.remove(i);
+            }
+          }
+
+          new Log(sender, state, "finish").setFileNames(fileNames).log();
+          new Log(sender, state, "restart").setFileNames(fileNames).log();
 
           response.remove(name);
           return;
@@ -388,7 +439,7 @@ public static void checks(String name, String message) {
           ArrayList<PluginData> deleteEval = params.getToDeleteEval();
           DeleteQueue deleteQueue = params.getDeleteQueue();
           Boolean deleteConfig = params.getDeleteConfigs();
-          String pluginName = deleteEval.get(0).getName();
+          String pluginName = deleteEval.get(0).getName(); //TODO: look into if this always gives the right name
           List<PluginData> whatDependsOn = Plugins.getWhatDependsOn(pluginName);
 
           int chosen = parseNumInput(sender, state, message, name, 3, 1);
@@ -400,7 +451,15 @@ public static void checks(String name, String message) {
             return;
           }
 
-          if (chosen == 1) deleteEval.removeAll(whatDependsOn);
+          if (chosen == 1) {
+            //uses the plugin names as the objects don't match.
+            for (int i = 1; i < deleteEval.size(); i++) {
+              for (PluginData dependsData : whatDependsOn) {
+                if (deleteEval.get(i).getName().equals(dependsData.getName())) deleteEval.remove(i);
+              }
+            }
+          }
+
           if (chosen == 2) {
             ArrayList<PluginData> toAppend = new ArrayList<>();
             dependLoop:

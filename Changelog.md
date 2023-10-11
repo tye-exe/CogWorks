@@ -37,3 +37,4 @@
 - Before installing a plugin it will be checked if it is already installed.
 - When deleting a plugin that other plugins depend on, it will prompt you if you want to delete those as well.
 - Removed "showErrors" config option. A warning/error message will always display. However, you can disable the java errors with "showErrorTrace".
+- If a plugin version has multiple files it will prompt you for which ones to install.
