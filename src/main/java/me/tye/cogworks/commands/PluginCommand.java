@@ -224,6 +224,11 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
       }.init(sender, 0)).start();
       return true;
     }
+    case "reload" -> {
+      reloadPluginData();
+      return true;
+    }
+
     }
   }
 
@@ -232,6 +237,7 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
     new Log(sender, "help.plugin.install").log();
     new Log(sender, "help.plugin.browse").log();
   }
+  if (sender.hasPermission("cogworks.plugin.reload")) new Log(sender, "help.plugin.reload").log();
   if (sender.hasPermission("cogworks.plugin.rm")) new Log(sender, "help.plugin.remove").log();
 
   return true;

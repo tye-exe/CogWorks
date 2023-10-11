@@ -20,6 +20,8 @@ permissions:
     default: op
   cogworks.plugin.rm:
     default: op
+  cogworks.plugin.reload:
+    default: op
 
   cogworks.file.nav:
     default: op

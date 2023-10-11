@@ -31,6 +31,7 @@ help:
     help: "§9/plugin help - §aShows this message."
     install: "§9/plugin install <Plugin Name | URL> - §aIf a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download."
     browse: "§9/plugin browse - §aAllows the user to search though the most popular plugins on modrinth that are compatible with your server type and install them with the press of a button."
+    reload: "§9/plugin reload - §aForces CogWorks to rescan the \"./plugins\" folder."
     remove: "§9/plugin remove - §aDisables and uninstalls the given plugin."
   file:
     help: "§9/file help - §aShows this message."

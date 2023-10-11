@@ -27,6 +27,9 @@ public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Comman
       if (sender.hasPermission("cogworks.plugin.rm")) {
         StringUtil.copyPartialMatches(args[0], List.of("remove"), completions);
       }
+      if (sender.hasPermission("cogworks.plugin.reload")) {
+        StringUtil.copyPartialMatches(args[0], List.of("reload"), completions);
+      }
 
       if (!completions.isEmpty()) StringUtil.copyPartialMatches(args[0], List.of("help"), completions);
     }
