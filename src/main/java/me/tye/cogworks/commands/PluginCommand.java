@@ -159,10 +159,7 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
           String[] names = new String[whatDepends.size()];
           for (int i = 0; i < whatDepends.size(); i++) names[i] = whatDepends.get(i).getName();
 
-          new Log(sender, "deletePlugin.dependsOn.0").setPluginNames(names).setPluginName(pluginName).log();
-          new Log(sender, "deletePlugin.dependsOn.1").setPluginName(pluginName).log();
-          new Log(sender, "deletePlugin.dependsOn.2").setPluginNames(names).setPluginName(pluginName).log();
-          new Log(sender, "deletePlugin.dependsOn.3").log();
+          new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
 
           ChatParams params = new ChatParams(sender, "pluginsDeleteEval").setDeleteQueue(new DeleteQueue(sender, "deletePlugin")).setToDeleteEval(deleteEval).setDeleteConfigs(deleteConfig);
           if (sender instanceof Player) response.put(sender.getName(), params);

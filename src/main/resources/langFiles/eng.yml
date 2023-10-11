@@ -147,11 +147,7 @@ pluginInstall:
 
 
 deletePlugin:
-  dependsOn:
-    0: "§e{pluginNames} depend(s) on {pluginName} to function."
-    1: "§a1: Force delete {pluginName}."
-    2: "§a2: Delete {pluginName} & {pluginNames}."
-    3: "§a3: Do nothing (exit)."
+  dependsOn: "§e{pluginNames} depend on {pluginName} to function.\n§a1: Force delete {pluginName}.\n§a2: Delete {pluginName} & {pluginNames}.\n§a3: Do nothing (exit)."
   deleteConfig:
     0: "§eDo you wish to delete the {pluginName} config files?"
     1: "§eSend y or n in chat to choose."
@@ -168,11 +164,7 @@ deletePlugin:
 
 
 pluginsDeleteEval:
-  dependsOn:
-    0: "§e{pluginNames} depend on {pluginName} to function."
-    1: "1: Force delete {pluginName}."
-    2: "2: Delete {pluginName} & {pluginNames}."
-    3: "3: Do nothing (exit)."
+  dependsOn: "§e{pluginNames} depend on {pluginName} to function.\n§a1: Force delete {pluginName}.\n§a2: Delete {pluginName} & {pluginNames}.\n§a3: Do nothing (exit)."
   deleteConfig:
     0: "§eDo you wish to delete the {pluginName} config files?"
     1: "§eSend y or n in chat to choose."
@@ -316,8 +308,8 @@ exceptions:
   newLangInstall: "There was an error installing the new lang file {fileName}. You can manually download it from \"{URL}\"."
   clearTemp: "There was an error clearing the temp folder - \"{filePath}\". This folder might fill up with unused files."
   stateNotFound: "There was an error matching the state your in. Please report this to the devs. State: \"{state}\"."
-  noConfigMatch: "A value could not be matched to the value file. Please report this to the devs. Key: \"{key}\""
-
+  noConfigMatch: "A value could not be matched to the value file. Please report this to the devs. Key: \"{key}\"."
+  chatError: "There was a general error when interacting with the chat system for CogWorks."
 
 
 #DO NOT CHANGE!

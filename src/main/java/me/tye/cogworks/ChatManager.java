@@ -20,8 +20,10 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
 
 import static me.tye.cogworks.FileGui.position;
 import static me.tye.cogworks.commands.PluginCommand.*;
@@ -402,6 +404,12 @@ public static void checks(String name, String message) {
           String pluginName = toDeleteEval.get(0).getName();
           List<PluginData> whatDepends = Plugins.getWhatDependsOn(pluginName);
 
+          if (message.equals("q")) {
+            response.remove(name);
+            new Log(sender, state, "quit").log();
+            return;
+          }
+
           boolean deleteConfig;
           if (message.equals("y")) deleteConfig = true;
           else if (message.equals("n")) deleteConfig = false;
@@ -421,16 +429,25 @@ public static void checks(String name, String message) {
             response.remove(name);
           } else {
             deleteQueue.addPlugin(pluginName, deleteConfig);
-            String[] names = new String[whatDepends.size()];
-            for (int i = 0; i < whatDepends.size(); i++) names[i] = whatDepends.get(i).getName();
 
-            new Log(sender, "deletePlugin.dependsOn.0").setPluginNames(names).setPluginName(pluginName).log();
-            new Log(sender, "deletePlugin.dependsOn.1").setPluginName(pluginName).log();
-            new Log(sender, "deletePlugin.dependsOn.2").setPluginNames(names).setPluginName(pluginName).log();
-            new Log(sender, "deletePlugin.dependsOn.3").log();
-            ChatParams newParams = new ChatParams(sender, "pluginsDeleteEval").setDeleteQueue(deleteQueue).setToDeleteEval(new ArrayList<>(whatDepends));
-            if (sender instanceof Player) response.put(sender.getName(), newParams);
-            else response.put("~", newParams);
+            if (!whatDepends.isEmpty()) {
+              String[] names = new String[whatDepends.size()];
+              for (int i = 0; i < whatDepends.size(); i++) names[i] = whatDepends.get(i).getName();
+              toDeleteEval.remove(0);
+
+              new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
+              ChatParams newParams = new ChatParams(sender, "pluginsDeleteEval").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
+              if (sender instanceof Player) response.put(sender.getName(), newParams);
+              else response.put("~", newParams);
+            } else {
+
+              new Log(sender, "deletePlugin.deleteConfig.0").setPluginName(pluginName).log();
+              new Log(sender, "deletePlugin.deleteConfig.1").log();
+              new Log(sender, "deletePlugin.deleteConfig.2").log();
+              ChatParams newParams = new ChatParams(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
+              if (sender instanceof Player) response.put(sender.getName(), newParams);
+              else response.put("~", params);
+            }
           }
           break;
         }
@@ -510,10 +527,7 @@ public static void checks(String name, String message) {
             for (int i = 0; i < whatDependsOn.size(); i++)
               names[i] = whatDependsOn.get(i).getName();
 
-            new Log(sender, "deletePlugin.dependsOn.0").setPluginNames(names).setPluginName(pluginName).log();
-            new Log(sender, "deletePlugin.dependsOn.1").setPluginName(pluginName).log();
-            new Log(sender, "deletePlugin.dependsOn.2").setPluginNames(names).setPluginName(pluginName).log();
-            new Log(sender, "deletePlugin.dependsOn.3").log();
+            new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
           }
           break;
         }
@@ -567,6 +581,7 @@ public static void checks(String name, String message) {
 
         }
       } catch (Exception e) {
+        new Log("exceptions.chatError", Level.WARNING, e).log();
         response.remove(name);
       }
     }
