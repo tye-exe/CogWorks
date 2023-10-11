@@ -1,5 +1,6 @@
 package me.tye.cogworks.commands;
 
+import me.tye.cogworks.util.Log;
 import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.yamlClasses.PluginData;
@@ -13,9 +14,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
-
-import static me.tye.cogworks.CogWorks.log;
 
 public class TabComplete implements TabCompleter {
 @Override
@@ -42,7 +40,7 @@ public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Comman
         for (PluginData data : Plugins.readPluginData())
           plugins.add(data.getName());
       } catch (IOException e) {
-        log(e, sender, Level.WARNING, Util.getLang("exceptions.dataReadError"));
+        new Log(sender, "tabComplete.dataReadError").log();
       }
 
       StringUtil.copyPartialMatches(args[1], plugins, completions);

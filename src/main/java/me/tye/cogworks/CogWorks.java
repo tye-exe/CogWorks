@@ -1,6 +1,5 @@
 package me.tye.cogworks;
 
-import com.google.common.io.Files;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -12,14 +11,11 @@ import me.tye.cogworks.util.Log;
 import me.tye.cogworks.util.ModrinthSearch;
 import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.Util;
-import me.tye.cogworks.util.exceptions.NoSuchPluginException;
 import me.tye.cogworks.util.yamlClasses.DependencyInfo;
 import me.tye.cogworks.util.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -34,7 +30,6 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.text.MessageFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -49,20 +44,20 @@ import static me.tye.cogworks.commands.PluginCommand.*;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
-//TODO: if there are more than one file for that version you get prompted to choose which one(s) to install
-
+//TODO: delletteee bug is still a thing (only with multiple dependencies)
+//TODO: lang version check
 //TODO: mark if plugins were installed by user or as a dependency
+//TODO: mark plugins for attempted ADR / when some were deleted to not attempt ADR
+
 //TODO: allow to delete multiple plugins at once - separate by ","?
-//TODO: when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
-//TODO: voice paper interactions throws error in automatic dependency resolve.
 //TODO: check if lang file exists for string the user entered
 //TODO: edit lang options based on available lang files.
 //TODO: add configs options for ADR
 //TODO: add command to force stop ADR?
-//TODO: lang version check
 //TODO: instead of deleting files, have them be moved to the .temp folder & either deleted upon reload | after a set time
 //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
 //TODO: allow to install multiple plugins at once when using a url.
+//TODO: when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
 
 @Override
 public void onEnable() {
@@ -97,56 +92,14 @@ public void onEnable() {
   } catch (Exception ignore) {
   }
 
+  Util.reloadPluginData();
 
-  File pluginFolder = new File(getDataFolder().getParent());
+  //ADR
   ArrayList<PluginData> identifiers = new ArrayList<>();
   try {
     identifiers = Plugins.readPluginData();
   } catch (IOException e) {
-    log(e, Level.SEVERE, Util.getLang("exceptions.noAccessPluginYML"));
-  }
-
-  //removes any plugin from plugin data that have been deleted
-  try {
-    PluginLoop:
-    for (PluginData data : identifiers) {
-      for (File file : Objects.requireNonNull(pluginFolder.listFiles())) {
-        if (file.isDirectory()) continue;
-        if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
-
-        if (data.getFileName().equals(file.getName())) {
-          continue PluginLoop;
-        }
-      }
-      try {
-        Plugins.removePluginData(data.getName());
-      } catch (NoSuchPluginException e) {
-        log(e, Level.WARNING, Util.getLang("exceptions.deletingRemovedPlugin", "fileName", data.getName()));
-      } catch (IOException e) {
-        log(e, Level.WARNING, Util.getLang("exceptions.noAccessDeleteRemovedPlugins", "fileName", data.getName()));
-      }
-    }
-
-    //adds any new plugins to the pluginData
-    for (File file : Objects.requireNonNull(pluginFolder.listFiles())) {
-      if (file.isDirectory()) continue;
-      if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
-      try {
-        Plugins.appendPluginData(file);
-      } catch (IOException e) {
-        log(e, Level.WARNING, Util.getLang("exceptions.badYmlAccess", "fileName", file.getName()));
-      }
-    }
-  } catch (NullPointerException e) {
-    log(e, Level.WARNING, Util.getLang("exceptions.gettingFilesErr", "filePath", pluginFolder.getAbsolutePath()));
-  }
-
-  //ADR
-  identifiers = new ArrayList<>();
-  try {
-    identifiers = Plugins.readPluginData();
-  } catch (IOException e) {
-    log(e, Level.SEVERE, Util.getLang("exceptions.noAccessPluginYML"));
+    new Log("exceptions.noAccessPluginYML", Level.SEVERE, e).log();
   }
 
   //checks for uninstalled dependencies
@@ -183,7 +136,7 @@ public void onEnable() {
       @Override
       public void run() {
         if (!ADRStore.mkdir()) {
-          log(null, Level.INFO, getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+          new Log("ADR.fail", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
           return;
         }
 
@@ -193,14 +146,14 @@ public void onEnable() {
         ArrayList<JsonObject> validPluginKeys;
         HashMap<JsonObject,JsonArray> validPlugins;
 
-        log(null, Level.INFO, getLang("ADR.attempting", "depName", unmetDepName, "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+        new Log("ADR.attempting", Level.INFO, null).setDepName(unmetDepName).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
 
         //searches the dependency name on modrinth
         ModrinthSearch search = modrinthSearch(null, "ADR", unmetDepName);
         validPluginKeys = search.getValidPluginKeys();
         validPlugins = search.getValidPlugins();
         if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) {
-          log(null, Level.INFO, getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+          new Log("ADR.fail", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
           return;
         }
 
@@ -225,7 +178,7 @@ public void onEnable() {
           }
 
           if (latestValidPlugin == null) {
-            log(null, Level.INFO, getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+            new Log("ADR.fail", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
             return;
           }
 
@@ -253,7 +206,7 @@ public void onEnable() {
               rbc.close();
               inputStream.close();
             } catch (IOException e) {
-              log(e, Level.WARNING, getLang("ADR.downloadingErr", "fileName", dependecyFile.getName()));
+              new Log("ADR.downloadingErr", Level.WARNING, e).setFileName(dependecyFile.getName()).log();
             }
 
             try {
@@ -273,14 +226,14 @@ public void onEnable() {
                 if (yamlData.get("name").equals(unmetDepName)) {
                   zip.close();
                   FileUtils.moveFile(dependecyFile, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+dependecyFile.getName()));
-                  log(null, Level.INFO, getLang("ADR.success.0", "fileName", unmetDependencies.get(unmetDepInfo).getName(), "depName", (String) yamlData.get("name")));
-                  log(null, Level.INFO, getLang("ADR.success.1"));
+                  new Log("ADR.success", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).setDepName((String) yamlData.get("name")).log();
+                  Util.reloadPluginData();
                   return versionInfo;
                 }
               }
               zip.close();
             } catch (Exception e) {
-              log(e, Level.WARNING, getLang("ADR.pluginYMLCheck", "fileName", dependecyFile.getName()));
+              new Log("ADR.pluginYMLCheck", Level.WARNING, e).setFileName(dependecyFile.getName()).log();
             }
             return null;
           }));
@@ -290,13 +243,13 @@ public void onEnable() {
         executorService.shutdown();
         try {
           if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
-            log(null, Level.WARNING, getLang("ADR.threadTime"));
-            log(null, Level.INFO, getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+            new Log("ADR.threadTime", Level.WARNING, null).log();
+            new Log("ADR.fail", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
             return;
           }
         } catch (InterruptedException e) {
-          log(e, Level.WARNING, getLang("ADR.threadTime"));
-          log(e, Level.INFO, getLang("ADR.fail", "fileName", unmetDependencies.get(unmetDepInfo).getName()));
+          new Log("ADR.threadTime", Level.WARNING, e).log();
+          new Log("ADR.fail", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
           return;
         }
 
@@ -314,14 +267,14 @@ public void onEnable() {
               }
             }
           } catch (InterruptedException | ExecutionException e) {
-            log(e, Level.WARNING, getLang("ADR.getErr"));
+            new Log("ADR.getErr", Level.WARNING, e).log();
           }
         }
 
         try {
           FileUtils.deleteDirectory(ADRStore);
         } catch (IOException e) {
-          log(e, Level.WARNING, getLang("ADR.cleanUpPossiblePlugins", "filePath", ADRStore.getAbsolutePath()));
+          new Log("ADR.cleanUpPossiblePlugins", Level.WARNING, e).setFilePath(ADRStore.getAbsolutePath()).log();
         }
       }
     }.init(unmetDepInfo, ADR, unmetDependencies)).start();
@@ -344,15 +297,15 @@ public void onEnable() {
 
         try {
           createFile(langFile, new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).openStream(), true);
-          log(null, Level.INFO, Util.getLang("info.newLang", "fileName", fileName));
+          new Log("info.newLang", Level.WARNING, null).setFileName(fileName).log();
         } catch (IOException e) {
-          log(e, Level.WARNING, Util.getLang("exceptions.newLangInstall", "fileName", langFile.getName(), "URL", "https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName));
+          new Log("exceptions.newLangInstall", Level.WARNING, e).setFileName(langFile.getName()).setUrl("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).log();
         }
       }
     }
 
   } catch (IOException e) {
-    log(e, Level.WARNING, Util.getLang("exceptions.newLangCheck"));
+    new Log("exceptions.newLangCheck", Level.WARNING, e).log();
   }
 
 
@@ -399,7 +352,7 @@ public static void createFile(File file, @Nullable InputStream resource, boolean
       }
     }
   } catch (IOException | NullPointerException e) {
-    log(null, Level.SEVERE, Util.getLang("exceptions.fileCreation", "fileName", file.getName(), "filePath", file.getAbsolutePath()));
+    new Log("exceptions.fileCreation", Level.SEVERE, e).setFilePath(file.getAbsolutePath()).log();
   }
 }
 
@@ -473,7 +426,7 @@ public static HashMap<String,Object> returnFileConfigs(File externalFile, String
   } catch (Exception e) {
     loadedValues = getKeysRecursive(getDefault(resourcePath));
     if (resourcePath.equals("config.yml")) Util.setConfig(getDefault(resourcePath));
-    log(e, Level.SEVERE, Util.getLang("exceptions.errorWritingConfigs"));
+    new Log("exceptions.errorWritingConfigs", Level.SEVERE, e).log();
   }
   return loadedValues;
 }
@@ -512,76 +465,4 @@ public static ItemStack itemProperties(ItemStack item, @Nullable String displayN
   return item;
 }
 
-
-/**
- Sends log message to console and all online op players. */
-public static void log(@Nullable Exception e, Level level, String message) {
-  if (Util.getConfig("showErrors")) {
-    ChatColor colour;
-    if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
-    else if (level.getName().equals("SEVERE")) {
-      colour = ChatColor.RED;
-      SendErrorSummary.severe++;
-    } else colour = ChatColor.GREEN;
-
-    Bukkit.getLogger().log(level, MessageFormat.format("[{0}]: {1}", plugin.getName(), message));
-    for (Player player : Bukkit.getOnlinePlayers()) {
-      if (!player.isOp()) continue;
-      String formattedMessage = MessageFormat.format("[{0}]: {1}{2}", plugin.getName(), colour, message);
-      if ((Boolean) Util.getConfig("showErrorTrace") && e != null)
-        formattedMessage += Util.getLang("exceptions.seeConsole");
-      player.sendMessage(formattedMessage);
-    }
-  }
-  if ((Boolean) Util.getConfig("showErrorTrace") && e != null) e.printStackTrace();
-}
-
-/**
- Sends log message to specified Player. */
-public static void log(@Nullable Exception e, @Nullable Player player, Level level, String message) {
-  if (player == null) {
-    log(e, level, message);
-    return;
-  }
-
-  ChatColor colour;
-  if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
-  else if (level.getName().equals("SEVERE")) {
-    colour = ChatColor.RED;
-    SendErrorSummary.severe++;
-  } else colour = ChatColor.GREEN;
-
-  if (Util.getConfig("showErrors")) {
-    String formattedMessage = MessageFormat.format("[{0}]: {1}{2}", plugin.getName(), colour, message);
-    if ((Boolean) Util.getConfig("showErrorTrace") && e != null)
-      formattedMessage += Util.getLang("exceptions.seeConsole");
-    player.sendMessage(formattedMessage);
-  }
-  if ((Boolean) Util.getConfig("showErrorTrace") && e != null) e.printStackTrace();
-}
-
-/**
- Sends log message to specified CommandSender. */
-public static void log(@Nullable Exception e, @Nullable CommandSender sender, Level level, String message) {
-  if (sender == null) {
-    log(e, level, message);
-    return;
-  }
-
-  ChatColor colour;
-  if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
-  else if (level.getName().equals("SEVERE")) {
-    colour = ChatColor.RED;
-    SendErrorSummary.severe++;
-  } else colour = ChatColor.GREEN;
-
-  if (Util.getConfig("showErrors")) {
-    String formattedMessage = MessageFormat.format("[{0}]: {1}{2}", plugin.getName(), colour, message);
-    if ((Boolean) Util.getConfig("showErrorTrace") && e != null)
-      formattedMessage += Util.getLang("exceptions.seeConsole");
-    sender.sendMessage(formattedMessage);
-  }
-
-  if ((Boolean) Util.getConfig("showErrorTrace") && e != null) e.printStackTrace();
-}
 }

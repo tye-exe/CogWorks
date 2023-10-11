@@ -1,19 +1,23 @@
 package me.tye.cogworks.util;
 
+import com.google.common.io.Files;
 import me.tye.cogworks.CogWorks;
+import me.tye.cogworks.util.exceptions.NoSuchPluginException;
+import me.tye.cogworks.util.yamlClasses.PluginData;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 
 import static me.tye.cogworks.ChatManager.response;
-import static me.tye.cogworks.CogWorks.log;
-
 
 public class Util {
 
@@ -102,7 +106,7 @@ public static String getLang(String key, String... replace) {
     }
 
     lang.put(key, defaultLang.get(key));
-    log(null, Level.WARNING, getLang("exceptions.noExternalResponse", "key", key));
+    new Log("exceptions.noExternalResponse", Level.WARNING, null).log();
   }
 
   for (int i = 0; i <= replace.length-1; i += 2) {
@@ -126,23 +130,23 @@ public static <T> T getConfig(String key) {
     response = defaultConfig.get(key);
 
     if (response == null) {
-      log(null, Level.WARNING, Util.getLang("exceptions.noSuchResponse", "key", key));
+      new Log("exceptions.noSuchResponse", Level.WARNING, null).setKey(key).log();
       return (T) Boolean.TRUE;
     }
 
     config.put(key, response);
-    log(null, Level.WARNING, "Unable to get external config for \""+key+"\". Using internal value.");
+    new Log("exceptions.noExternalResponse", Level.WARNING, null).setKey(key).log();
 
   } else response = String.valueOf(config.get(key));
 
   switch (key) {
   case "lang":
     return (T) String.valueOf(response);
-  case "showErrors", "showErrorTrace", "showOpErrorSummary":
+  case "showErrorTrace", "showOpErrorSummary":
     return (T) Boolean.valueOf(String.valueOf(response));
   }
 
-  log(null, Level.WARNING, "Unable to find match for request config, returning true");
+  new Log("exceptions.noConfigMatch", Level.WARNING, null).setKey(key).log();
   return (T) Boolean.TRUE;
 }
 
@@ -171,6 +175,48 @@ public static int parseNumInput(CommandSender sender, String state, String messa
   return chosen;
 }
 
+public static void reloadPluginData() {
+  ArrayList<PluginData> identifiers = new ArrayList<>();
+  try {
+    identifiers = Plugins.readPluginData();
+  } catch (IOException e) {
+    new Log("exceptions.noAccessPluginYML", Level.SEVERE, e).log();
+  }
 
+  //removes any plugin from plugin data that have been deleted
+  try {
+    PluginLoop:
+    for (PluginData data : identifiers) {
+      for (File file : Objects.requireNonNull(pluginFolder.listFiles())) {
+        if (file.isDirectory()) continue;
+        if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
+
+        if (data.getFileName().equals(file.getName())) {
+          continue PluginLoop;
+        }
+      }
+      try {
+        Plugins.removePluginData(data.getName());
+      } catch (NoSuchPluginException e) {
+        new Log("exceptions.deletingRemovedPlugin", Level.WARNING, e).setPluginName(data.getName()).log();
+      } catch (IOException e) {
+        new Log("exceptions.noAccessDeleteRemovedPlugins", Level.WARNING, e).setPluginName(data.getName()).log();
+      }
+    }
+
+    //adds any new plugins to the pluginData
+    for (File file : Objects.requireNonNull(pluginFolder.listFiles())) {
+      if (file.isDirectory()) continue;
+      if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
+      try {
+        Plugins.appendPluginData(file);
+      } catch (IOException e) {
+        new Log("exceptions.badYmlAccess", Level.WARNING, e).setFileName(file.getName()).log();
+      }
+    }
+  } catch (NullPointerException e) {
+    new Log("exceptions.gettingFilesErr", Level.WARNING, e).setFilePath(pluginFolder.getAbsolutePath()).log();
+  }
+}
 
 }

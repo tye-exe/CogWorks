@@ -1,11 +1,17 @@
 package me.tye.cogworks.util;
 
-import me.tye.cogworks.CogWorks;
+import me.tye.cogworks.events.SendErrorSummary;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.List;
 import java.util.logging.Level;
 
+import static me.tye.cogworks.util.Util.getConfig;
 import static me.tye.cogworks.util.Util.getLang;
 
 public class Log {
@@ -19,6 +25,7 @@ Exception e = null;
 //possible keys
 String filePath = null;
 String fileName = null;
+String fileNames = null;
 String depName = null;
 String pluginName = null;
 String pluginNames = null;
@@ -29,12 +36,12 @@ String isFile = null;
 String state = null;
 
 /**
- Creates an object which can be used for logging. If any param is null, no message will be sent.
+ Creates an object which can be used for logging. If state or event is null, no message will be sent.
  @param sender Sender to output the log to.
  @param state  First part of the lang path for the response, useful for methods.
  @param event  Last part of the lang path fot the response. */
 public Log(CommandSender sender, String state, String event) {
-  if (sender == null || state == null || event == null) {
+  if (state == null || event == null) {
     this.langPath = null;
   } else {
     this.sender = sender;
@@ -43,7 +50,7 @@ public Log(CommandSender sender, String state, String event) {
 }
 
 /**
- Creates an object which can be used for logging. If any param is null, no message will be sent.
+ Creates an object which can be used for logging. If langPath is null, no message will be sent.
  @param sender   Sender to output the log to.
  @param langPath The lang path for the response. */
 public Log(CommandSender sender, @NonNull String langPath) {
@@ -51,22 +58,48 @@ public Log(CommandSender sender, @NonNull String langPath) {
   this.langPath = langPath;
 }
 
+/**
+ Creates an object which can be used for logging. This method is intended for outputting any messages that do not originate from a users actions.
+ @param langPath The lang path for the response.
+ @param level    The level of the message.
+ @param e        The error that caused the message. */
+public Log(String langPath, @NonNull Level level, @Nullable Exception e) {
+  this.langPath = langPath;
+  this.level = level;
+  this.e = e;
+}
+
 public void log() {
   if (langPath == null) return;
 
-  String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile, "pluginNames", pluginNames, "state", state);
+  String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile, "pluginNames", pluginNames, "state", state, "fileNames", fileNames);
 
   if (sender != null) {
-    message = message.replaceAll("\n", "\n§f[CogWorks] ");
-    System.out.println(message);
-    sender.sendMessage("[CogWorks] "+message);
-  }
-  else {
     for (String line : message.split("\n")) {
-      CogWorks.log(e, level, line);
-      e = null;
+      sender.sendMessage("[CogWorks] "+line);
+    }
+
+  } else {
+    for (String line : message.split("\n")) {
+      ChatColor colour;
+      if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
+      else if (level.getName().equals("SEVERE")) {
+        colour = ChatColor.RED;
+        SendErrorSummary.severe++;
+      } else colour = ChatColor.GREEN;
+
+      Bukkit.getLogger().log(level, "[CogWorks] "+line);
+      for (Player player : Bukkit.getOnlinePlayers()) {
+        if (!player.isOp()) continue;
+        String formattedMessage = "[CogWorks] "+colour+line;
+        if ((Boolean) Util.getConfig("showErrorTrace") && e != null)
+          formattedMessage += Util.getLang("exceptions.seeConsole");
+        player.sendMessage(formattedMessage);
+      }
     }
   }
+
+  if ((Boolean) getConfig("showErrorTrace") && e != null) e.printStackTrace();
 }
 
 public Log setDepName(String depName) {
@@ -76,6 +109,22 @@ public Log setDepName(String depName) {
 
 public Log setFileName(String fileName) {
   this.fileName = fileName;
+  return this;
+}
+
+/**
+ Takes a List & formats it into a string for the lang. */
+public Log setFileNames(List<String> fileNames) {
+  StringBuilder names = new StringBuilder();
+  for (String fileName : fileNames) {
+    names.append(fileName).append(", ");
+  }
+  this.fileNames = names.substring(0, names.length()-2);
+  return this;
+}
+
+public Log setFileNames(String fileNames) {
+  this.fileNames = fileNames;
   return this;
 }
 

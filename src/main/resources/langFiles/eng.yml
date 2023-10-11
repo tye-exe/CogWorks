@@ -4,6 +4,7 @@
 #Info: the keys need to be surrounded with "{" & "}".
 #Keys:
 #fileName = The name of the file.
+#fileNames = The names of multiple files.
 #filePath = The path to the file.
 #depName = The name of the dependency.
 #pluginName = The name of the plugin.
@@ -21,7 +22,6 @@ info:
   menuClose: "§eMenu closed due to reload, this is to prevent errors."
   errorSum: "§eThere have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
   onlyPlayersFile: "§eThis command is only available to online players, being redirected to terminal."
-  primary: "Primary"
 
 
 help:
@@ -41,6 +41,8 @@ help:
 tabComplete:
   plugin:
     install: "<pluginName | URL>"
+
+  dataReadError: "There was an error getting the plugin names."
 
 
 pluginSelect:
@@ -72,6 +74,8 @@ pluginVersionSelect:
   installed: "§e{fileName} is already installed."
   installedDep: "§aDependencies installed."
   finish: "§aFinished installing {pluginName}. Reload or restart for {pluginName} to activate."
+  #Do translate the world (Primary)
+  versionFiles: "§aSend the number corresponding to the version file to install it.\n§aThe file labeled (Primary) is the main file.\n§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
 
   quit: "§eQuitting."
   NAN: "§ePlease enter a listed number."
@@ -82,6 +86,30 @@ pluginVersionSelect:
   alreadyExists: "§eThat {fileName} is already installed on your system."
   installError: "§eThere was an error installing {fileName}."
   cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
+
+
+pluginFileSelect:
+  start: "§aInstalling {fileNames}."
+  installingDep: "§aInstalling dependencies for {pluginName}.\n§eNote: This will install the dependencies listed for the version, not for the specified file(s)."
+  downloading: "§aDownloading {fileName}."
+  installed: "§e{fileName} is already installed."
+  installedDep: "§aDependencies installed."
+  finish: "§aFinished installing {fileNames}."
+  restart: "§aReload or restart for {fileNames} to activate."
+  #Do translate the world (Primary)
+  versionFiles: "§aSend the number corresponding to the version file to install it.\n§aThe file labeled (Primary) is the main file.\n§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
+  primary: "(Primary)"
+
+  quit: "§eQuitting."
+  NAN: "§ePlease enter a listed number."
+  noFiles: "§eFailed to find compatible file to download."
+  badUrl: "§eSkipping {fileName}. Invalid download URL."
+  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
+  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
+  alreadyExists: "§eThat {fileName} is already installed on your system."
+  installError: "§eThere was an error installing {fileName}."
+  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
+  noneSelected: "§eNo valid files were selected."
 
 
 pluginBrowse:
@@ -257,9 +285,7 @@ terminal:
 
 ADR:
   attempting: "Attempting to automatically resolve missing dependency \"{depName}\" for \"{fileName}\"."
-  success:
-    0: "Unmet dependency for \"{fileName}\" successfully resolved by installing \"{depName}\"."
-    1: "Reload or restart for this to take effect."
+  success: "Unmet dependency for \"{fileName}\" successfully resolved by installing \"{depName}\".\nReload or restart for this to take effect."
   fail: "Unmet dependency for \"{fileName}\" could not be automatically resolved."
 
   getErr: "Error checking if the installed dependency has any dependencies."
@@ -277,19 +303,21 @@ exceptions:
   fileCreation: "Unable to create {fileName} file in \"{filePath}\"."
   removeLeftoverFiles: "Unable to clean up unused file \"{filePath}\". Please manually delete this file at your earliest convenience."
   noAccessPluginYML: "Unable to access plugin.yml file, many features of this plugin WILL break."
-  deletingRemovedPlugin: "Error deleting removed plugin {fileName} from pluginData."
-  noAccessDeleteRemovedPlugins: "Unable to access pluginData file to remove {fileName}. This will cause the plugin to appear present when interacting with CogWorks."
+  deletingRemovedPlugin: "Error deleting removed plugin {pluginName} from pluginData."
+  noAccessDeleteRemovedPlugins: "Unable to access pluginData file to remove {pluginName}. This will cause the plugin to appear present when interacting with CogWorks."
   badYmlAccess: "Unable to access plugin.yml file for {fileName}. {fileName} won't work for many features of this plugin."
   errorWritingConfigs: "Error writing configurations to \"{filePath}\". Reverting to default settings."
   pluginNotRegistered: "Plugin {pluginName} either not installed or not indexed by CogWorks."
   badModrinthUrl: "Creating a url to send request to Modrinth failed. An invalid url was created."
   dataReadError: "There was an error reading the plugin names from the pluginData file."
-  noExternalResponse: "Unable to get external lang response for {key}. Using internal value."
+  noExternalResponse: "Unable to get external lang response for \"{key}\". Using internal value."
   gettingFilesErr: "There was an error getting the files in \"{filePath}\"."
   newLangCheck: "There was an error checking for new lang files."
   newLangInstall: "There was an error installing the new lang file {fileName}. You can manually download it from \"{URL}\"."
   clearTemp: "There was an error clearing the temp folder - \"{filePath}\". This folder might fill up with unused files."
   stateNotFound: "There was an error matching the state your in. Please report this to the devs. State: \"{state}\"."
+  noConfigMatch: "A value could not be matched to the value file. Please report this to the devs. Key: \"{key}\""
+
 
 
 #DO NOT CHANGE!

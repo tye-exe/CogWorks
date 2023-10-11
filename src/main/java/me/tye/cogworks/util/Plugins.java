@@ -17,7 +17,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-import static me.tye.cogworks.CogWorks.log;
+import static me.tye.cogworks.util.Util.getLang;
 import static me.tye.cogworks.util.Util.pluginDataFile;
 
 public class Plugins {
@@ -33,7 +33,7 @@ public static boolean registered(String name) {
       if (plugin.getName().equals(name)) return true;
     }
   } catch (IOException e) {
-    log(e, Level.WARNING, Util.getLang("execution.dataReadError"));
+    new Log("execution.dataReadError", Level.WARNING, e).log();
   }
   return false;
 }
@@ -68,7 +68,7 @@ public static Map<String,Object> getYML(File pluginJar) {
       return yaml.load(out.toString());
     }
   } catch (Exception e) {
-    log(e, Level.WARNING, Util.getLang("exceptions.noAccessPluginYML"));
+    new Log("exceptions.noAccessPluginYML", Level.WARNING, e).log();
   }
   return new HashMap<>();
 }
@@ -91,7 +91,7 @@ public static List<PluginData> getWhatDependsOn(String pluginName) {
     return whatDepends;
 
   } catch (IOException e) {
-    log(e, Level.WARNING, Util.getLang("execution.dataReadError"));
+    new Log("execution.dataReadError", Level.WARNING, e);
   }
   return new ArrayList<>();
 }
@@ -113,7 +113,7 @@ public static void removePluginData(String pluginName) throws NoSuchPluginExcept
   }
 
   if (pluginToRemove == null) {
-    throw new NoSuchPluginException(Util.getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
+    throw new NoSuchPluginException(getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
   }
 
   pluginData.remove(pluginToRemove);
@@ -189,7 +189,7 @@ public static PluginData readPluginData(String pluginName) throws NoSuchPluginEx
   for (PluginData data : readPluginData()) {
     if (data.getName().equals(pluginName)) return data;
   }
-  throw new NoSuchPluginException(Util.getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
+  throw new NoSuchPluginException(getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
 }
 
 /**
