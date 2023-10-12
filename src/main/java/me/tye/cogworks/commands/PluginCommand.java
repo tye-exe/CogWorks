@@ -121,8 +121,10 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
         PluginData pluginData;
         try {
           pluginData = Plugins.readPluginData(pluginName);
-          if (!new File(pluginFolder+File.separator+pluginData.getName()).exists())
+          if (!Plugins.hasConfigFolder(pluginName)) {
             deleteConfig = false;
+            new Log(sender, "deletePlugin.noConfigsFound").setPluginName(pluginName).log();
+          }
         } catch (NoSuchPluginException | IOException e) {
           new Log(sender, "deletePlugin.noSuchPlugin").setException(e).setPluginName(pluginName).log();
           return true;

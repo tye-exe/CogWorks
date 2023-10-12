@@ -159,6 +159,7 @@ deletePlugin:
   pluginDelete: "§a{pluginName} deleted."
   reloadWarn: "§eImmediately reload or restart to avoid errors."
   provideName: "§ePlease provide a plugin name!"
+  noConfigsFound: "§eNo config folder could be found for {pluginName}. Won't prompt for config delete."
 
   noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
   deleteError: "§ePlugin {pluginName} couldn't be deleted."
@@ -176,6 +177,7 @@ pluginsDeleteEval:
   pluginDelete: "§a{pluginName} deleted."
   reloadWarn: "§eImmediately reload or restart to avoid errors."
   provideName: "§ePlease provide a plugin name!"
+  noConfigsFound: "§eNo config folder could be found for {pluginName}. Won't prompt for config delete."
 
   noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
   deleteError: "§ePlugin {pluginName} couldn't be deleted."

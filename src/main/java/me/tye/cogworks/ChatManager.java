@@ -417,9 +417,11 @@ public static void checks(String name, String message) {
             return;
           }
 
+          //adds plugins that depend on the current one being deleted to the queue to be evald
           for (PluginData data : whatDepends) {
-            if (!toDeleteEval.contains(data) && deleteQueue.isQueued(data.getName()))
+            if (!toDeleteEval.contains(data) && deleteQueue.isQueued(data.getName())) {
               toDeleteEval.add(data);
+            }
           }
 
           if (toDeleteEval.size() <= 1) {
@@ -440,6 +442,7 @@ public static void checks(String name, String message) {
               else response.put("~", newParams);
             } else {
 
+
               new Log(sender, "deletePlugin.deleteConfig").setPluginName(toDeleteEval.get(0).getName()).log();
               ChatParams newParams = new ChatParams(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
               if (sender instanceof Player) response.put(sender.getName(), newParams);
@@ -453,7 +456,7 @@ public static void checks(String name, String message) {
           ArrayList<PluginData> deleteEval = params.getToDeleteEval();
           DeleteQueue deleteQueue = params.getDeleteQueue();
           Boolean deleteConfig = params.getDeleteConfigs();
-          String pluginName = deleteEval.get(0).getName(); //TODO: look into if this always gives the right name
+          String pluginName = deleteEval.get(0).getName();
           List<PluginData> whatDependsOn = Plugins.getWhatDependsOn(pluginName);
 
           int chosen = parseNumInput(sender, state, message, name, 3, 1);
@@ -489,28 +492,28 @@ public static void checks(String name, String message) {
           if (deleteConfig != null)
             deleteQueue.addPlugin(pluginName, deleteConfig);
           else {
-            new Log(sender, state, "deleteConfig").setPluginName(pluginName).log();
-            ChatParams newParams = new ChatParams(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(deleteEval);
-            if (sender instanceof Player) response.put(sender.getName(), newParams);
-            else response.put("~", newParams);
-            return;
+            if (Plugins.hasConfigFolder(pluginName)) {
+              new Log(sender, state, "deleteConfig").setPluginName(pluginName).log();
+              ChatParams newParams = new ChatParams(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(deleteEval);
+              if (sender instanceof Player) response.put(sender.getName(), newParams);
+              else response.put("~", newParams);
+              return;
+            }
           }
 
           deleteEval.remove(0);
 
-          //checks if plugins to be evaluated have config folders
-          ArrayList<PluginData> newEvals = new ArrayList<>();
-          for (int i = 0; i < deleteEval.size(); i++) {
-            String evalName = deleteEval.get(i).getName();
-            if (!new File(pluginFolder.getAbsolutePath()+File.separator+evalName).exists()) {
+          //sets the plugins that don't have config folder to deleteConfig false.
+          for (int i = 0; i < deleteEval.size();i++) {
+            String newPluginName = deleteEval.get(i).getName();
+            if (!Plugins.hasConfigFolder(newPluginName)) {
+              deleteQueue.addPlugin(newPluginName, false);
+              deleteEval.addAll(Plugins.getWhatDependsOn(newPluginName));
               deleteEval.remove(i);
               i--;
-              newEvals.addAll(Plugins.getWhatDependsOn(evalName));
-              deleteQueue.addPlugin(evalName, false);
+              new Log(sender, state, "noConfigsFound").setPluginName(newPluginName).log();
             }
           }
-
-          deleteEval.addAll(newEvals);
 
           if (deleteEval.isEmpty()) {
             deleteQueue.executeDelete();

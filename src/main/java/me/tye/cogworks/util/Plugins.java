@@ -17,8 +17,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-import static me.tye.cogworks.util.Util.getLang;
-import static me.tye.cogworks.util.Util.pluginDataFile;
+import static me.tye.cogworks.util.Util.*;
 
 public class Plugins {
 
@@ -203,5 +202,9 @@ public static void writePluginData(ArrayList<PluginData> pluginData) throws IOEx
   FileWriter fileWriter = new FileWriter(pluginDataFile);
   gson.create().toJson(pluginData, fileWriter);
   fileWriter.close();
+}
+
+public static boolean hasConfigFolder(String pluginName) {
+  return new File(pluginFolder + File.separator + pluginName).exists();
 }
 }

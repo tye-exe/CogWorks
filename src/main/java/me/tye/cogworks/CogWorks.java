@@ -44,7 +44,6 @@ import static me.tye.cogworks.commands.PluginCommand.*;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
-//TODO: check if config files exist during delete & skip the prompt if it doesn't
 //TODO: lang version check
 //TODO: mark if plugins were installed by user or as a dependency
 //TODO: mark plugins for attempted ADR / when some were deleted to not attempt ADR
