@@ -76,7 +76,7 @@ public void onEnable() {
   HashMap<String,Object> defaultValues = getKeysRecursive(getDefault("plugin.yml"));
   if (!defaultValues.get("version").equals(getLang("langVer"))) {
     try {
-      Files.move(Path.of(langFolder.getAbsolutePath()+File.separator+Util.getConfig("lang")+".yml"), Path.of(langFolder.getAbsolutePath()+File.separator+defaultValues.get("version")+" - "+Util.getConfig("lang")+".yml"));
+      Files.move(Path.of(langFolder.getAbsolutePath()+File.separator+Util.getConfig("lang")+".yml"), Path.of(langFolder.getAbsolutePath()+File.separator+getLang("langVer")+" - "+Util.getConfig("lang")+".yml"));
 
       //set the lang to the updated file inside of the plugin or english if that file can't be found.
       if (getDefault("langFiles/"+Util.getConfig("lang")+".yml") != null) {
