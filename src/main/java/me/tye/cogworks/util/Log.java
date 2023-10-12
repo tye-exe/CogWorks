@@ -80,7 +80,16 @@ public void log() {
     }
 
   } else {
-    for (String line : message.split("\n")) {
+    char[] messageChars = message.toCharArray();
+    for (int i = 0; i < messageChars.length; i++) {
+      if (messageChars[i] == '§') {
+        messageChars[i] = 0;
+        messageChars[i+1] = 0;
+      }
+    }
+    message = new String(messageChars);
+
+    for (String line : message.split("\\{n}")) {
       ChatColor colour;
       if (level.getName().equals("WARNING")) colour = ChatColor.YELLOW;
       else if (level.getName().equals("SEVERE")) {
@@ -99,7 +108,10 @@ public void log() {
     }
   }
 
-  if ((Boolean) getConfig("showErrorTrace") && e != null) e.printStackTrace();
+  if ((Boolean) getConfig("showErrorTrace") && e != null) {
+    if (sender != null) sender.sendMessage(getLang("exceptions.seeConsole"));
+    e.printStackTrace();
+  }
 }
 
 public Log setDepName(String depName) {
