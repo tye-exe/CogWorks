@@ -258,7 +258,7 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
   File destination;
 
   try {
-    if (newPlugin.exists() || new File(pluginFolder+File.separator+fileName).exists()) {
+    if (new File(pluginFolder+File.separator+fileName).exists()) {
       new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
       return false;
     }
