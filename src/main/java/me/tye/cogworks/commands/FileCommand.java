@@ -32,8 +32,7 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
     if (sender instanceof Player) response.put(sender.getName(), newParams);
     else response.put("~", newParams);
 
-    new Log(sender, "terminal.init.0").log();
-    new Log(sender, "terminal.init.1").log();
+    new Log(sender, "terminal.init").log();
     new Log(sender, "terminal.WIP").log();
     new Log(sender, "terminal.path").setFilePath(position.get("~").getRelativePath()).log();
 

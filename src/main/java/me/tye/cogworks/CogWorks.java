@@ -44,7 +44,7 @@ import static me.tye.cogworks.commands.PluginCommand.*;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
-//TODO: delletteee bug is still a thing (only with multiple dependencies)
+//TODO: check if config files exist during delete & skip the prompt if it doesn't
 //TODO: lang version check
 //TODO: mark if plugins were installed by user or as a dependency
 //TODO: mark plugins for attempted ADR / when some were deleted to not attempt ADR
@@ -58,6 +58,7 @@ public final class CogWorks extends JavaPlugin {
 //TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
 //TODO: allow to install multiple plugins at once when using a url.
 //TODO: when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
+//TODO: make to try & install plugins for the correct server version if the server is updated
 
 @Override
 public void onEnable() {
@@ -136,7 +137,7 @@ public void onEnable() {
       @Override
       public void run() {
         if (!ADRStore.mkdir()) {
-          new Log("ADR.fail", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+          new Log("ADR.fail", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
           return;
         }
 
@@ -146,14 +147,14 @@ public void onEnable() {
         ArrayList<JsonObject> validPluginKeys;
         HashMap<JsonObject,JsonArray> validPlugins;
 
-        new Log("ADR.attempting", Level.INFO, null).setDepName(unmetDepName).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+        new Log("ADR.attempting", Level.WARNING, null).setDepName(unmetDepName).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
 
         //searches the dependency name on modrinth
-        ModrinthSearch search = modrinthSearch(null, "ADR", unmetDepName);
+        ModrinthSearch search = modrinthSearch(null, null, unmetDepName);
         validPluginKeys = search.getValidPluginKeys();
         validPlugins = search.getValidPlugins();
         if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) {
-          new Log("ADR.fail", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+          new Log("ADR.fail", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
           return;
         }
 
@@ -178,7 +179,7 @@ public void onEnable() {
           }
 
           if (latestValidPlugin == null) {
-            new Log("ADR.fail", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+            new Log("ADR.fail", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
             return;
           }
 
@@ -226,7 +227,7 @@ public void onEnable() {
                 if (yamlData.get("name").equals(unmetDepName)) {
                   zip.close();
                   FileUtils.moveFile(dependecyFile, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+dependecyFile.getName()));
-                  new Log("ADR.success", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).setDepName((String) yamlData.get("name")).log();
+                  new Log("ADR.success", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).setDepName((String) yamlData.get("name")).log();
                   Util.reloadPluginData();
                   return versionInfo;
                 }
@@ -244,12 +245,12 @@ public void onEnable() {
         try {
           if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
             new Log("ADR.threadTime", Level.WARNING, null).log();
-            new Log("ADR.fail", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+            new Log("ADR.fail", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
             return;
           }
         } catch (InterruptedException e) {
           new Log("ADR.threadTime", Level.WARNING, e).log();
-          new Log("ADR.fail", Level.INFO, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+          new Log("ADR.fail", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
           return;
         }
 

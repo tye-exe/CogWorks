@@ -106,7 +106,7 @@ public static String getLang(String key, String... replace) {
     }
 
     lang.put(key, defaultLang.get(key));
-    new Log("exceptions.noExternalResponse", Level.WARNING, null).log();
+    new Log("exceptions.noExternalResponse", Level.WARNING, null).setKey(key).log();
   }
 
   for (int i = 0; i <= replace.length-1; i += 2) {

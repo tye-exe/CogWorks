@@ -75,7 +75,7 @@ public void log() {
   String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile, "pluginNames", pluginNames, "state", state, "fileNames", fileNames);
 
   if (sender != null) {
-    for (String line : message.split("\n")) {
+    for (String line : message.split("\\{n}")) {
       sender.sendMessage("[CogWorks] "+line);
     }
 

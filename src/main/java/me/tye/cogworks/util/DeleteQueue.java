@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import static me.tye.cogworks.commands.PluginCommand.deletePlugin;
@@ -68,7 +69,7 @@ public void executeDelete() {
 
   }
 
-  new Log(sender, "deletePlugin.reloadWarn").log();
+  if (Arrays.stream(completed.get(sender)).toList().contains(true)) new Log(sender, "deletePlugin.reloadWarn").log();
 }
 
 }

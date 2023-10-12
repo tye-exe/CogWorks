@@ -20,7 +20,6 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
@@ -423,17 +422,17 @@ public static void checks(String name, String message) {
               toDeleteEval.add(data);
           }
 
-          if (toDeleteEval.size() == 1) {
+          if (toDeleteEval.size() <= 1) {
             deleteQueue.addPlugin(pluginName, deleteConfig);
             deleteQueue.executeDelete();
             response.remove(name);
           } else {
             deleteQueue.addPlugin(pluginName, deleteConfig);
+            toDeleteEval.remove(0);
 
             if (!whatDepends.isEmpty()) {
               String[] names = new String[whatDepends.size()];
               for (int i = 0; i < whatDepends.size(); i++) names[i] = whatDepends.get(i).getName();
-              toDeleteEval.remove(0);
 
               new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
               ChatParams newParams = new ChatParams(sender, "pluginsDeleteEval").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
@@ -441,9 +440,7 @@ public static void checks(String name, String message) {
               else response.put("~", newParams);
             } else {
 
-              new Log(sender, "deletePlugin.deleteConfig.0").setPluginName(pluginName).log();
-              new Log(sender, "deletePlugin.deleteConfig.1").log();
-              new Log(sender, "deletePlugin.deleteConfig.2").log();
+              new Log(sender, "deletePlugin.deleteConfig").setPluginName(toDeleteEval.get(0).getName()).log();
               ChatParams newParams = new ChatParams(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
               if (sender instanceof Player) response.put(sender.getName(), newParams);
               else response.put("~", params);
@@ -492,8 +489,7 @@ public static void checks(String name, String message) {
           if (deleteConfig != null)
             deleteQueue.addPlugin(pluginName, deleteConfig);
           else {
-            new Log(sender, state, "deleteConfig.0").setPluginName(pluginName).log();
-            new Log(sender, state, "deleteConfig.1").log();
+            new Log(sender, state, "deleteConfig").setPluginName(pluginName).log();
             ChatParams newParams = new ChatParams(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(deleteEval);
             if (sender instanceof Player) response.put(sender.getName(), newParams);
             else response.put("~", newParams);
@@ -508,6 +504,7 @@ public static void checks(String name, String message) {
             String evalName = deleteEval.get(i).getName();
             if (!new File(pluginFolder.getAbsolutePath()+File.separator+evalName).exists()) {
               deleteEval.remove(i);
+              i--;
               newEvals.addAll(Plugins.getWhatDependsOn(evalName));
               deleteQueue.addPlugin(evalName, false);
             }

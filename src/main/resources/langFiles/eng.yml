@@ -11,11 +11,12 @@
 #pluginNames = The name of multiple plugins.
 #key = The value used to retrieve an element from a group.
 #URL = The URL.
-#isFile = Whether
+#isFile = Whether it is a file or not.
 #errors = Amount of severe errors that have occurred since last reload/restart.
 #lineNum = The number of the line inside a file.
 #searchPhrase = The current phrase being searched.
 #state = The current chat state that the user is in.
+#n = newLine.
 
 info:
   newLang: "The language file {fileName} is now available for this version of the plugin and has been automatically downloaded."
@@ -54,7 +55,7 @@ pluginSelect:
   installedDep: "§aDependencies installed."
   finish: "§aFinished installing {pluginName}. Reload or restart for {pluginName} to activate."
   #Do translate the world (Primary)
-  versionFiles: "§aSend the number corresponding to the version file to install it.\n§aThe file labeled (Primary) is the main file.\n§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
+  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
 
   quit: "§eQuitting."
   NAN: "§ePlease enter a listed number."
@@ -76,7 +77,7 @@ pluginVersionSelect:
   installedDep: "§aDependencies installed."
   finish: "§aFinished installing {pluginName}. Reload or restart for {pluginName} to activate."
   #Do translate the world (Primary)
-  versionFiles: "§aSend the number corresponding to the version file to install it.\n§aThe file labeled (Primary) is the main file.\n§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
+  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
 
   quit: "§eQuitting."
   NAN: "§ePlease enter a listed number."
@@ -91,14 +92,14 @@ pluginVersionSelect:
 
 pluginFileSelect:
   start: "§aInstalling {fileNames}."
-  installingDep: "§aInstalling dependencies for {pluginName}.\n§eNote: This will install the dependencies listed for the version, not for the specified file(s)."
+  installingDep: "§aInstalling dependencies for {pluginName}.{n}§eNote: This will install the dependencies listed for the version, not for the specified file(s)."
   downloading: "§aDownloading {fileName}."
   installed: "§e{fileName} is already installed."
   installedDep: "§aDependencies installed."
   finish: "§aFinished installing {fileNames}."
   restart: "§aReload or restart for {fileNames} to activate."
   #Do translate the world (Primary)
-  versionFiles: "§aSend the number corresponding to the version file to install it.\n§aThe file labeled (Primary) is the main file.\n§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
+  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
   primary: "(Primary)"
 
   quit: "§eQuitting."
@@ -148,12 +149,11 @@ pluginInstall:
 
 
 deletePlugin:
-  dependsOn: "§e{pluginNames} depend on {pluginName} to function.\n§a1: Force delete {pluginName}.\n§a2: Delete {pluginName} & {pluginNames}.\n§a3: Do nothing (exit)."
-  deleteConfig:
-    0: "§eDo you wish to delete the {pluginName} config files?"
-    1: "§eSend y or n in chat to choose."
-    2: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
+  dependsOn: "§e{pluginNames} depend on {pluginName} to function.{n}§a1: Force delete {pluginName}.{n}§a2: Delete {pluginName} & {pluginNames}.{n}§a3: Do nothing (exit)."
+  deleteConfig: "§eDo you wish to delete the {pluginName} config files?{n}§eSend y or n in chat to choose."
+  note: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
 
+  quit: "§eQuitting."
   confirm: "§ePlease enter either \"y\" or \"n\"."
   configRemove: "§aConfig files for {pluginName} deleted."
   pluginDelete: "§a{pluginName} deleted."
@@ -162,14 +162,13 @@ deletePlugin:
 
   noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
   deleteError: "§ePlugin {pluginName} couldn't be deleted."
+  scheduleDelete: "§e{pluginName} will be scheduled for attempted deletion on server restart."
 
 
 pluginsDeleteEval:
-  dependsOn: "§e{pluginNames} depend on {pluginName} to function.\n§a1: Force delete {pluginName}.\n§a2: Delete {pluginName} & {pluginNames}.\n§a3: Do nothing (exit)."
-  deleteConfig:
-    0: "§eDo you wish to delete the {pluginName} config files?"
-    1: "§eSend y or n in chat to choose."
-    2: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
+  dependsOn: "§e{pluginNames} depend on {pluginName} to function.{n}§a1: Force delete {pluginName}.{n}§a2: Delete {pluginName} & {pluginNames}.{n}§a3: Do nothing (exit)."
+  deleteConfig: "§eDo you wish to delete the {pluginName} config files?{n}§eSend y or n in chat to choose."
+  note: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
 
   quit: "§eQuitting."
   NAN: "§ePlease enter a listed number."
@@ -180,6 +179,7 @@ pluginsDeleteEval:
 
   noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
   deleteError: "§ePlugin {pluginName} couldn't be deleted."
+  scheduleDelete: "§e{pluginName} will be scheduled for attempted deletion on server restart."
 
 
 ModrinthAPI:
@@ -256,9 +256,7 @@ fileGui:
 
 
 terminal:
-  init:
-    0: "§aYou've entered the CogWorks terminal."
-    1: "§aType \"help\" in chat for help or \"exit\" to leave the terminal."
+  init: "§aYou've entered the CogWorks terminal.{n}§aType \"help\" in chat for help or \"exit\" to leave the terminal."
   WIP: "§cWARNING: THIS A VERY MUCH A WIP AND NOT YET IMPLEMENTED"
   blank: ""
   path: "§9{filePath} §6$"
@@ -278,11 +276,11 @@ terminal:
 
 ADR:
   attempting: "Attempting to automatically resolve missing dependency \"{depName}\" for \"{fileName}\"."
-  success: "Unmet dependency for \"{fileName}\" successfully resolved by installing \"{depName}\".\nReload or restart for this to take effect."
+  success: "Unmet dependency for \"{fileName}\" successfully resolved by installing \"{depName}\".{n}Reload or restart for this to take effect."
   fail: "Unmet dependency for \"{fileName}\" could not be automatically resolved."
 
   getErr: "Error checking if the installed dependency has any dependencies."
-  ModrinthSearchErr: "Error querying Modrinth for automatic dependency resolution."
+  modrinthSearchErr: "Error querying Modrinth for automatic dependency resolution."
   downloadingErr: "Error downloading \"{fileName}\" to check plugin as possible dependency."
   threadTime: "Plugins took too long to download."
   pluginYMLCheck: "Error checking plugin name for \"{fileName}\". Skipping \"{fileName}\" as possible dependency."

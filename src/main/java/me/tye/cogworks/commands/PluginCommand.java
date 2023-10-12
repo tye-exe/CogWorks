@@ -145,9 +145,8 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
 
         //prompt to delete config files
         if (deleteConfig == null) {
-          new Log(sender, "deletePlugin.deleteConfig.0").setPluginName(pluginName).log();
-          new Log(sender, "deletePlugin.deleteConfig.1").log();
-          new Log(sender, "deletePlugin.deleteConfig.2").log();
+          new Log(sender, "deletePlugin.deleteConfig").setPluginName(pluginName).log();
+          new Log(sender, "deletePlugin.note").log();
           ChatParams params = new ChatParams(sender, "deletePlugin").setDeleteQueue(new DeleteQueue(sender, "deletePlugin")).setToDeleteEval(deleteEval);
           if (sender instanceof Player) response.put(sender.getName(), params);
           else response.put("~", params);
@@ -167,8 +166,9 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
           return true;
         }
 
-        deletePlugin(sender, "deletePlugin", pluginName, deleteConfig);
-        new Log(sender, "deletePlugin.reloadWarn").log();
+        if (deletePlugin(sender, "deletePlugin", pluginName, deleteConfig)) {
+          new Log(sender, "deletePlugin.reloadWarn").log();
+        }
 
       } else {
         new Log(sender, "deletePlugin.provideName").log();
@@ -319,7 +319,7 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
  @param pluginName   Name of the plugin to delete. (The name specified in the plugin.yml file).
  @param deleteConfig Whether to delete the plugins configs alongside the jar. If null & no sender is specified the config folder will be preserved.
  @return True - Returned if the file installed successfully.<br>
- False - Returned if the deletion failed for whatever reason. */
+ False - Returned if the deletion failed for any reason. */
 public static boolean deletePlugin(@Nullable CommandSender sender, String state, String pluginName, boolean deleteConfig) {
 
   try {
@@ -347,7 +347,15 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
       }
     }
 
-    FileUtils.delete(new File(Bukkit.getServer().getWorldContainer().getAbsolutePath()+File.separator+"plugins"+File.separator+data.getFileName()));
+    try {
+      FileUtils.delete(new File(pluginFolder+File.separator+data.getFileName()));
+    } catch (IOException e) {
+      new Log(sender, state, "deleteError").setLevel(Level.WARNING).setException(e).setPluginName(pluginName).log();
+      new Log(sender, state, "scheduleDelete").setLevel(Level.WARNING).setPluginName(pluginName).log();
+      FileUtils.forceDeleteOnExit(new File(pluginFolder+File.separator+data.getFileName()));
+      return false;
+    }
+
     Plugins.removePluginData(pluginName);
     new Log(sender, state, "pluginDelete").setPluginName(pluginName).log();
     return true;
