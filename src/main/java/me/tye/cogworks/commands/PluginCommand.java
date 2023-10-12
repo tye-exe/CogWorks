@@ -569,11 +569,11 @@ public static JsonElement modrinthAPI(@Nullable CommandSender sender, String sta
 }
 
 /**
- Installed plugins & their dependencies from modrinth.
+ Installed plugins & their dependencies from Modrinth.
  @param sender The command sender performing this action.
  @param state  The lang path to get the responses from.
  @param files  The files to install.
- @return True if all of the plugins installed successfully */
+ @return True if all of the plugins installed successfully. */
 public static boolean installModrinthPlugin(@Nullable CommandSender sender, String state, JsonArray files) {
   ArrayList<Boolean> installed = new ArrayList<>();
 
@@ -614,10 +614,35 @@ public static boolean installModrinthPlugin(@Nullable CommandSender sender, Stri
 }
 
 /**
- Gets the compatible dependencies for a version from Modrinth
+ Gets the compatible dependencies for a version from Modrinth and installs them.
  @param sender        The command sender performing this action.
  @param state         The lang path to get the responses from.
- @param pluginVersion The plugin version to get the dependencies from
+ @param pluginVersion The plugin version to get the dependencies from.
+ @return True if all of the plugins installed successfully. */
+public static boolean installModrinthDependencies(@Nullable CommandSender sender, String state, JsonObject pluginVersion, String pluginName) {
+  HashMap<String,JsonArray> dependencies = getModrinthDependencies(sender, state, pluginVersion);
+  ArrayList<Boolean> installed = new ArrayList<>();
+
+  if (!dependencies.isEmpty()) {
+    new Log(sender, state, "installingDep").setPluginName(pluginName).log();
+    for (JsonArray plugins : dependencies.values()) {
+      if (plugins.isEmpty()) continue;
+      boolean install = installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray());
+      installed.add(install);
+      if (install)
+        new Log(sender, state, "installed").setFileName(plugins.get(0).getAsJsonObject().get("files").getAsJsonArray().get(0).getAsJsonObject().get("filename").getAsString());
+    }
+    new Log(sender, state, "installedDep").log();
+  }
+
+  return !installed.contains(false);
+}
+
+/**
+ Gets the compatible dependencies for a version from Modrinth.
+ @param sender        The command sender performing this action.
+ @param state         The lang path to get the responses from.
+ @param pluginVersion The plugin version to get the dependencies from.
  @return A HashMap with the pluginId as a key and the compatible files to download in a json array. */
 public static HashMap<String,JsonArray> getModrinthDependencies(@Nullable CommandSender sender, String state, JsonObject pluginVersion) {
   HashMap<String,JsonArray> compatibleFiles = new HashMap<>();

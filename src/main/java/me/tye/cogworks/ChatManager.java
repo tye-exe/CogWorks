@@ -26,7 +26,8 @@ import java.util.logging.Level;
 
 import static me.tye.cogworks.FileGui.position;
 import static me.tye.cogworks.commands.PluginCommand.*;
-import static me.tye.cogworks.util.Util.*;
+import static me.tye.cogworks.util.Util.getLang;
+import static me.tye.cogworks.util.Util.parseNumInput;
 
 public class ChatManager implements Listener {
 
@@ -90,18 +91,7 @@ public static void checks(String name, String message) {
             String title = plugin.get("title").getAsString();
             new Log(sender, state, "start").setPluginName(title).log();
 
-            HashMap<String,JsonArray> dependencies = getModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject());
-            ArrayList<Boolean> installed = new ArrayList<>();
-
-            if (!dependencies.isEmpty()) {
-              new Log(sender, state, "installingDep").setPluginName(title).log();
-              for (JsonArray plugins : dependencies.values()) {
-                if (plugins.isEmpty()) continue;
-                if (!installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()))
-                  new Log(sender, state, "installed").setFileName(plugins.get(0).getAsJsonObject().get("files").getAsJsonArray().get(0).getAsJsonObject().get("filename").getAsString());
-              }
-              new Log(sender, state, "installedDep").log();
-            }
+            installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), title);
 
             JsonArray files = compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray();
             if (files.isEmpty()) {
@@ -110,8 +100,7 @@ public static void checks(String name, String message) {
             }
 
             if (files.size() == 1) {
-              installed.add(installModrinthPlugin(sender, state, files));
-              if (!installed.contains(false))
+              if (installModrinthPlugin(sender, state, files))
                 new Log(sender, state, "finish").setPluginName(title).log();
 
               // if there are more than one file for that version you get prompted to choose which one(s) to install
@@ -167,18 +156,7 @@ public static void checks(String name, String message) {
           String title = plugin.get("title").getAsString();
           new Log(sender, state, "start").setPluginName(title).log();
 
-          HashMap<String,JsonArray> dependencies = getModrinthDependencies(sender, state, chosen);
-          ArrayList<Boolean> installed = new ArrayList<>();
-
-          if (!dependencies.isEmpty()) {
-            new Log(sender, state, "installingDep").setPluginName(title).log();
-            for (JsonArray plugins : dependencies.values()) {
-              if (plugins.isEmpty()) continue;
-              if (!installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()))
-                new Log(sender, state, "installed").setFileName(plugins.get(0).getAsJsonObject().get("files").getAsJsonArray().get(0).getAsJsonObject().get("filename").getAsString());
-            }
-            new Log(sender, state, "installedDep").log();
-          }
+          installModrinthDependencies(sender, state, chosen, title);
 
           JsonArray files = chosen.get("files").getAsJsonArray();
           if (files.isEmpty()) {
@@ -187,8 +165,7 @@ public static void checks(String name, String message) {
           }
 
           if (files.size() == 1) {
-            installed.add(installModrinthPlugin(sender, state, files));
-            if (!installed.contains(false))
+            if (installModrinthPlugin(sender, state, files))
               new Log(sender, state, "finish").setPluginName(title).log();
 
             // if there are more than one file for that version you get prompted to choose which one(s) to install
@@ -244,20 +221,7 @@ public static void checks(String name, String message) {
             return;
           }
 
-          HashMap<String,JsonArray> dependencies = getModrinthDependencies(sender, state, pluginVersion);
-          ArrayList<Boolean> installed = new ArrayList<>();
-          String title = plugin.get("title").getAsString();
-
-          if (!dependencies.isEmpty()) {
-            new Log(sender, state, "installingDep").setPluginName(title).log();
-            for (JsonArray plugins : dependencies.values()) {
-              if (plugins.isEmpty()) continue;
-              if (!installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()))
-                new Log(sender, state, "installed").setFileName(plugins.get(0).getAsJsonObject().get("files").getAsJsonArray().get(0).getAsJsonObject().get("filename").getAsString());
-            }
-            new Log(sender, state, "installedDep").log();
-          }
-
+          installModrinthDependencies(sender, state, pluginVersion, plugin.get("title").getAsString());
 
           ArrayList<String> fileNames = new ArrayList<>();
           for (JsonElement file : toInstall) {
@@ -267,6 +231,7 @@ public static void checks(String name, String message) {
 
           new Log(sender, state, "start").setFileNames(fileNames).log();
 
+          ArrayList<Boolean> installed = new ArrayList<>();
           for (JsonElement file : toInstall) {
             JsonArray array = new JsonArray();
             array.add(file);
@@ -279,7 +244,10 @@ public static void checks(String name, String message) {
           } else {
             //removes the filenames that didn't install successfully from the log
             for (int i = 0; i < installed.size(); i++) {
-              if (!installed.get(i)) fileNames.remove(i);
+              if (!installed.get(i)) {
+                fileNames.remove(i);
+                i--;
+              }
             }
           }
 
@@ -356,22 +324,11 @@ public static void checks(String name, String message) {
               String title = plugin.get("title").getAsString();
               new Log(sender, state, "start").setPluginName(title).log();
 
-              HashMap<String,JsonArray> dependencies = getModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject());
-              ArrayList<Boolean> installed = new ArrayList<>();
+              installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), title);
 
-              if (!dependencies.isEmpty()) {
-                new Log(sender, state, "installingDep").setPluginName(title).log();
-                for (JsonArray plugins : dependencies.values()) {
-                  if (plugins.isEmpty()) continue;
-                  if (!installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()))
-                    new Log(sender, state, "installed").setFileName(plugins.get(0).getAsJsonObject().get("files").getAsJsonArray().get(0).getAsJsonObject().get("filename").getAsString());
-                }
-                new Log(sender, state, "installedDep").log();
-              }
-
-              installed.add(installModrinthPlugin(sender, state, compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray()));
-              if (!installed.contains(false))
+              if (installModrinthPlugin(sender, state, compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray())) {
                 new Log(sender, state, "finish").setPluginName(title).log();
+              }
 
             } else {
               new Log(sender, state, "pluginSelect").log();

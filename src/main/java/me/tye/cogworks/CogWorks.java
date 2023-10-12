@@ -41,7 +41,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static me.tye.cogworks.FileGui.position;
-import static me.tye.cogworks.commands.PluginCommand.*;
+import static me.tye.cogworks.commands.PluginCommand.installModrinthDependencies;
+import static me.tye.cogworks.commands.PluginCommand.modrinthSearch;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
@@ -318,13 +319,7 @@ public void onEnable() {
             JsonObject dependency = future.get();
             if (dependency == null) continue;
 
-            HashMap<String,JsonArray> depDeps = getModrinthDependencies(null, "ADR", dependency);
-            if (!depDeps.isEmpty()) {
-              for (JsonArray plugins : depDeps.values()) {
-                if (plugins.isEmpty()) continue;
-                installModrinthPlugin(null, null, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray());
-              }
-            }
+            installModrinthDependencies(null, null, dependency, null);
           } catch (InterruptedException | ExecutionException e) {
             new Log("ADR.getErr", Level.WARNING, e).log();
           }
