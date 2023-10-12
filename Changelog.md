@@ -40,3 +40,4 @@
 - If a plugin version has multiple files it will prompt you for which ones to install.
 - Added "/plugin reload", which makes CogWorks rescan the "./plugins" folder for any changes.
 - If a plugin doesn't have a config folder then there won't be a prompt to delete the config folder.
+- When updating CogWorks it will automatically install the correct versions of the lang files. If an updated version of the lang you are using isn't yet available it will continue to use the old version and substitute any missing values with english ones.

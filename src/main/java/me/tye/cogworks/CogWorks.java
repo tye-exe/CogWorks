@@ -29,6 +29,7 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -44,7 +45,6 @@ import static me.tye.cogworks.commands.PluginCommand.*;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
-//TODO: lang version check
 //TODO: mark if plugins were installed by user or as a dependency
 //TODO: mark plugins for attempted ADR / when some were deleted to not attempt ADR
 
@@ -70,6 +70,65 @@ public void onEnable() {
   //loads the essential config files
   Util.setConfig(returnFileConfigs(configFile, "config.yml"));
   Util.setLang(returnFileConfigs(new File(langFolder.getAbsoluteFile()+File.separator+Util.getConfig("lang")+".yml"), "langFiles/"+Util.getConfig("lang")+".yml"));
+
+  //checks lang version & installs the correct lang version.
+  HashMap<String,Object> defaultValues = getKeysRecursive(getDefault("plugin.yml"));
+  if (!defaultValues.get("version").equals(getLang("langVer"))) {
+    try {
+      Files.move(Path.of(langFolder.getAbsolutePath()+File.separator+Util.getConfig("lang")+".yml"), Path.of(langFolder.getAbsolutePath()+File.separator+defaultValues.get("version")+" - "+Util.getConfig("lang")+".yml"));
+
+      //set the lang to the updated file inside of the plugin or english if that file can't be found.
+      if (getDefault("langFiles/"+Util.getConfig("lang")+".yml") != null) {
+        Util.setLang(returnFileConfigs(new File(langFolder.getAbsoluteFile()+File.separator+Util.getConfig("lang")+".yml"), "langFiles/"+Util.getConfig("lang")+".yml"));
+        new Log("info.updatedLang", Level.WARNING, null).log();
+
+      } else {
+        //checks for new lang files & installs them.
+        new Thread(() -> {
+          try {
+            HashMap<String,Object> pluginMap = getKeysRecursive(new Yaml().load(new String(getResource("plugin.yml").readAllBytes())));
+            String indexText = new String(new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/index.yml").openStream().readAllBytes());
+            HashMap<String,Object> indexMap = getKeysRecursive(new Yaml().load(indexText));
+
+            String files = String.valueOf(indexMap.get(String.valueOf(pluginMap.get("version"))));
+            if (!files.equals("null")) {
+              files = files.substring(0, files.length()-1).substring(1);
+              String[] filesNames = files.split(", ");
+
+              for (String fileName : filesNames) {
+                File langFile = new File(langFolder.getAbsolutePath()+File.separator+fileName);
+                if (langFile.exists()) continue;
+
+                try {
+                  createFile(langFile, new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).openStream(), true);
+                  new Log("info.newLang", Level.WARNING, null).setFileName(fileName).log();
+                } catch (IOException e) {
+                  new Log("exceptions.newLangInstall", Level.WARNING, e).setFileName(langFile.getName()).setUrl("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).log();
+                }
+              }
+
+              //checks if the new lang file exists yet
+              for (String fileName : filesNames) {
+                if (Util.getConfig("lang").equals(fileName)) {
+                  Util.setLang(returnFileConfigs(new File(langFolder.getAbsoluteFile()+File.separator+Util.getConfig("lang")+".yml"), "langFiles/"+Util.getConfig("lang")+".yml"));
+                  new Log("info.updatedLang", Level.WARNING, null).log();
+                  return;
+                }
+              }
+            }
+
+            setLang(returnFileConfigs(new File(langFolder.getAbsoluteFile()+File.separator+Util.getConfig("lang")+".yml"), "langFiles/eng.yml"));
+            new Log("exceptions.langUpdateFail", Level.WARNING, null).log();
+
+          } catch (IOException e) {
+            new Log("exceptions.newLangCheck", Level.WARNING, e).log();
+          }
+        }).start();
+      }
+    } catch (IOException e) {
+      new Log("exceptions.langUpdateFail", Level.WARNING, null).log();
+    }
+  }
 
   //deletes temp if present
   try {
@@ -281,32 +340,35 @@ public void onEnable() {
   }
 
   //checks for new lang files & installs them.
-  try {
-    HashMap<String,Object> pluginMap = getKeysRecursive(new Yaml().load(new String(getResource("plugin.yml").readAllBytes())));
-    String indexText = new String(new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/index.yml").openStream().readAllBytes());
-    HashMap<String,Object> indexMap = getKeysRecursive(new Yaml().load(indexText));
+  new Thread(() -> {
+    try {
+      HashMap<String,Object> pluginMap = getKeysRecursive(new Yaml().load(new String(getResource("plugin.yml").readAllBytes())));
+      String indexText = new String(new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/index.yml").openStream().readAllBytes());
+      HashMap<String,Object> indexMap = getKeysRecursive(new Yaml().load(indexText));
 
-    String files = String.valueOf(indexMap.get(String.valueOf(pluginMap.get("version"))));
-    if (!files.equals("null")) {
-      files = files.substring(0, files.length()-1).substring(1);
-      String[] filesNames = files.split(", ");
+      String files = String.valueOf(indexMap.get(String.valueOf(pluginMap.get("version"))));
+      if (!files.equals("null")) {
+        files = files.substring(0, files.length()-1).substring(1);
+        String[] filesNames = files.split(", ");
 
-      for (String fileName : filesNames) {
-        File langFile = new File(langFolder.getAbsolutePath()+File.separator+fileName);
-        if (langFile.exists()) continue;
+        for (String fileName : filesNames) {
+          File langFile = new File(langFolder.getAbsolutePath()+File.separator+fileName);
+          if (langFile.exists()) continue;
 
-        try {
-          createFile(langFile, new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).openStream(), true);
-          new Log("info.newLang", Level.WARNING, null).setFileName(fileName).log();
-        } catch (IOException e) {
-          new Log("exceptions.newLangInstall", Level.WARNING, e).setFileName(langFile.getName()).setUrl("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).log();
+          try {
+            createFile(langFile, new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).openStream(), true);
+            new Log("info.newLang", Level.WARNING, null).setFileName(fileName).log();
+          } catch (IOException e) {
+            new Log("exceptions.newLangInstall", Level.WARNING, e).setFileName(langFile.getName()).setUrl("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).log();
+          }
         }
       }
-    }
 
-  } catch (IOException e) {
-    new Log("exceptions.newLangCheck", Level.WARNING, e).log();
-  }
+    } catch (
+        IOException e) {
+      new Log("exceptions.newLangCheck", Level.WARNING, e).log();
+    }
+  }).start();
 
 
   //Commands
@@ -357,7 +419,8 @@ public static void createFile(File file, @Nullable InputStream resource, boolean
 }
 
 /**
- Reads the data from an external specified yaml file and returns the data in a hashmap of Key, Value. Appending any missing values to the external file, making use of the resourcePath of the file inside the jar.
+ Reads the data from an external specified yaml file and returns the data in a hashmap of Key, Value. Appending any missing values to the external file, making use of the resourcePath of the file inside the jar.<br>
+ If the resource path doesn't return any files then no repairing will be done to the file.
  @param externalFile External config file.
  @param resourcePath Path to the internal file from the resource folder.
  @return The data from the external file with any missing values being loaded in as defaults. */

@@ -23,6 +23,7 @@ info:
   menuClose: "§eMenu closed due to reload, this is to prevent errors."
   errorSum: "§eThere have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
   onlyPlayersFile: "§eThis command is only available to online players, being redirected to terminal."
+  updatedLang: "Your lang file has been changed to the one designed for this version of CogWorks."
 
 
 help:
@@ -311,7 +312,8 @@ exceptions:
   stateNotFound: "There was an error matching the state your in. Please report this to the devs. State: \"{state}\"."
   noConfigMatch: "A value could not be matched to the value file. Please report this to the devs. Key: \"{key}\"."
   chatError: "There was a general error when interacting with the chat system for CogWorks."
+  langUpdateFail: "A valid lang file couldn't be found for your version, defaulting to english."
 
 
 #DO NOT CHANGE!
-langVer: 0.3.0.1
+langVer: 0.3
