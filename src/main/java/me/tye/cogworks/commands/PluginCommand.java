@@ -26,6 +26,7 @@ import java.io.*;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -43,7 +44,7 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 
 import static me.tye.cogworks.ChatManager.response;
-import static me.tye.cogworks.CogWorks.makeValidForUrl;
+import static me.tye.cogworks.CogWorks.encodeUrl;
 import static me.tye.cogworks.util.Util.*;
 
 public class PluginCommand implements CommandExecutor {
@@ -69,7 +70,9 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
           @Override
           public void run() {
             try {
-              URL url = new URL(args[1]);
+              //checks if the arg given is a valid url or not.
+              new URL(encodeUrl(args[1])).toURI();
+
               //gets the filename from the url
               String fileName;
               String[] splits = args[1].split("/");
@@ -77,12 +80,15 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
               if (!Files.getFileExtension(fileName).equals("jar")) {
                 fileName += ".jar";
               }
-              if (installPluginURL(sender, "pluginInstall", url, fileName, true)) {
+
+              if (installPluginURL(sender, "pluginInstall", encodeUrl(args[1]), fileName, true)) {
                 new Log(sender, "pluginInstall.finish").setFileName(fileName).log();
               }
 
-            } catch (MalformedURLException ignore) {
-              ModrinthSearch search = modrinthSearch(sender, "pluginInstall", args[1]);
+            } catch (MalformedURLException | URISyntaxException ignore) {
+              StringBuilder query = new StringBuilder();
+              for (int i = 1; i < args.length; i++) query.append(" ").append(args[i]);
+              ModrinthSearch search = modrinthSearch(sender, "pluginInstall", query.substring(1));
               HashMap<JsonObject,JsonArray> validPlugins = search.getValidPlugins();
               ArrayList<JsonObject> validPluginKeys = search.getValidPluginKeys();
 
@@ -249,15 +255,17 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
  Installs a plugin from a given url. There are NO restriction on the url used, however ".jar" will always be appended.
  @param sender      The sender to send the log messages to.
  @param state       The path to get the lang responses from.
- @param Url         Url to download thew file from.
+ @param stringUrl   The Url as a string to download the file from.
  @param fileName    Name of the file to download. Sometimes the file is stored under a name different to the desired file name.
  @param addFileHash If downloading from a non api source the file hash can be added to the end of the file, as many downloads have generic names such as "download".
  @return True if and only if the file installed successfully. */
-public static boolean installPluginURL(@Nullable CommandSender sender, String state, URL Url, String fileName, Boolean addFileHash) {
+public static boolean installPluginURL(@Nullable CommandSender sender, String state, String stringUrl, String fileName, Boolean addFileHash) {
   File newPlugin = new File(temp.getAbsolutePath()+File.separator+fileName);
   File destination;
 
   try {
+    URL Url = new URL(encodeUrl(stringUrl));
+
     if (new File(pluginFolder+File.separator+fileName).exists()) {
       new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
       return false;
@@ -304,9 +312,11 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
     return true;
 
   } catch (FileNotFoundException noFile) {
-    new Log(sender, state, "noFile").setLevel(Level.WARNING).setUrl(Url.toExternalForm()).setException(noFile).log();
+    new Log(sender, state, "noFile").setLevel(Level.WARNING).setUrl(stringUrl).setException(noFile).log();
+  } catch (MalformedURLException e) {
+    new Log(sender, state, "badUrl").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).setFileName(fileName).log();
   } catch (IOException | NoSuchAlgorithmException e) {
-    new Log(sender, state, "installError").setLevel(Level.WARNING).setUrl(Url.toExternalForm()).setException(e).log();
+    new Log(sender, state, "installError").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).log();
   } finally {
     if (newPlugin.exists()) if (!newPlugin.delete())
       new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(newPlugin.getAbsolutePath()).log();
@@ -386,7 +396,7 @@ public static ModrinthSearch modrinthSearch(@Nullable CommandSender sender, Stri
     mcVersion = mcVersion.substring(0, mcVersion.length()-1);
     String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
 
-    JsonElement relevantPlugins = modrinthAPI(sender, "ModrinthAPI", "https://api.modrinth.com/v2/search?query="+makeValidForUrl(searchQuery)+"&facets=[[%22versions:"+mcVersion+"%22],[%22categories:"+serverSoftware+"%22]]", "GET");
+    JsonElement relevantPlugins = modrinthAPI(sender, "ModrinthAPI", "https://api.modrinth.com/v2/search?query="+searchQuery+"&facets=[[%22versions:"+mcVersion+"%22],[%22categories:"+serverSoftware+"%22]]", "GET");
     JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
     if (hits.isEmpty()) throw new ModrinthAPIException(Util.getLang("ModrinthAPI.empty"));
 
@@ -535,8 +545,8 @@ public static ModrinthSearch modrinthBrowse(@Nullable CommandSender sender, Stri
  @throws MalformedURLException If the Url is invalid.
  @throws ModrinthAPIException  If there was a problem getting the response from Modrinth. */
 public static JsonElement modrinthAPI(@Nullable CommandSender sender, String state, String URL, String requestMethod) throws MalformedURLException, ModrinthAPIException {
-  URL url = new URL(URL);
   try {
+    URL url = new URL(encodeUrl(URL));
     HttpURLConnection con = (HttpURLConnection) url.openConnection();
     con.setRequestMethod(requestMethod);
     con.setRequestProperty("Content-Type", "application/json");
@@ -580,34 +590,21 @@ public static boolean installModrinthPlugin(@Nullable CommandSender sender, Stri
   if (files.size() == 1) {
     JsonObject file = files.get(0).getAsJsonObject();
     String fileName = file.get("filename").getAsString();
-    try {
-      installed.add(installPluginURL(sender, state, new URL(file.get("url").getAsString()), fileName, false));
+    installed.add(installPluginURL(sender, state, file.get("url").getAsString(), fileName, false));
 
-    } catch (MalformedURLException e) {
-      new Log(sender, state, "badUrl").setLevel(Level.WARNING).setFileName(fileName).log();
-    }
   } else if (!files.isEmpty()) {
 
     for (JsonElement je : files) {
       JsonObject file = je.getAsJsonObject();
       if (file.get("primary").getAsBoolean()) {
-        try {
-          installed.add(installPluginURL(sender, state, new URL(file.get("url").getAsString()), file.get("filename").getAsString(), false));
+        installed.add(installPluginURL(sender, state, file.get("url").getAsString(), file.get("filename").getAsString(), false));
 
-        } catch (MalformedURLException e) {
-          new Log(sender, state, "badUrl").setLevel(Level.WARNING).setFileName(file.get("filename").getAsString()).log();
-        }
       }
     }
 
     JsonObject file = files.get(0).getAsJsonObject();
     String fileName = file.get("filename").getAsString();
-    try {
-      installed.add(installPluginURL(sender, state, new URL(file.get("url").getAsString()), fileName, false));
-
-    } catch (MalformedURLException e) {
-      new Log(sender, state, "badUrl").setLevel(Level.WARNING).setFileName(fileName).log();
-    }
+    installed.add(installPluginURL(sender, state, file.get("url").getAsString(), fileName, false));
 
   }
   return !installed.contains(false);

@@ -25,7 +25,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
-import java.net.URL;
+import java.net.*;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
@@ -484,7 +484,7 @@ public static HashMap<String,Object> returnFileConfigs(File externalFile, String
   } catch (Exception e) {
     loadedValues = getKeysRecursive(getDefault(resourcePath));
     if (resourcePath.equals("config.yml")) Util.setConfig(getDefault(resourcePath));
-    new Log("exceptions.errorWritingConfigs", Level.SEVERE, e).log();
+    new Log("exceptions.errorWritingConfigs", Level.SEVERE, e).setFilePath(externalFile.getAbsolutePath()).log();
   }
   return loadedValues;
 }
@@ -499,10 +499,17 @@ public static HashMap<String,Object> getDefault(String filepath) {
 }
 
 /**
- Filters out character that are invalid in an url & replaces " " chars with %22.
- @return Filtered output */
-public static String makeValidForUrl(String text) {
-  return text.replaceAll("[^A-z0-9s-]", "").replaceAll(" ", "%20");
+ Encodes the given string URL into a valid URL.
+ @return The valid URL */
+public static String encodeUrl(String text) {
+  try {
+    URL url = new URL(URLDecoder.decode(text, StandardCharsets.UTF_8));
+    URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+    return uri.toASCIIString();
+
+  } catch (MalformedURLException | URISyntaxException e) {
+    return text;
+  }
 }
 
 /**
