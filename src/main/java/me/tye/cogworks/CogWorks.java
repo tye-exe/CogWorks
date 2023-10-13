@@ -21,6 +21,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
@@ -500,15 +501,16 @@ public static HashMap<String,Object> getDefault(String filepath) {
 
 /**
  Encodes the given string URL into a valid URL.
- @return The valid URL */
-public static String encodeUrl(String text) {
+ @return The valid URL.
+ @throws MalformedURLException When the given URL can't be encoded to a valid URL. */
+public static URL encodeUrl(@NonNull String text) throws MalformedURLException {
   try {
     URL url = new URL(URLDecoder.decode(text, StandardCharsets.UTF_8));
     URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
-    return uri.toASCIIString();
+    return uri.toURL();
 
-  } catch (MalformedURLException | URISyntaxException e) {
-    return text;
+  } catch (MalformedURLException | URISyntaxException | IllegalArgumentException e) {
+    throw new MalformedURLException();
   }
 }
 

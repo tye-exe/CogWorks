@@ -26,10 +26,10 @@ import java.io.*;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -71,7 +71,7 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
           public void run() {
             try {
               //checks if the arg given is a valid url or not.
-              new URL(encodeUrl(args[1])).toURI();
+              encodeUrl(args[1]);
 
               //gets the filename from the url
               String fileName;
@@ -81,11 +81,11 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
                 fileName += ".jar";
               }
 
-              if (installPluginURL(sender, "pluginInstall", encodeUrl(args[1]), fileName, true)) {
+              if (installPluginURL(sender, "pluginInstall", args[1], fileName, true)) {
                 new Log(sender, "pluginInstall.finish").setFileName(fileName).log();
               }
 
-            } catch (MalformedURLException | URISyntaxException ignore) {
+            } catch (MalformedURLException ignore) {
               StringBuilder query = new StringBuilder();
               for (int i = 1; i < args.length; i++) query.append(" ").append(args[i]);
               ModrinthSearch search = modrinthSearch(sender, "pluginInstall", query.substring(1));
@@ -262,14 +262,13 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
 public static boolean installPluginURL(@Nullable CommandSender sender, String state, String stringUrl, String fileName, Boolean addFileHash) {
   File newPlugin = new File(temp.getAbsolutePath()+File.separator+fileName);
   File destination;
+  boolean installed = false;
 
   try {
-    URL Url = new URL(encodeUrl(stringUrl));
+    URL Url = encodeUrl(stringUrl);
 
-    if (new File(pluginFolder+File.separator+fileName).exists()) {
-      new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
-      return false;
-    }
+    if (new File(pluginFolder+File.separator+fileName).exists())
+      throw new FileAlreadyExistsException(newPlugin.getAbsolutePath());
 
     //downloads the file
     new Log(sender, state, "downloading").setFileName(fileName).log();
@@ -279,11 +278,7 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
     fos.close();
     rbc.close();
 
-    if (Plugins.registered(newPlugin)) {
-      new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
-      newPlugin.delete();
-      return false;
-    }
+    if (Plugins.registered(newPlugin)) throw new FileAlreadyExistsException(newPlugin.getAbsolutePath());
 
     //adds the file hash to the name since alot of urls just have a generic filename like "download"
     String hash = "";
@@ -299,29 +294,27 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
 
     destination = new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
 
-    if (destination.exists()) {
-      new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
-      newPlugin.delete();
-      return false;
-    }
+    if (destination.exists()) throw new FileAlreadyExistsException(newPlugin.getAbsolutePath());
 
     //moves the file to plugin folder
     FileUtils.moveFile(newPlugin, destination);
 
     Plugins.appendPluginData(destination);
-    return true;
+    installed = true;
 
   } catch (FileNotFoundException noFile) {
     new Log(sender, state, "noFile").setLevel(Level.WARNING).setUrl(stringUrl).setException(noFile).log();
   } catch (MalformedURLException e) {
     new Log(sender, state, "badUrl").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).setFileName(fileName).log();
+  } catch (FileAlreadyExistsException e) {
+    new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
   } catch (IOException | NoSuchAlgorithmException e) {
     new Log(sender, state, "installError").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).log();
   } finally {
     if (newPlugin.exists()) if (!newPlugin.delete())
       new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(newPlugin.getAbsolutePath()).log();
   }
-  return false;
+  return installed;
 }
 
 /**
@@ -539,15 +532,14 @@ public static ModrinthSearch modrinthBrowse(@Nullable CommandSender sender, Stri
 /**
  @param sender        The sender to send the log messages to.
  @param state         The path to get the lang responses from.
- @param URL           The url to send the request to.
+ @param stringURL     The url to send the request to.
  @param requestMethod The request method to use.
  @return The response from Modrinth.
  @throws MalformedURLException If the Url is invalid.
  @throws ModrinthAPIException  If there was a problem getting the response from Modrinth. */
-public static JsonElement modrinthAPI(@Nullable CommandSender sender, String state, String URL, String requestMethod) throws MalformedURLException, ModrinthAPIException {
+public static JsonElement modrinthAPI(@Nullable CommandSender sender, String state, String stringURL, String requestMethod) throws MalformedURLException, ModrinthAPIException {
   try {
-    URL url = new URL(encodeUrl(URL));
-    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+    HttpURLConnection con = (HttpURLConnection) encodeUrl(stringURL).openConnection();
     con.setRequestMethod(requestMethod);
     con.setRequestProperty("Content-Type", "application/json");
     con.setRequestProperty("User-Agent", "CogWorks: https://github.com/Mapty231 contact: tye.exe@gmail.com");
@@ -560,7 +552,7 @@ public static JsonElement modrinthAPI(@Nullable CommandSender sender, String sta
       new Log(sender, state, "ApiLimit").setLevel(Level.WARNING).log();
     }
     if (status != 200) {
-      throw new ModrinthAPIException(Util.getLang("ModrinthAPI.error"), new Throwable("URL: "+url.toExternalForm()+"\n request method: "+requestMethod+"\n response message:"+con.getResponseMessage()));
+      throw new ModrinthAPIException(Util.getLang("ModrinthAPI.error"), new Throwable("URL: "+stringURL+"\n request method: "+requestMethod+"\n response message:"+con.getResponseMessage()));
     }
 
     BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
