@@ -1,6 +1,6 @@
-package me.tye.cogworks.events;
+package me.tye.cogworks;
 
-import me.tye.cogworks.util.Log;
+import me.tye.cogworks.util.customObjects.Log;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

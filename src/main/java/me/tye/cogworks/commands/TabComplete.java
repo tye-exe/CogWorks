@@ -1,8 +1,8 @@
 package me.tye.cogworks.commands;
 
-import me.tye.cogworks.util.Log;
 import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.Util;
+import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.yamlClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;

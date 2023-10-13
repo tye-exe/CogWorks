@@ -1,23 +1,15 @@
 package me.tye.cogworks.util;
 
-import com.google.common.io.Files;
 import me.tye.cogworks.CogWorks;
-import me.tye.cogworks.util.exceptions.NoSuchPluginException;
-import me.tye.cogworks.util.yamlClasses.PluginData;
-import org.bukkit.command.CommandSender;
+import me.tye.cogworks.util.customObjects.Log;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.logging.Level;
-
-import static me.tye.cogworks.ChatManager.response;
 
 public class Util {
 
@@ -140,83 +132,17 @@ public static <T> T getConfig(String key) {
   } else response = String.valueOf(config.get(key));
 
   switch (key) {
-  case "lang":
+  case "lang" -> {
     return (T) String.valueOf(response);
-  case "showErrorTrace", "showOpErrorSummary":
+  }
+  case "showErrorTrace", "showOpErrorSummary" -> {
     return (T) Boolean.valueOf(String.valueOf(response));
+  }
   }
 
   new Log("exceptions.noConfigMatch", Level.WARNING, null).setKey(key).log();
   return (T) Boolean.TRUE;
 }
 
-
-/**
- * @return -1 if there was an error. Else the value parsed.
- */
-public static int parseNumInput(CommandSender sender, String state, String message, String name, int max, int min) {
-  if (message.equals("q")) {
-    response.remove(name);
-    new Log(sender, state, "quit").log();
-    return -1;
-  }
-
-  int chosen;
-  try {
-    chosen = Integer.parseInt(message);
-  } catch (NumberFormatException e) {
-    new Log(sender, state, "NAN").log();
-    return -1;
-  }
-  if (chosen > max || chosen < min) {
-    new Log(sender, state, "NAN").log();
-    return -1;
-  }
-  return chosen;
-}
-
-public static void reloadPluginData() {
-  ArrayList<PluginData> identifiers = new ArrayList<>();
-  try {
-    identifiers = Plugins.readPluginData();
-  } catch (IOException e) {
-    new Log("exceptions.noAccessPluginYML", Level.SEVERE, e).log();
-  }
-
-  //removes any plugin from plugin data that have been deleted
-  try {
-    PluginLoop:
-    for (PluginData data : identifiers) {
-      for (File file : Objects.requireNonNull(pluginFolder.listFiles())) {
-        if (file.isDirectory()) continue;
-        if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
-
-        if (data.getFileName().equals(file.getName())) {
-          continue PluginLoop;
-        }
-      }
-      try {
-        Plugins.removePluginData(data.getName());
-      } catch (NoSuchPluginException e) {
-        new Log("exceptions.deletingRemovedPlugin", Level.WARNING, e).setPluginName(data.getName()).log();
-      } catch (IOException e) {
-        new Log("exceptions.noAccessDeleteRemovedPlugins", Level.WARNING, e).setPluginName(data.getName()).log();
-      }
-    }
-
-    //adds any new plugins to the pluginData
-    for (File file : Objects.requireNonNull(pluginFolder.listFiles())) {
-      if (file.isDirectory()) continue;
-      if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
-      try {
-        Plugins.appendPluginData(file);
-      } catch (IOException e) {
-        new Log("exceptions.badYmlAccess", Level.WARNING, e).setFileName(file.getName()).log();
-      }
-    }
-  } catch (NullPointerException e) {
-    new Log("exceptions.gettingFilesErr", Level.WARNING, e).setFilePath(pluginFolder.getAbsolutePath()).log();
-  }
-}
 
 }

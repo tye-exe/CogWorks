@@ -1,4 +1,4 @@
-package me.tye.cogworks.util;
+package me.tye.cogworks.util.customObjects;
 
 import java.io.File;
 import java.nio.file.Files;

@@ -1,4 +1,4 @@
-package me.tye.cogworks.util;
+package me.tye.cogworks.util.customObjects;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -23,28 +23,46 @@ ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
 JsonObject plugin = new JsonObject();
 JsonObject pluginVersion = new JsonObject();
 
-JsonArray dependencies = new JsonArray();
 JsonArray files = new JsonArray();
 
 ArrayList<PluginData> toDeleteEval = new ArrayList<>();
 Boolean deleteConfigs = null;
 DeleteQueue deleteQueue = new DeleteQueue(null, null);
 
-
 int offset = 0;
 
+
+/**
+ This object is used to pass variables across one state to another within the chat interactions.
+ @param sender The command sender.
+ @param state  The state the sender is in. */
 public ChatParams(@NonNull CommandSender sender, @NonNull String state) {
   this.state = state;
   this.sender = sender;
 }
 
-public ChatParams setSender(CommandSender sender) {
-  this.sender = sender;
-  return this;
-}
-
-public ChatParams setState(String state) {
+/**
+ Resets the all the internal values to their default state.
+ * @param sender The command sender.
+ * @param state The state the sender is in.
+ * @return The modified ChatParams object.
+ */
+public ChatParams reset(@NonNull CommandSender sender, @NonNull String state) {
   this.state = state;
+  this.sender = sender;
+
+  this.pluginName = "";
+  this.validPlugins = new HashMap<>();
+  this.validPluginKeys = new ArrayList<>();
+  this.chooseableFiles = new ArrayList<>();
+  this.plugin = new JsonObject();
+  this.pluginVersion = new JsonObject();
+  this.files = new JsonArray();
+  this.toDeleteEval = new ArrayList<>();
+  this.deleteConfigs = null;
+  this.deleteQueue = new DeleteQueue(null, null);
+  this.offset = 0;
+
   return this;
 }
 
@@ -54,11 +72,6 @@ public ChatParams setState(String state) {
  @return Edited ChatParams object. */
 public ChatParams setChooseable(ArrayList<JsonObject> chooseableFiles) {
   this.chooseableFiles = chooseableFiles;
-  return this;
-}
-
-public ChatParams setDependencies(JsonArray dependencies) {
-  this.dependencies = dependencies;
   return this;
 }
 
@@ -124,13 +137,16 @@ public ChatParams setDeleteConfigs(Boolean deleteConfigs) {
 }
 
 /**
- @param deleteQueue What plugins to delete & with what parameters for each deletion
+ @param deleteQueue What plugins to delete & with what parameters for each deletion.
  @return ChatParams object with this value edited. */
 public ChatParams setDeleteQueue(DeleteQueue deleteQueue) {
   this.deleteQueue = deleteQueue;
   return this;
 }
 
+/**
+ @param pluginVersion The pluginVersion information.
+ @return ChatParams object with this value edited. */
 public ChatParams setPluginVersion(JsonObject pluginVersion) {
   this.pluginVersion = pluginVersion;
   return this;
@@ -153,10 +169,6 @@ public ArrayList<JsonObject> getValidPluginKeys() {
  @return The command sender executing the action. */
 public CommandSender getSender() {
   return sender;
-}
-
-public JsonArray getDependencies() {
-  return dependencies;
 }
 
 public JsonArray getFiles() {
@@ -212,6 +224,8 @@ public DeleteQueue getDeleteQueue() {
   return deleteQueue;
 }
 
+/**
+ @return The pluginVersion */
 public JsonObject getPluginVersion() {
   return pluginVersion;
 }

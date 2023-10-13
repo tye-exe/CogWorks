@@ -1,4 +1,4 @@
-package me.tye.cogworks.util;
+package me.tye.cogworks.util.customObjects;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 

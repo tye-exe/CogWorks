@@ -1,4 +1,4 @@
-package me.tye.cogworks.util;
+package me.tye.cogworks.util.customObjects;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;

@@ -1,11 +1,11 @@
-package me.tye.cogworks.util;
+package me.tye.cogworks.util.customObjects;
 
 import com.google.gson.JsonElement;
 import org.bukkit.Bukkit;
 
 import java.util.concurrent.Callable;
 
-import static me.tye.cogworks.commands.PluginCommand.modrinthAPI;
+import static me.tye.cogworks.util.Plugins.modrinthAPI;
 
 public class VersionGetThread implements Callable<JsonElement> {
 

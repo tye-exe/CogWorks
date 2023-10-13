@@ -3,7 +3,8 @@ package me.tye.cogworks;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import me.tye.cogworks.util.*;
+import me.tye.cogworks.util.Plugins;
+import me.tye.cogworks.util.customObjects.*;
 import me.tye.cogworks.util.yamlClasses.PluginData;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -25,9 +26,8 @@ import java.util.List;
 import java.util.logging.Level;
 
 import static me.tye.cogworks.FileGui.position;
-import static me.tye.cogworks.commands.PluginCommand.*;
+import static me.tye.cogworks.util.Plugins.parseNumInput;
 import static me.tye.cogworks.util.Util.getLang;
-import static me.tye.cogworks.util.Util.parseNumInput;
 
 public class ChatManager implements Listener {
 
@@ -91,7 +91,7 @@ public static void checks(String name, String message) {
             String title = plugin.get("title").getAsString();
             new Log(sender, state, "start").setPluginName(title).log();
 
-            installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), title);
+            Plugins.installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), title);
 
             JsonArray files = compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray();
             if (files.isEmpty()) {
@@ -100,7 +100,7 @@ public static void checks(String name, String message) {
             }
 
             if (files.size() == 1) {
-              if (installModrinthPlugin(sender, state, files))
+              if (Plugins.installModrinthPlugin(sender, state, files))
                 new Log(sender, state, "finish").setPluginName(title).log();
 
               // if there are more than one file for that version you get prompted to choose which one(s) to install
@@ -116,9 +116,9 @@ public static void checks(String name, String message) {
                 sender.spigot().sendMessage(projectName);
                 i++;
               }
-              ChatParams newParams = new ChatParams(sender, "pluginFileSelect").setChooseable(chooseableFiles).setPlugin(plugin).setPluginVersion(compatibleFiles.get(0).getAsJsonObject());
-              if (sender instanceof Player) response.put(sender.getName(), newParams);
-              else response.put("~", newParams);
+              params.reset(sender, "pluginFileSelect").setChooseable(chooseableFiles).setPlugin(plugin).setPluginVersion(compatibleFiles.get(0).getAsJsonObject());
+              if (sender instanceof Player) response.put(sender.getName(), params);
+              else response.put("~", params);
               return;
             }
 
@@ -136,9 +136,9 @@ public static void checks(String name, String message) {
               sender.spigot().sendMessage(projectName);
               i++;
             }
-            ChatParams newParams = new ChatParams(sender, "pluginVersionSelect").setChooseable(chooseableFiles).setPlugin(plugin);
-            if (sender instanceof Player) response.put(sender.getName(), newParams);
-            else response.put("~", newParams);
+            params.reset(sender, "pluginVersionSelect").setChooseable(chooseableFiles).setPlugin(plugin);
+            if (sender instanceof Player) response.put(sender.getName(), params);
+            else response.put("~", params);
             return;
           }
 
@@ -156,7 +156,7 @@ public static void checks(String name, String message) {
           String title = plugin.get("title").getAsString();
           new Log(sender, state, "start").setPluginName(title).log();
 
-          installModrinthDependencies(sender, state, chosen, title);
+          Plugins.installModrinthDependencies(sender, state, chosen, title);
 
           JsonArray files = chosen.get("files").getAsJsonArray();
           if (files.isEmpty()) {
@@ -165,7 +165,7 @@ public static void checks(String name, String message) {
           }
 
           if (files.size() == 1) {
-            if (installModrinthPlugin(sender, state, files))
+            if (Plugins.installModrinthPlugin(sender, state, files))
               new Log(sender, state, "finish").setPluginName(title).log();
 
             // if there are more than one file for that version you get prompted to choose which one(s) to install
@@ -181,9 +181,9 @@ public static void checks(String name, String message) {
               sender.spigot().sendMessage(projectName);
               i++;
             }
-            ChatParams newParams = new ChatParams(sender, "pluginFileSelect").setChooseable(chooseableFiles).setPlugin(plugin).setPluginVersion(chosen);
-            if (sender instanceof Player) response.put(sender.getName(), newParams);
-            else response.put("~", newParams);
+            params.reset(sender, "pluginFileSelect").setChooseable(chooseableFiles).setPlugin(plugin).setPluginVersion(chosen);
+            if (sender instanceof Player) response.put(sender.getName(), params);
+            else response.put("~", params);
             return;
           }
 
@@ -221,7 +221,7 @@ public static void checks(String name, String message) {
             return;
           }
 
-          installModrinthDependencies(sender, state, pluginVersion, plugin.get("title").getAsString());
+          Plugins.installModrinthDependencies(sender, state, pluginVersion, plugin.get("title").getAsString());
 
           ArrayList<String> fileNames = new ArrayList<>();
           for (JsonElement file : toInstall) {
@@ -235,7 +235,7 @@ public static void checks(String name, String message) {
           for (JsonElement file : toInstall) {
             JsonArray array = new JsonArray();
             array.add(file);
-            installed.add(installModrinthPlugin(sender, state, array));
+            installed.add(Plugins.installModrinthPlugin(sender, state, array));
           }
 
           if (fileNames.size() != installed.size()) {
@@ -285,7 +285,7 @@ public static void checks(String name, String message) {
 
           if (nextOffset != null) {
             //if the user chooses to scroll
-            ModrinthSearch modrinthSearch = modrinthBrowse(sender, state, nextOffset);
+            ModrinthSearch modrinthSearch = Plugins.modrinthBrowse(sender, state, nextOffset);
             ArrayList<JsonObject> newValidPluginKeys = modrinthSearch.getValidPluginKeys();
             HashMap<JsonObject,JsonArray> newValidPlugins = modrinthSearch.getValidPlugins();
             if (newValidPluginKeys.isEmpty() || newValidPlugins.isEmpty()) return;
@@ -309,9 +309,9 @@ public static void checks(String name, String message) {
 
             sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": v");
 
-            ChatParams newParams = new ChatParams(sender, "pluginBrowse").setValidPlugins(newValidPlugins).setValidPluginKeys(newValidPluginKeys).setOffset(nextOffset);
-            if (sender instanceof Player) response.put(sender.getName(), newParams);
-            else response.put("~", newParams);
+            params.reset(sender, "pluginBrowse").setValidPlugins(newValidPlugins).setValidPluginKeys(newValidPluginKeys).setOffset(nextOffset);
+            if (sender instanceof Player) response.put(sender.getName(), params);
+            else response.put("~", params);
 
           } else {
             //if the user decides to install a plugin
@@ -324,9 +324,9 @@ public static void checks(String name, String message) {
               String title = plugin.get("title").getAsString();
               new Log(sender, state, "start").setPluginName(title).log();
 
-              installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), title);
+              Plugins.installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), title);
 
-              if (installModrinthPlugin(sender, state, compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray())) {
+              if (Plugins.installModrinthPlugin(sender, state, compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray())) {
                 new Log(sender, state, "finish").setPluginName(title).log();
               }
 
@@ -344,9 +344,9 @@ public static void checks(String name, String message) {
                 i++;
               }
 
-              ChatParams newParams = new ChatParams(sender, "pluginVersionSelect").setChooseable(chooseableFiles).setPlugin(plugin);
-              if (sender instanceof Player) response.put(sender.getName(), newParams);
-              else response.put("~", newParams);
+              params.reset(sender, "pluginVersionSelect").setChooseable(chooseableFiles).setPlugin(plugin);
+              if (sender instanceof Player) response.put(sender.getName(), params);
+              else response.put("~", params);
               return;
             }
             response.remove(name);
@@ -394,15 +394,15 @@ public static void checks(String name, String message) {
               for (int i = 0; i < whatDepends.size(); i++) names[i] = whatDepends.get(i).getName();
 
               new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
-              ChatParams newParams = new ChatParams(sender, "pluginsDeleteEval").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
-              if (sender instanceof Player) response.put(sender.getName(), newParams);
-              else response.put("~", newParams);
+              params.reset(sender, "pluginsDeleteEval").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
+              if (sender instanceof Player) response.put(sender.getName(), params);
+              else response.put("~", params);
             } else {
 
 
               new Log(sender, "deletePlugin.deleteConfig").setPluginName(toDeleteEval.get(0).getName()).log();
-              ChatParams newParams = new ChatParams(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
-              if (sender instanceof Player) response.put(sender.getName(), newParams);
+              params.reset(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
+              if (sender instanceof Player) response.put(sender.getName(), params);
               else response.put("~", params);
             }
           }
@@ -451,9 +451,9 @@ public static void checks(String name, String message) {
           else {
             if (Plugins.hasConfigFolder(pluginName)) {
               new Log(sender, state, "deleteConfig").setPluginName(pluginName).log();
-              ChatParams newParams = new ChatParams(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(deleteEval);
-              if (sender instanceof Player) response.put(sender.getName(), newParams);
-              else response.put("~", newParams);
+              params.reset(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(deleteEval);
+              if (sender instanceof Player) response.put(sender.getName(), params);
+              else response.put("~", params);
               return;
             }
           }
@@ -476,9 +476,9 @@ public static void checks(String name, String message) {
             deleteQueue.executeDelete();
             response.remove(name);
           } else {
-            ChatParams newParams = new ChatParams(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(deleteEval);
-            if (sender instanceof Player) response.put(sender.getName(), newParams);
-            else response.put("~", newParams);
+            params.reset(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(deleteEval);
+            if (sender instanceof Player) response.put(sender.getName(), params);
+            else response.put("~", params);
 
             String[] names = new String[whatDependsOn.size()];
             for (int i = 0; i < whatDependsOn.size(); i++)

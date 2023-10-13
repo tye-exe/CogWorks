@@ -21,13 +21,12 @@
 info:
   menuClose: "§eMenu closed due to reload, this is to prevent errors."
   errorSum: "§eThere have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
-  onlyPlayersFile: "§eThis command is only available to online players, being redirected to terminal."
   newLang: "§aThe language file {fileName} is now available for this version of the plugin and has been automatically downloaded."
   updatedLang: "§aYour lang file has been changed to the one designed for this version of CogWorks."
 
 
 help:
-  #Don't translate anything after the "-" in this section.
+  #Don't translate anything before the "-" in this section.
   #E.G "§9/plugin help - §a{translated text}."
   plugin:
     help: "§9/plugin help - §aShows this message."
@@ -263,8 +262,9 @@ terminal:
   WIP: "§cWARNING: THIS A VERY MUCH A WIP AND NOT YET IMPLEMENTED"
   blank: ""
   path: "§9{filePath} §6$"
+  noGui: "§eThis command is only available to online players, being redirected to terminal."
 
-  #Don't translate anything after the "-" in this section.
+  #Don't translate anything before the "-" in this section.
   #E.G "§9help - §a{translated text}."
   help:
     help: "§9help - §aShows this message."

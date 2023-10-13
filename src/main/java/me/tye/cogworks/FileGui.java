@@ -1,9 +1,9 @@
 package me.tye.cogworks;
 
-import me.tye.cogworks.util.FileData;
-import me.tye.cogworks.util.Log;
-import me.tye.cogworks.util.PathHolder;
 import me.tye.cogworks.util.Util;
+import me.tye.cogworks.util.customObjects.FileData;
+import me.tye.cogworks.util.customObjects.Log;
+import me.tye.cogworks.util.customObjects.PathHolder;
 import net.wesjd.anvilgui.AnvilGUI;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.*;

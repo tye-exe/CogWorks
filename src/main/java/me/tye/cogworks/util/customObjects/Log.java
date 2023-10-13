@@ -1,6 +1,7 @@
-package me.tye.cogworks.util;
+package me.tye.cogworks.util.customObjects;
 
-import me.tye.cogworks.events.SendErrorSummary;
+import me.tye.cogworks.SendErrorSummary;
+import me.tye.cogworks.util.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;

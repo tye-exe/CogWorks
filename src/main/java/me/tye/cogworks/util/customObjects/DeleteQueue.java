@@ -1,4 +1,4 @@
-package me.tye.cogworks.util;
+package me.tye.cogworks.util.customObjects;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import static me.tye.cogworks.commands.PluginCommand.deletePlugin;
+import static me.tye.cogworks.util.Plugins.deletePlugin;
 import static me.tye.cogworks.util.Util.plugin;
 
 public class DeleteQueue {
@@ -20,16 +20,28 @@ String state;
 ArrayList<String> pluginNames = new ArrayList<>();
 ArrayList<Boolean> deleteConfigs = new ArrayList<>();
 
+/**
+ Creates an object that stores plugins that can be deleted in the future.
+ @param sender The sender performing the deletion.
+ @param state  The state the sender is in. */
 public DeleteQueue(CommandSender sender, String state) {
   this.sender = sender;
   this.state = state;
 }
 
+/**
+ Adds a plugin to the list of plugins to be deleted.
+ @param pluginName   The name of the plugin.
+ @param deleteConfig Whether or not to delete the configs. */
 public void addPlugin(String pluginName, boolean deleteConfig) {
   pluginNames.add(pluginName);
   deleteConfigs.add(deleteConfig);
 }
 
+/**
+ Checks if a plugin is in the queue to be deleted or not.
+ @param pluginName The name of the plugin.
+ @return True if the plugin is in the queue. */
 public boolean isQueued(String pluginName) {
   return pluginNames.contains(pluginName);
 }

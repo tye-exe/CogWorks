@@ -6,11 +6,10 @@ import com.google.gson.JsonObject;
 import me.tye.cogworks.commands.FileCommand;
 import me.tye.cogworks.commands.PluginCommand;
 import me.tye.cogworks.commands.TabComplete;
-import me.tye.cogworks.events.SendErrorSummary;
-import me.tye.cogworks.util.Log;
-import me.tye.cogworks.util.ModrinthSearch;
 import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.Util;
+import me.tye.cogworks.util.customObjects.Log;
+import me.tye.cogworks.util.customObjects.ModrinthSearch;
 import me.tye.cogworks.util.yamlClasses.DependencyInfo;
 import me.tye.cogworks.util.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
@@ -42,8 +41,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static me.tye.cogworks.FileGui.position;
-import static me.tye.cogworks.commands.PluginCommand.installModrinthDependencies;
-import static me.tye.cogworks.commands.PluginCommand.modrinthSearch;
+import static me.tye.cogworks.util.Plugins.installModrinthDependencies;
+import static me.tye.cogworks.util.Plugins.modrinthSearch;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
@@ -153,7 +152,7 @@ public void onEnable() {
   } catch (Exception ignore) {
   }
 
-  Util.reloadPluginData();
+  Plugins.reloadPluginData();
 
   //ADR
   ArrayList<PluginData> identifiers = new ArrayList<>();
@@ -288,7 +287,7 @@ public void onEnable() {
                   zip.close();
                   FileUtils.moveFile(dependecyFile, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+dependecyFile.getName()));
                   new Log("ADR.success", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).setDepName((String) yamlData.get("name")).log();
-                  Util.reloadPluginData();
+                  Plugins.reloadPluginData();
                   return versionInfo;
                 }
               }
