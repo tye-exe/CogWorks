@@ -51,7 +51,8 @@ public Log(CommandSender sender, String state, String event) {
 }
 
 /**
- Creates an object which can be used for logging. If langPath is null, no message will be sent.
+ Creates an object which can be used for logging. If langPath is null, no message will be sent.<br>
+ The .log method will need to be used to output the log message.
  @param sender   Sender to output the log to.
  @param langPath The lang path for the response. */
 public Log(CommandSender sender, @NonNull String langPath) {
@@ -60,7 +61,8 @@ public Log(CommandSender sender, @NonNull String langPath) {
 }
 
 /**
- Creates an object which can be used for logging. This method is intended for outputting any messages that do not originate from a users actions.
+ Creates an object which can be used for logging. This method is intended for outputting any messages that do not originate from a users actions.<br>
+ The .log method will need to be used to output the log message.
  @param langPath The lang path for the response.
  @param level    The level of the message.
  @param e        The error that caused the message. */
@@ -70,6 +72,8 @@ public Log(String langPath, @NonNull Level level, @Nullable Exception e) {
   this.e = e;
 }
 
+/**
+ Outputs the log message. */
 public void log() {
   if (langPath == null) return;
 
@@ -115,18 +119,25 @@ public void log() {
   }
 }
 
+/**
+ /@param depName The dependency name
+ @return The modified Log object. */
 public Log setDepName(String depName) {
   this.depName = depName;
   return this;
 }
 
+/**
+ @param fileName The fileName.
+ @return The modified Log object. */
 public Log setFileName(String fileName) {
   this.fileName = fileName;
   return this;
 }
 
 /**
- Takes a List & formats it into a string for the lang. */
+ @param fileNames A list of file names.
+ @return The modified Log object. */
 public Log setFileNames(List<String> fileNames) {
   StringBuilder names = new StringBuilder();
   for (String fileName : fileNames) {
@@ -136,53 +147,82 @@ public Log setFileNames(List<String> fileNames) {
   return this;
 }
 
+/**
+ @param fileNames An already formatted string of fileNames.
+ @return The modified Log object. */
 public Log setFileNames(String fileNames) {
   this.fileNames = fileNames;
   return this;
 }
 
+/**
+ @param filePath The filePath.
+ @return The modified Log object. */
 public Log setFilePath(String filePath) {
   this.filePath = filePath;
   return this;
 }
 
+/**
+ @param key The key.
+ @return The modified Log object. */
 public Log setKey(String key) {
   this.key = key;
   return this;
 }
 
+/**
+ @param pluginName The pluginName.
+ @return The modified Log object. */
 public Log setPluginName(String pluginName) {
   this.pluginName = pluginName;
   return this;
 }
 
+/**
+ @param url The URL.
+ @return The modified Log object. */
 public Log setUrl(String url) {
   this.Url = url;
   return this;
+
 }
 
+/**
+ @param e The exception.
+ @return The modified Log object. */
 public Log setException(Exception e) {
   this.e = e;
   return this;
 }
 
+/**
+ @param level The level of the log message.
+ @return The modified Log object. */
 public Log setLevel(Level level) {
   this.level = level;
   return this;
 }
 
-public Log setSevere(int server) {
-  this.severe = String.valueOf(server);
+/**
+ @param severe The amount of severe error messages that have occurred since last reload/restart.
+ @return The modified Log object. */
+public Log setSevere(int severe) {
+  this.severe = String.valueOf(severe);
   return this;
 }
 
+/**
+ @param isFile Whether it is a file or a dir. True for file.
+ @return The modified Log object. */
 public Log isFile(boolean isFile) {
   this.isFile = isFile ? "File" : "Folder";
   return this;
 }
 
 /**
- Takes a string array & formats it into a string for the lang. */
+ @param pluginNames A string array of pluginNames.
+ @return The modified Log object. */
 public Log setPluginNames(String[] pluginNames) {
   StringBuilder names = new StringBuilder();
   for (String pluginName : pluginNames) {
@@ -192,13 +232,18 @@ public Log setPluginNames(String[] pluginNames) {
   return this;
 }
 
+/**
+ @param pluginNames The string of pluginNames that has already been formatted.
+ @return The modified Log object. */
 public Log setPluginNames(String pluginNames) {
   this.pluginNames = pluginNames;
   return this;
 }
 
 /**
- Sets the key value for state, not the state for the lang path */
+ Sets the key value for state, not the state for the lang path.
+ @param state The state
+ @return The modified Log object. */
 public Log setState(String state) {
   this.state = state;
   return this;

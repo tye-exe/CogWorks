@@ -30,10 +30,11 @@ help:
   #E.G "§9/plugin help - §a{translated text}."
   plugin:
     help: "§9/plugin help - §aShows this message."
-    install: "§9/plugin install <Plugin Name | URL> - §aIf a url is entered it downloads the file from the url to the plugins folder. If a name is given, it uses Modrinth to search the name given and returns the results, which can be chosen from to download."
+    install: "§9/plugin install <URL> - §aDownloads the file from the url to the \"./plugins\" folder."
+    search: "§9/plugin search <Plugin name> - §aUses Modrinth to search the name given and returns the results, which can be chosen from to download."
     browse: "§9/plugin browse - §aAllows the user to search though the most popular plugins on modrinth that are compatible with your server type and install them with the press of a button."
     reload: "§9/plugin reload - §aForces CogWorks to rescan the \"./plugins\" folder."
-    remove: "§9/plugin remove - §aDisables and uninstalls the given plugin."
+    remove: "§9/plugin remove <Plugin name> - §aDisables and uninstalls the given plugin."
   file:
     help: "§9/file help - §aShows this message."
     chat: "§9/file chat - §a(WIP) Turns your chat into a mock command line which lets you interact with files on the server."
@@ -42,9 +43,21 @@ help:
 
 tabComplete:
   plugin:
-    install: "<pluginName | URL>"
+    install: "<URL>"
+    search: "<Plugin name>"
+    remove: "<Plugin name>"
 
   dataReadError: "§eThere was an error getting the plugin names."
+
+reload:
+  reloading: "§aReloading Plugins."
+  reloaded: "§aPlugins reloaded."
+
+  noAccessPluginYML: "§cUnable to access plugin.yml file."
+  deletingRemovedPlugin: "§eError deleting removed plugin {pluginName} from pluginData."
+  noAccessDeleteRemovedPlugins: "§cUnable to remove {pluginName}. This will cause {pluginName} to appear present when interacting with CogWorks."
+  badYmlAccess: "§cUnable to access plugin.yml file for {fileName}. {fileName} won't work for many features of this plugin."
+  gettingFilesErr: "§eThere was an error getting the files in \"{filePath}\"."
 
 
 pluginSelect:
@@ -145,6 +158,7 @@ pluginInstall:
   cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
   noInput: "§ePlease provide a plugin name to search or an url to download from."
   modrinthSearchErr: "§eThere was an error getting plugins with that name from Modrinth."
+  badUrl: "§eInvalid download URL.{n}§eURL: \"{URL}\""
   finish: "§aFinished installing {fileName}. Reload or restart for {fileName} to activate."
 
 

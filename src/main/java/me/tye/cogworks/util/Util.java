@@ -2,6 +2,7 @@ package me.tye.cogworks.util;
 
 import me.tye.cogworks.CogWorks;
 import me.tye.cogworks.util.customObjects.Log;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
@@ -17,12 +18,16 @@ public class Util {
 public static final JavaPlugin plugin = JavaPlugin.getPlugin(CogWorks.class);
 
 public static final File pluginFolder = new File(plugin.getDataFolder().getParent());
+public static final File serverFolder = new File(pluginFolder.getParent());
 public static final File configFile = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+"config.yml");
 public static final File dataStore = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+".data");
 public static final File pluginDataFile = new File(dataStore.getAbsolutePath()+File.separator+"pluginData.json");
 public static final File langFolder = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+"langFiles");
 public static final File temp = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+".temp");
 public static final File ADR = new File(temp.getAbsolutePath()+File.separator+"ADR");
+
+public static final String mcVersion = Bukkit.getVersion().split(": ")[1].substring(0, Bukkit.getVersion().split(": ")[1].length()-1);
+public static final String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
 
 
 //lang & config

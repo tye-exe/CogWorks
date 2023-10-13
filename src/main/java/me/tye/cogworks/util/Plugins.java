@@ -11,7 +11,6 @@ import me.tye.cogworks.util.exceptions.NoSuchPluginException;
 import me.tye.cogworks.util.yamlClasses.DependencyInfo;
 import me.tye.cogworks.util.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -47,13 +46,13 @@ public class Plugins {
 
 /**
  Checks if a plugin is installed.
- @param name Name of the plugin to check.
+ @param pluginName Name of the plugin to check.
  @return true only if the plugin was found to be installed & the data could be read. */
-public static boolean registered(String name) {
+public static boolean registered(String pluginName) {
   try {
     ArrayList<PluginData> data = new ArrayList<>(readPluginData());
     for (PluginData plugin : data) {
-      if (plugin.getName().equals(name)) return true;
+      if (plugin.getName().equals(pluginName)) return true;
     }
   } catch (IOException e) {
     new Log("execution.dataReadError", Level.WARNING, e).log();
@@ -96,7 +95,10 @@ public static Map<String,Object> getYML(File pluginJar) {
   return new HashMap<>();
 }
 
-
+/**
+ Gets the plugins that depend on this one to function.
+ @param pluginName The name of the plugin to check if anything depends on it.
+ @return A list of the pluginData for the plugins that depend on this one to function. */
 public static List<PluginData> getWhatDependsOn(String pluginName) {
   ArrayList<PluginData> whatDepends = new ArrayList<>();
   try {
@@ -119,8 +121,6 @@ public static List<PluginData> getWhatDependsOn(String pluginName) {
   return new ArrayList<>();
 }
 
-
-//low level
 
 /**
  Removes a plugin from plugin data.
@@ -208,7 +208,6 @@ public static ArrayList<PluginData> readPluginData() throws IOException {
  @throws NoSuchPluginException Thrown if the plugin couldn't be found in the pluginData file.
  @throws IOException           Thrown if there was an error reading from the pluginData file. */
 public static PluginData readPluginData(String pluginName) throws NoSuchPluginException, IOException {
-  ;
   for (PluginData data : readPluginData()) {
     if (data.getName().equals(pluginName)) return data;
   }
@@ -228,8 +227,9 @@ public static void writePluginData(ArrayList<PluginData> pluginData) throws IOEx
   fileWriter.close();
 }
 
+
 public static boolean hasConfigFolder(String pluginName) {
-  return new File(pluginFolder + File.separator + pluginName).exists();
+  return new File(pluginFolder+File.separator+pluginName).exists();
 }
 
 
@@ -366,11 +366,6 @@ public static ModrinthSearch modrinthSearch(@Nullable CommandSender sender, Stri
   HashMap<JsonObject,JsonArray> validPlugins = new HashMap<>();
 
   try {
-
-    String mcVersion = Bukkit.getVersion().split(": ")[1];
-    mcVersion = mcVersion.substring(0, mcVersion.length()-1);
-    String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
-
     JsonElement relevantPlugins = modrinthAPI(sender, "ModrinthAPI", "https://api.modrinth.com/v2/search?query="+searchQuery+"&facets=[[%22versions:"+mcVersion+"%22],[%22categories:"+serverSoftware+"%22]]", "GET");
     JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
     if (hits.isEmpty()) throw new ModrinthAPIException(Util.getLang("ModrinthAPI.empty"));
@@ -462,9 +457,6 @@ public static ModrinthSearch modrinthBrowse(@Nullable CommandSender sender, Stri
   HashMap<JsonObject,JsonArray> validPlugins = new HashMap<>();
 
   try {
-    String mcVersion = Bukkit.getVersion().split(": ")[1];
-    mcVersion = mcVersion.substring(0, mcVersion.length()-1);
-    String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
 
     JsonElement relevantPlugins = modrinthAPI(sender, "ModrinthAPI", "https://api.modrinth.com/v2/search?query=&facets=[[%22versions:"+mcVersion+"%22],[%22categories:"+serverSoftware+"%22]]&offset="+offset, "GET");
     JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
@@ -678,10 +670,6 @@ public static HashMap<String,JsonArray> getModrinthDependencies(@Nullable Comman
   }
 
   //makes sure the dependencies run on this version
-  String mcVersion = Bukkit.getVersion().split(": ")[1];
-  mcVersion = mcVersion.substring(0, mcVersion.length()-1);
-  String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
-
   for (JsonElement je : pluginVersions.getAsJsonArray()) {
     JsonObject jo = je.getAsJsonObject();
     boolean supportsVersion = false;
@@ -740,12 +728,12 @@ public static int parseNumInput(CommandSender sender, String state, String messa
   return chosen;
 }
 
-public static void reloadPluginData() {
+public static void reloadPluginData(@Nullable CommandSender sender, String state) {
   ArrayList<PluginData> identifiers = new ArrayList<>();
   try {
     identifiers = readPluginData();
   } catch (IOException e) {
-    new Log("exceptions.noAccessPluginYML", Level.SEVERE, e).log();
+    new Log(sender, state, "noAccessPluginYML").setLevel(Level.SEVERE).setException(e).log();
   }
 
   //removes any plugin from plugin data that have been deleted
@@ -763,9 +751,9 @@ public static void reloadPluginData() {
       try {
         removePluginData(data.getName());
       } catch (NoSuchPluginException e) {
-        new Log("exceptions.deletingRemovedPlugin", Level.WARNING, e).setPluginName(data.getName()).log();
+        new Log(sender, state, "deletingRemovedPlugin").setLevel(Level.SEVERE).setException(e).setPluginName(data.getName()).log();
       } catch (IOException e) {
-        new Log("exceptions.noAccessDeleteRemovedPlugins", Level.WARNING, e).setPluginName(data.getName()).log();
+        new Log(sender, state, "noAccessDeleteRemovedPlugins").setLevel(Level.SEVERE).setException(e).setPluginName(data.getName()).log();
       }
     }
 
@@ -776,11 +764,11 @@ public static void reloadPluginData() {
       try {
         appendPluginData(file);
       } catch (IOException e) {
-        new Log("exceptions.badYmlAccess", Level.WARNING, e).setFileName(file.getName()).log();
+        new Log(sender, state, "badYmlAccess").setLevel(Level.SEVERE).setException(e).setFileName(file.getName()).log();
       }
     }
   } catch (NullPointerException e) {
-    new Log("exceptions.gettingFilesErr", Level.WARNING, e).setFilePath(pluginFolder.getAbsolutePath()).log();
+    new Log(sender, state, "gettingFilesErr").setLevel(Level.WARNING).setException(e).setFilePath(pluginFolder.getAbsolutePath()).log();
   }
 }
 

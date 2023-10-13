@@ -59,6 +59,7 @@ public final class CogWorks extends JavaPlugin {
 //TODO: allow to install multiple plugins at once when using a url.
 //TODO: when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
 //TODO: make to try & install plugins for the correct server version if the server is updated
+//TODO: allow the sender to pass though an offset when using /plugin browse?
 
 @Override
 public void onEnable() {
@@ -152,7 +153,7 @@ public void onEnable() {
   } catch (Exception ignore) {
   }
 
-  Plugins.reloadPluginData();
+  Plugins.reloadPluginData(null, "exceptions");
 
   //ADR
   ArrayList<PluginData> identifiers = new ArrayList<>();
@@ -287,7 +288,7 @@ public void onEnable() {
                   zip.close();
                   FileUtils.moveFile(dependecyFile, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+dependecyFile.getName()));
                   new Log("ADR.success", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).setDepName((String) yamlData.get("name")).log();
-                  Plugins.reloadPluginData();
+                  Plugins.reloadPluginData(null, "exceptions");
                   return versionInfo;
                 }
               }

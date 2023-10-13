@@ -11,15 +11,23 @@ public class ModrinthSearch {
 ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
 HashMap<JsonObject,JsonArray> validPlugins = new HashMap<>();
 
+/**
+ Stores the result of ModrinthSearch.
+ @param validPluginKeys The valid plugin keys.
+ @param validPlugins    The valid plugins in order. */
 public ModrinthSearch(@Nullable ArrayList<JsonObject> validPluginKeys, @Nullable HashMap<JsonObject,JsonArray> validPlugins) {
   if (validPluginKeys != null) this.validPluginKeys = validPluginKeys;
   if (validPlugins != null) this.validPlugins = validPlugins;
 }
 
+/**
+ @return The valid plugin keys in order. */
 public ArrayList<JsonObject> getValidPluginKeys() {
   return validPluginKeys;
 }
 
+/**
+ @return The valid plugins. */
 public HashMap<JsonObject,JsonArray> getValidPlugins() {
   return validPlugins;
 }

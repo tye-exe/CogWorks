@@ -4,29 +4,41 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class PathHolder {
-String serverPath;
-String currentPath;
+import static me.tye.cogworks.util.Util.serverFolder;
 
-public PathHolder(String serverPath, String currentPath) {
-  this.serverPath = serverPath;
-  this.currentPath = currentPath;
+public class PathHolder {
+Path serverPath = serverFolder.toPath().normalize();
+Path currentPath;
+
+/**
+ Makes an object to store a users current position in the file system.
+ @param currentPath The full current path to the file the users is viewing. */
+public PathHolder(String currentPath) {
+  this.currentPath = Path.of(currentPath).normalize();
+}
+
+/**
+ Makes an object to store a users current position in the file system.<br>
+ The current path is set to the server folder. */
+public PathHolder() {
+  this.currentPath = serverPath;
 }
 
 /**
  @return Path to the server folder. */
 public String getServerPath() {
-  return serverPath;
+  return serverPath.normalize().toString();
 }
 
 /**
  @return Full path to current file. */
 public String getCurrentPath() {
   //guards against people trying to go higher in the file system
-  String trueServerPath = Path.of(serverPath).normalize().toString();
-  String trueCurrentPosition = Path.of(currentPath).normalize().toString();
-  if (trueCurrentPosition.startsWith(trueServerPath)) return currentPath;
-  else return trueServerPath;
+  if (currentPath.normalize().startsWith(serverPath.normalize())) return currentPath.toString();
+  else {
+    this.currentPath = serverPath;
+    return serverPath.toString();
+  }
 }
 
 /**
@@ -43,13 +55,12 @@ public String getFileName() {
 
 
 /**
- Sets the current path to the given string. */
-public void setCurrentPath(String currentPath) {
+ Sets the current path to the given string.
+ @param newPath The new path to set*/
+public void setCurrentPath(String newPath) {
+  Path currentPath = Path.of(newPath).normalize();
   //guards against people trying to go higher in the file system
-  String trueServerPath = Path.of(serverPath).normalize().toString();
-  String trueCurrentPosition = Path.of(currentPath).normalize().toString();
-  if (trueCurrentPosition.startsWith(trueServerPath) && Files.exists(Path.of(currentPath)))
+  if (serverPath.startsWith(currentPath) && Files.exists(currentPath))
     this.currentPath = currentPath;
-  else this.currentPath = trueServerPath;
 }
 }

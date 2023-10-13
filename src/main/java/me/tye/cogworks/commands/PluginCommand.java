@@ -33,72 +33,9 @@ public class PluginCommand implements CommandExecutor {
 @Override
 public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String[] args) {
   if (args.length >= 1) {
-    switch (args[0]) {
-    case "install" -> {
-      if (!sender.hasPermission("cogworks.plugin.ins")) return true;
-      if (args.length >= 2) {
-        new Thread(new Runnable() {
 
-          private CommandSender sender;
-          private String[] args;
+    if (args[0].equals("remove")) {
 
-          public Runnable init(CommandSender sender, String[] args) {
-            this.sender = sender;
-            this.args = args;
-            return this;
-          }
-
-          @Override
-          public void run() {
-            try {
-              //checks if the arg given is a valid url or not.
-              encodeUrl(args[1]);
-
-              //gets the filename from the url
-              String fileName;
-              String[] splits = args[1].split("/");
-              fileName = splits[splits.length-1];
-              if (!Files.getFileExtension(fileName).equals("jar")) {
-                fileName += ".jar";
-              }
-
-              if (Plugins.installPluginURL(sender, "pluginInstall", args[1], fileName, true)) {
-                new Log(sender, "pluginInstall.finish").setFileName(fileName).log();
-              }
-
-            } catch (MalformedURLException ignore) {
-              StringBuilder query = new StringBuilder();
-              for (int i = 1; i < args.length; i++) query.append(" ").append(args[i]);
-              ModrinthSearch search = Plugins.modrinthSearch(sender, "pluginInstall", query.substring(1));
-              HashMap<JsonObject,JsonArray> validPlugins = search.getValidPlugins();
-              ArrayList<JsonObject> validPluginKeys = search.getValidPluginKeys();
-
-              if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) return;
-
-              new Log(sender, "pluginInstall.pluginSelect").log();
-              for (int i = 0; 10 > i; i++) {
-                if (validPluginKeys.size() <= i) break;
-                JsonObject project = validPluginKeys.get(i);
-                TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
-                projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
-                projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
-                projectName.setUnderlined(true);
-                sender.spigot().sendMessage(projectName);
-              }
-
-              ChatParams params = new ChatParams(sender, "pluginSelect").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys);
-              if (sender instanceof Player) response.put(sender.getName(), params);
-              else response.put("~", params);
-
-            }
-          }
-        }.init(sender, args)).start();
-      } else {
-        new Log(sender, "pluginInstall.noInput").log();
-      }
-      return true;
-    }
-    case "remove" -> {
       if (!sender.hasPermission("cogworks.plugin.rm")) return true;
       if (args.length >= 2) {
         Boolean deleteConfig = null;
@@ -163,71 +100,144 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
         new Log(sender, "deletePlugin.provideName").log();
       }
       return true;
-    }
-    case "browse" -> {
-      if (!sender.hasPermission("cogworks.plugin.ins")) return true;
+
+      //runs the other commands in a thread since they involve networking.
+    } else {
       new Thread(new Runnable() {
 
         private CommandSender sender;
-        private int offset;
+        private String[] args;
 
-        public Runnable init(CommandSender sender, int offset) {
+        public Runnable init(CommandSender sender, String[] args) {
           this.sender = sender;
-          this.offset = offset;
+          this.args = args;
           return this;
         }
 
         @Override
         public void run() {
-          ModrinthSearch modrinthSearch = Plugins.modrinthBrowse(sender, "pluginBrowse", offset);
-          ArrayList<JsonObject> validPluginKeys = modrinthSearch.getValidPluginKeys();
-          HashMap<JsonObject,JsonArray> validPlugins = modrinthSearch.getValidPlugins();
 
-          if (validPluginKeys.isEmpty() || validPlugins.isEmpty()) return;
+          switch (args[0]) {
+          case "install" -> {
+            if (!sender.hasPermission("cogworks.plugin.ins.gen")) return;
+            if (args.length < 2) {
+              new Log(sender, "pluginInstall.noInput").log();
+              return;
+            }
+            try {
+              //checks if the arg given is a valid url or not.
+              encodeUrl(args[1]);
 
-          new Log(sender, "pluginBrowse.pluginSelect").log();
-          int i = 0;
+              //gets the filename from the url
+              String fileName;
+              String[] splits = args[1].split("/");
+              fileName = splits[splits.length-1];
+              if (!Files.getFileExtension(fileName).equals("jar")) {
+                fileName += ".jar";
+              }
 
-          if (offset >= 1) {
-            sender.sendMessage(ChatColor.GREEN+String.valueOf(i)+": ^");
-            i++;
+              if (Plugins.installPluginURL(sender, "pluginInstall", args[1], fileName, true)) {
+                new Log(sender, "pluginInstall.finish").setFileName(fileName).log();
+              }
+
+            } catch (MalformedURLException e) {
+              new Log(sender, "pluginInstall.badUrl").setUrl(args[1]);
+            }
           }
 
-          while (validPluginKeys.size() > i) {
-            JsonObject project = validPluginKeys.get(i);
-            TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
-            projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
-            projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
-            projectName.setUnderlined(true);
-            sender.spigot().sendMessage(projectName);
-            i++;
+          case "search" -> {
+            if (!sender.hasPermission("cogworks.plugin.ins.modrinth")) return;
+            if (args.length < 2) {
+              new Log(sender, "pluginInstall.noInput").log();
+              return;
+            }
+            StringBuilder query = new StringBuilder();
+            for (int i = 1; i < args.length; i++) query.append(" ").append(args[i]);
+            ModrinthSearch search = Plugins.modrinthSearch(sender, "pluginInstall", query.substring(1));
+            HashMap<JsonObject,JsonArray> validPlugins = search.getValidPlugins();
+            ArrayList<JsonObject> validPluginKeys = search.getValidPluginKeys();
+
+            if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) return;
+
+            new Log(sender, "pluginInstall.pluginSelect").log();
+            for (int i = 0; 10 > i; i++) {
+              if (validPluginKeys.size() <= i) break;
+              JsonObject project = validPluginKeys.get(i);
+              TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
+              projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
+              projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
+              projectName.setUnderlined(true);
+              sender.spigot().sendMessage(projectName);
+            }
+
+            ChatParams params = new ChatParams(sender, "pluginSelect").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys);
+            if (sender instanceof Player) response.put(sender.getName(), params);
+            else response.put("~", params);
+
           }
 
-          sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": v");
+          case "browse" -> {
+            if (!sender.hasPermission("cogworks.plugin.ins.modrinth")) return;
+            int offset = 0;
+            ModrinthSearch modrinthSearch = Plugins.modrinthBrowse(sender, "pluginBrowse", offset);
+            ArrayList<JsonObject> validPluginKeys = modrinthSearch.getValidPluginKeys();
+            HashMap<JsonObject,JsonArray> validPlugins = modrinthSearch.getValidPlugins();
 
-          ChatParams params = new ChatParams(sender, "pluginBrowse").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys).setOffset(offset);
-          if (sender instanceof Player) response.put(sender.getName(), params);
-          else response.put("~", params);
+            if (validPluginKeys.isEmpty() || validPlugins.isEmpty()) return;
 
+            new Log(sender, "pluginBrowse.pluginSelect").log();
+            int i = 0;
+
+            if (offset >= 1) {
+              sender.sendMessage(ChatColor.GREEN+String.valueOf(i)+": ^");
+              i++;
+            }
+
+            while (validPluginKeys.size() > i) {
+              JsonObject project = validPluginKeys.get(i);
+              TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
+              projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
+              projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
+              projectName.setUnderlined(true);
+              sender.spigot().sendMessage(projectName);
+              i++;
+            }
+
+            sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": v");
+
+            ChatParams params = new ChatParams(sender, "pluginBrowse").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys).setOffset(offset);
+            if (sender instanceof Player) response.put(sender.getName(), params);
+            else response.put("~", params);
+          }
+
+          case "reload" -> {
+            new Log(sender, "reload.reloading").log();
+            Plugins.reloadPluginData(sender, "reload");
+            new Log(sender, "reload.reloaded").log();
+          }
+
+          }
         }
-      }.init(sender, 0)).start();
-      return true;
-    }
-    case "reload" -> {
-      Plugins.reloadPluginData();
-      return true;
+      }.init(sender, args)).start();
     }
 
-    }
   }
 
   new Log(sender, "help.plugin.help").log();
-  if (sender.hasPermission("cogworks.plugin.ins")) {
+
+  if (sender.hasPermission("cogworks.plugin.ins.gen"))
     new Log(sender, "help.plugin.install").log();
+
+  if (sender.hasPermission("cogworks.plugin.ins.modrinth")) {
+    new Log(sender, "help.plugin.search").log();
     new Log(sender, "help.plugin.browse").log();
   }
-  if (sender.hasPermission("cogworks.plugin.reload")) new Log(sender, "help.plugin.reload").log();
-  if (sender.hasPermission("cogworks.plugin.rm")) new Log(sender, "help.plugin.remove").log();
+
+  if (sender.hasPermission("cogworks.plugin.reload"))
+    new Log(sender, "help.plugin.reload").log();
+
+  if (sender.hasPermission("cogworks.plugin.rm"))
+    new Log(sender, "help.plugin.remove").log();
 
   return true;
 }

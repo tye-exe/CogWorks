@@ -21,8 +21,11 @@ public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Comman
   ArrayList<String> completions = new ArrayList<>();
   if (label.equals("plugin")) {
     if (args.length == 1) {
-      if (sender.hasPermission("cogworks.plugin.ins")) {
-        StringUtil.copyPartialMatches(args[0], Arrays.asList("install", "browse"), completions);
+      if (sender.hasPermission("cogworks.plugin.ins.gen")) {
+        StringUtil.copyPartialMatches(args[0], List.of("install"), completions);
+      }
+      if (sender.hasPermission("cogworks.plugin.ins.modrinth")) {
+        StringUtil.copyPartialMatches(args[0], List.of("search", "browse"), completions);
       }
       if (sender.hasPermission("cogworks.plugin.rm")) {
         StringUtil.copyPartialMatches(args[0], List.of("remove"), completions);

@@ -9,6 +9,12 @@ String searchPhrase;
 int searchInstance;
 boolean deleteMode;
 
+/**
+ Stores data about the file/dir the user is currently viewing.
+ @param currentLine    The current line they are viewing.
+ @param searchPhrase   The current search phrase.
+ @param searchInstance The current search instance.
+ @param deleteMode     Whether the user is in delete mode. */
 public FileData(int currentLine, @Nullable String searchPhrase, int searchInstance, boolean deleteMode) {
   setCurrentLine(currentLine);
   setSearchPhrase(searchPhrase);

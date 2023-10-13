@@ -30,7 +30,9 @@ The latest public version of the plugin will always be available on [Modrinth](h
 - Permissions.
 
 ### Permissions:
-- cogworks.plugin.ins - Able to install plugins.
+
+- cogworks.plugin.ins.gen - Able to install plugins from any URL.
+- cogworks.plugin.ins.modrinth - Able to install plugins from Modrinth.
 - cogworks.plugin.reload - Able to make CogWorks rescan the "./plugins" folder for any changes.
 - cogworks.plugin.rm - Able to remove plugins.
 - cogworks.file.nav - Able to use the "/file" command, view files and folders, & navigate though folders.
