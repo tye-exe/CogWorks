@@ -19,8 +19,8 @@
 #n = newLine.
 
 info:
-  menuClose: "§eMenu closed due to reload, this is to prevent errors."
-  errorSum: "§eThere have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
+  menuClose: "§e[CogWorks] Menu closed due to reload, this is to prevent errors."
+  errorSum: "§e[CogWorks] There have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
   newLang: "§aThe language file {fileName} is now available for this version of the plugin and has been automatically downloaded."
   updatedLang: "§aYour lang file has been changed to the one designed for this version of CogWorks."
 
@@ -66,7 +66,7 @@ pluginSelect:
   downloading: "§aDownloading {fileName}."
   installed: "§e{fileName} is already installed."
   installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {pluginName}. Reload or restart for {pluginName} to activate."
+  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
   #Do translate the world (Primary)
   versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
 
@@ -88,7 +88,7 @@ pluginVersionSelect:
   downloading: "§aDownloading {fileName}."
   installed: "§e{fileName} is already installed."
   installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {pluginName}. Reload or restart for {pluginName} to activate."
+  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
   #Do translate the world (Primary)
   versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
 
@@ -109,8 +109,7 @@ pluginFileSelect:
   downloading: "§aDownloading {fileName}."
   installed: "§e{fileName} is already installed."
   installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {fileNames}."
-  restart: "§aReload or restart for {fileNames} to activate."
+  finish: "§aFinished installing {fileNames}.{n}§aReload or restart for the plugin(s) to activate."
   #Do translate the world (Primary)
   versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
   primary: "(Primary)"
@@ -135,7 +134,9 @@ pluginBrowse:
   downloading: "§aDownloading {fileName}."
   installed: "§e{fileName} is already installed."
   installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {pluginName}. Reload or restart for {pluginName} to activate."
+  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
+  #Do translate the world (Primary)
+  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
 
   quit: "§eQuitting."
   NAN: "§ePlease enter a listed number."
@@ -151,6 +152,9 @@ pluginBrowse:
 
 
 pluginInstall:
+  downloading: "§aDownloading {fileName}."
+  finish: "§aFinished installing {fileName}.{n}§aReload or restart for {fileName} to activate."
+
   noFiles: "§eFailed to find compatible file to download."
   alreadyExists: "§eThat {fileName} is already installed on your system."
   pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
@@ -159,7 +163,6 @@ pluginInstall:
   noInput: "§ePlease provide a plugin name to search or an url to download from."
   modrinthSearchErr: "§eThere was an error getting plugins with that name from Modrinth."
   badUrl: "§eInvalid download URL.{n}§eURL: \"{URL}\""
-  finish: "§aFinished installing {fileName}. Reload or restart for {fileName} to activate."
 
 
 deletePlugin:
@@ -206,11 +209,6 @@ ModrinthAPI:
 
 
 fileGui:
-  confirmDel:
-    title: "Confirm Deletion"
-    deny: "§cDeny"
-    confirm: "§aConfirm"
-
   goto.title: "Goto:"
 
   search:
@@ -224,16 +222,21 @@ fileGui:
 
   createFile:
     title: "Name:"
-    fileExists: "There is already a {isFile} with that name."
-    creationErr: "There was an error creating that {isFile}."
+    fileExists: "§eThere is already a {isFile} with that name."
+    creationErr: "§eThere was an error creating that {isFile}."
 
-  confirmedDelete.error: "Failed to delete {fileName}."
+  confirmDel:
+    title: "Confirm Deletion"
+    deny: "§cDeny"
+    confirm: "§aConfirm"
 
   confirmDirDelete:
     title: "See sign."
     sign: "§l§cThis folder contains files within it! Are you sure?"
-    no: "§cNo"
-    yes: "§aYes"
+    deny: "§cNo"
+    confirm: "§aYes"
+
+  confirmedDelete.error: "§eFailed to delete {fileName}."
 
   fileEditor:
     title: "File editor:"
@@ -266,9 +269,9 @@ fileGui:
     back: "Back"
     backDesc: "Exists the file."
 
-    readErr: "There was an error when trying to read {filePath}."
-    fileCloseErr: "There was an error closing {filePath}. This file will not be able to be used until the server is restarted."
-    getFilesErr: "There was an error trying to get the files in {filePath}."
+    readErr: "§eThere was an error when trying to read {filePath}."
+    fileCloseErr: "§eThere was an error closing {filePath}. This file will not be able to be used until the server is restarted."
+    getFilesErr: "§eThere was an error trying to get the files in {filePath}."
 
 
 terminal:
@@ -306,7 +309,7 @@ ADR:
 
 exceptions:
   seeConsole: "§ePlease see the console for stack trace."
-  noSuchResponse: "§cNo lang response could be found for {key}. Please inform the devs about this."
+  noSuchResponse: "§cNo lang response could be found for \"{key}\". Please inform the devs about this."
 
   fileCreation: "§eUnable to create {fileName} file in \"{filePath}\"."
   removeLeftoverFiles: "§eUnable to clean up unused file \"{filePath}\". Please manually delete this file at your earliest convenience."
@@ -318,7 +321,7 @@ exceptions:
   pluginNotRegistered: "§e{pluginName} either not installed or not indexed by CogWorks."
   badModrinthUrl: "§eCreating a url to send request to Modrinth failed. An invalid url was created."
   dataReadError: "§eThere was an error reading the plugin names from the pluginData file."
-  noExternalResponse: "§eUnable to get external lang response for {key}. Using internal value."
+  noExternalResponse: "§eUnable to get external lang response for \"{key}\". Using internal value."
   gettingFilesErr: "§eThere was an error getting the files in \"{filePath}\"."
   newLangCheck: "§eThere was an error checking for new lang files."
   newLangInstall: "§eThere was an error installing the new lang file {fileName}. You can manually download it from \"{URL}\"."

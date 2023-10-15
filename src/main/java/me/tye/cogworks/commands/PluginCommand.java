@@ -141,7 +141,7 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
               }
 
             } catch (MalformedURLException e) {
-              new Log(sender, "pluginInstall.badUrl").setUrl(args[1]);
+              new Log(sender, "pluginInstall.badUrl").setUrl(args[1]).log();
             }
           }
 
@@ -216,29 +216,46 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
             new Log(sender, "reload.reloaded").log();
           }
 
+          default -> {
+            new Log(sender, "help.plugin.help").log();
+
+            if (sender.hasPermission("cogworks.plugin.ins.gen"))
+              new Log(sender, "help.plugin.install").log();
+
+            if (sender.hasPermission("cogworks.plugin.ins.modrinth")) {
+              new Log(sender, "help.plugin.search").log();
+              new Log(sender, "help.plugin.browse").log();
+            }
+
+            if (sender.hasPermission("cogworks.plugin.reload"))
+              new Log(sender, "help.plugin.reload").log();
+
+            if (sender.hasPermission("cogworks.plugin.rm"))
+              new Log(sender, "help.plugin.remove").log();
+          }
+
           }
         }
       }.init(sender, args)).start();
     }
 
+  } else {
+    new Log(sender, "help.plugin.help").log();
+
+    if (sender.hasPermission("cogworks.plugin.ins.gen"))
+      new Log(sender, "help.plugin.install").log();
+
+    if (sender.hasPermission("cogworks.plugin.ins.modrinth")) {
+      new Log(sender, "help.plugin.search").log();
+      new Log(sender, "help.plugin.browse").log();
+    }
+
+    if (sender.hasPermission("cogworks.plugin.reload"))
+      new Log(sender, "help.plugin.reload").log();
+
+    if (sender.hasPermission("cogworks.plugin.rm"))
+      new Log(sender, "help.plugin.remove").log();
   }
-
-  new Log(sender, "help.plugin.help").log();
-
-  if (sender.hasPermission("cogworks.plugin.ins.gen"))
-    new Log(sender, "help.plugin.install").log();
-
-  if (sender.hasPermission("cogworks.plugin.ins.modrinth")) {
-    new Log(sender, "help.plugin.search").log();
-    new Log(sender, "help.plugin.browse").log();
-  }
-
-  if (sender.hasPermission("cogworks.plugin.reload"))
-    new Log(sender, "help.plugin.reload").log();
-
-  if (sender.hasPermission("cogworks.plugin.rm"))
-    new Log(sender, "help.plugin.remove").log();
-
   return true;
 }
 

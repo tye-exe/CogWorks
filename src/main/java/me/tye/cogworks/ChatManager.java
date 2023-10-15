@@ -35,23 +35,27 @@ public static HashMap<String,ChatParams> response = new HashMap<>();
 
 @EventHandler
 public void onPlayerMessage(AsyncPlayerChatEvent e) {
-  if (response.containsKey(e.getPlayer().getName())) e.setCancelled(true);
+  if (response.containsKey(e.getPlayer().getName()))
+    e.setCancelled(true);
   checks(e.getPlayer().getName(), e.getMessage());
-  if (response.containsKey(e.getPlayer().getName())) e.setCancelled(true);
+  if (response.containsKey(e.getPlayer().getName()))
+    e.setCancelled(true);
 }
 
 @EventHandler
 public void onConsoleMessage(ServerCommandEvent e) {
-  if (response.containsKey("~")) e.setCancelled(true);
+  if (response.containsKey("~"))
+    e.setCancelled(true);
   checks("~", e.getCommand());
-  if (response.containsKey("~")) e.setCancelled(true);
+  if (response.containsKey("~"))
+    e.setCancelled(true);
 }
 
 public static void checks(String name, String message) {
-  if (!response.containsKey(name)) return;
-  ChatParams params = response.get(name);
-  String state = params.getState();
-  if (message.startsWith("plugin")) return;
+  if (!response.containsKey(name))
+    return;
+  if (message.startsWith("plugin"))
+    return;
 
   new Thread(new Runnable() {
 
@@ -76,7 +80,8 @@ public static void checks(String name, String message) {
           HashMap<JsonObject,JsonArray> validPlugins = params.getValidPlugins();
           ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
           int chosenPlugin = parseNumInput(sender, state, message, name, validPluginKeys.size(), 1);
-          if (chosenPlugin == -1) return;
+          if (chosenPlugin == -1)
+            return;
 
           JsonObject plugin = validPluginKeys.get(chosenPlugin-1);
           JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosenPlugin-1));
@@ -100,6 +105,7 @@ public static void checks(String name, String message) {
             }
 
             if (files.size() == 1) {
+              Plugins.installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), title);
               if (Plugins.installModrinthPlugin(sender, state, files))
                 new Log(sender, state, "finish").setPluginName(title).log();
 
@@ -117,8 +123,10 @@ public static void checks(String name, String message) {
                 i++;
               }
               params.reset(sender, "pluginFileSelect").setChooseable(chooseableFiles).setPlugin(plugin).setPluginVersion(compatibleFiles.get(0).getAsJsonObject());
-              if (sender instanceof Player) response.put(sender.getName(), params);
-              else response.put("~", params);
+              if (sender instanceof Player)
+                response.put(sender.getName(), params);
+              else
+                response.put("~", params);
               return;
             }
 
@@ -137,8 +145,10 @@ public static void checks(String name, String message) {
               i++;
             }
             params.reset(sender, "pluginVersionSelect").setChooseable(chooseableFiles).setPlugin(plugin);
-            if (sender instanceof Player) response.put(sender.getName(), params);
-            else response.put("~", params);
+            if (sender instanceof Player)
+              response.put(sender.getName(), params);
+            else
+              response.put("~", params);
             return;
           }
 
@@ -150,7 +160,8 @@ public static void checks(String name, String message) {
           ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
           JsonObject plugin = params.getPlugin();
           int chosenVersion = parseNumInput(sender, state, message, name, chooseableFiles.size(), 1);
-          if (chosenVersion == -1) return;
+          if (chosenVersion == -1)
+            return;
 
           JsonObject chosen = chooseableFiles.get(chosenVersion).getAsJsonObject();
           String title = plugin.get("title").getAsString();
@@ -182,8 +193,10 @@ public static void checks(String name, String message) {
               i++;
             }
             params.reset(sender, "pluginFileSelect").setChooseable(chooseableFiles).setPlugin(plugin).setPluginVersion(chosen);
-            if (sender instanceof Player) response.put(sender.getName(), params);
-            else response.put("~", params);
+            if (sender instanceof Player)
+              response.put(sender.getName(), params);
+            else
+              response.put("~", params);
             return;
           }
 
@@ -207,7 +220,8 @@ public static void checks(String name, String message) {
           //allow multiple inpuits for parse
           for (String file : message.split(",")) {
             file = file.strip();
-            if (file.isEmpty()) continue;
+            if (file.isEmpty())
+              continue;
 
             try {
               toInstall.add(chooseableFiles.get(Integer.parseInt(file)-1));
@@ -238,21 +252,16 @@ public static void checks(String name, String message) {
             installed.add(Plugins.installModrinthPlugin(sender, state, array));
           }
 
-          if (fileNames.size() != installed.size()) {
-            new Log(sender, state, "finish").setFileNames(fileNames).log();
-            new Log(sender, state, "restart").setFileNames(fileNames).log();
-          } else {
-            //removes the filenames that didn't install successfully from the log
-            for (int i = 0; i < installed.size(); i++) {
-              if (!installed.get(i)) {
-                fileNames.remove(i);
-                i--;
-              }
+          //removes the filenames that didn't install successfully from the log
+          for (int i = 0; i < installed.size(); i++) {
+            if (!installed.get(i)) {
+              fileNames.remove(i);
+              installed.remove(i);
+              i--;
             }
           }
 
           new Log(sender, state, "finish").setFileNames(fileNames).log();
-          new Log(sender, state, "restart").setFileNames(fileNames).log();
 
           response.remove(name);
           return;
@@ -280,15 +289,18 @@ public static void checks(String name, String message) {
           }
 
           Integer nextOffset = null;
-          if (chosen == 0) nextOffset = Math.max(offset-10, 0);
-          if (chosen == validPluginKeys.size()+1) nextOffset = offset+10;
+          if (chosen == 0)
+            nextOffset = Math.max(offset-10, 0);
+          if (chosen == validPluginKeys.size()+1)
+            nextOffset = offset+10;
 
           if (nextOffset != null) {
             //if the user chooses to scroll
             ModrinthSearch modrinthSearch = Plugins.modrinthBrowse(sender, state, nextOffset);
             ArrayList<JsonObject> newValidPluginKeys = modrinthSearch.getValidPluginKeys();
             HashMap<JsonObject,JsonArray> newValidPlugins = modrinthSearch.getValidPlugins();
-            if (newValidPluginKeys.isEmpty() || newValidPlugins.isEmpty()) return;
+            if (newValidPluginKeys.isEmpty() || newValidPlugins.isEmpty())
+              return;
 
             new Log(sender, "pluginBrowse.pluginBrowse").log();
             int i = 0;
@@ -310,25 +322,54 @@ public static void checks(String name, String message) {
             sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": v");
 
             params.reset(sender, "pluginBrowse").setValidPlugins(newValidPlugins).setValidPluginKeys(newValidPluginKeys).setOffset(nextOffset);
-            if (sender instanceof Player) response.put(sender.getName(), params);
-            else response.put("~", params);
+            if (sender instanceof Player)
+              response.put(sender.getName(), params);
+            else
+              response.put("~", params);
 
           } else {
             //if the user decides to install a plugin
             JsonObject plugin = validPluginKeys.get(chosen-1);
             JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosen-1));
             ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
+
             if (compatibleFiles.isEmpty()) {
               new Log(sender, state, "noFiles").log();
+
             } else if (compatibleFiles.size() == 1) {
-              String title = plugin.get("title").getAsString();
-              new Log(sender, state, "start").setPluginName(title).log();
-
-              Plugins.installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), title);
-
-              if (Plugins.installModrinthPlugin(sender, state, compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray())) {
-                new Log(sender, state, "finish").setPluginName(title).log();
+              JsonArray files = compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray();
+              if (files.isEmpty()) {
+                new Log(sender, state, "noFiles").log();
+                return;
               }
+
+              //if there is only one file to install from that version it installs it
+              if (files.size() == 1) {
+                Plugins.installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), compatibleFiles.get(0).getAsJsonObject().get("title").getAsString());
+                if (Plugins.installModrinthPlugin(sender, state, files))
+                  new Log(sender, state, "finish").setPluginName(compatibleFiles.get(0).getAsJsonObject().get("title").getAsString()).log();
+
+                // if there are more than one file for that version you get prompted to choose which one(s) to install
+              } else {
+                new Log(sender, state, "versionFiles").log();
+
+                int i = 1;
+                for (JsonElement je : files) {
+                  JsonObject jo = je.getAsJsonObject();
+                  chooseableFiles.add(jo);
+                  TextComponent projectName = new TextComponent(i+": "+(jo.get("primary").getAsBoolean() ? net.md_5.bungee.api.ChatColor.BLUE+getLang("pluginFileSelect.primary")+net.md_5.bungee.api.ChatColor.GREEN+" " : "")+jo.get("filename").getAsString());
+                  projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
+                  sender.spigot().sendMessage(projectName);
+                  i++;
+                }
+                params.reset(sender, "pluginFileSelect").setChooseable(chooseableFiles).setPlugin(plugin).setPluginVersion(compatibleFiles.get(0).getAsJsonObject());
+                if (sender instanceof Player)
+                  response.put(sender.getName(), params);
+                else
+                  response.put("~", params);
+                return;
+              }
+
 
             } else {
               new Log(sender, state, "pluginSelect").log();
@@ -345,8 +386,10 @@ public static void checks(String name, String message) {
               }
 
               params.reset(sender, "pluginVersionSelect").setChooseable(chooseableFiles).setPlugin(plugin);
-              if (sender instanceof Player) response.put(sender.getName(), params);
-              else response.put("~", params);
+              if (sender instanceof Player)
+                response.put(sender.getName(), params);
+              else
+                response.put("~", params);
               return;
             }
             response.remove(name);
@@ -367,8 +410,10 @@ public static void checks(String name, String message) {
           }
 
           boolean deleteConfig;
-          if (message.equals("y")) deleteConfig = true;
-          else if (message.equals("n")) deleteConfig = false;
+          if (message.equals("y"))
+            deleteConfig = true;
+          else if (message.equals("n"))
+            deleteConfig = false;
           else {
             new Log(sender, state, "confirm").log();
             return;
@@ -391,19 +436,24 @@ public static void checks(String name, String message) {
 
             if (!whatDepends.isEmpty()) {
               String[] names = new String[whatDepends.size()];
-              for (int i = 0; i < whatDepends.size(); i++) names[i] = whatDepends.get(i).getName();
+              for (int i = 0; i < whatDepends.size(); i++)
+                names[i] = whatDepends.get(i).getName();
 
               new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
               params.reset(sender, "pluginsDeleteEval").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
-              if (sender instanceof Player) response.put(sender.getName(), params);
-              else response.put("~", params);
+              if (sender instanceof Player)
+                response.put(sender.getName(), params);
+              else
+                response.put("~", params);
             } else {
 
 
               new Log(sender, "deletePlugin.deleteConfig").setPluginName(toDeleteEval.get(0).getName()).log();
               params.reset(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
-              if (sender instanceof Player) response.put(sender.getName(), params);
-              else response.put("~", params);
+              if (sender instanceof Player)
+                response.put(sender.getName(), params);
+              else
+                response.put("~", params);
             }
           }
           break;
@@ -417,7 +467,8 @@ public static void checks(String name, String message) {
           List<PluginData> whatDependsOn = Plugins.getWhatDependsOn(pluginName);
 
           int chosen = parseNumInput(sender, state, message, name, 3, 1);
-          if (chosen == -1) return;
+          if (chosen == -1)
+            return;
 
           if (chosen == 3) {
             response.remove(name);
@@ -429,7 +480,8 @@ public static void checks(String name, String message) {
             //uses the plugin names as the objects don't match.
             for (int i = 1; i < deleteEval.size(); i++) {
               for (PluginData dependsData : whatDependsOn) {
-                if (deleteEval.get(i).getName().equals(dependsData.getName())) deleteEval.remove(i);
+                if (deleteEval.get(i).getName().equals(dependsData.getName()))
+                  deleteEval.remove(i);
               }
             }
           }
@@ -439,7 +491,8 @@ public static void checks(String name, String message) {
             dependLoop:
             for (PluginData data : whatDependsOn) {
               for (PluginData evalData : deleteEval) {
-                if (evalData.getName().equals(data.getName())) continue dependLoop;
+                if (evalData.getName().equals(data.getName()))
+                  continue dependLoop;
               }
               toAppend.add(data);
             }
@@ -452,16 +505,20 @@ public static void checks(String name, String message) {
             if (Plugins.hasConfigFolder(pluginName)) {
               new Log(sender, state, "deleteConfig").setPluginName(pluginName).log();
               params.reset(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(deleteEval);
-              if (sender instanceof Player) response.put(sender.getName(), params);
-              else response.put("~", params);
+              if (sender instanceof Player)
+                response.put(sender.getName(), params);
+              else
+                response.put("~", params);
               return;
+            } else {
+              deleteQueue.addPlugin(pluginName, false);
             }
           }
 
           deleteEval.remove(0);
 
           //sets the plugins that don't have config folder to deleteConfig false.
-          for (int i = 0; i < deleteEval.size();i++) {
+          for (int i = 0; i < deleteEval.size(); i++) {
             String newPluginName = deleteEval.get(i).getName();
             if (!Plugins.hasConfigFolder(newPluginName)) {
               deleteQueue.addPlugin(newPluginName, false);
@@ -477,8 +534,10 @@ public static void checks(String name, String message) {
             response.remove(name);
           } else {
             params.reset(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(deleteEval);
-            if (sender instanceof Player) response.put(sender.getName(), params);
-            else response.put("~", params);
+            if (sender instanceof Player)
+              response.put(sender.getName(), params);
+            else
+              response.put("~", params);
 
             String[] names = new String[whatDependsOn.size()];
             for (int i = 0; i < whatDependsOn.size(); i++)

@@ -41,8 +41,9 @@
 - Added "/plugin reload", which makes CogWorks rescan the "./plugins" folder for any changes.
 - If a plugin doesn't have a config folder then there won't be a prompt to delete the config folder.
 - When updating CogWorks it will automatically install the correct versions of the lang files. If an updated version of the lang you are using isn't yet available it will continue to use the old version and substitute any missing values with english ones.
-- Split /plugin install into two commands:<br>/plugin install <URL> - Downloads the file from the url to the
-  \"./plugins\" folder.<br>/plugin search <Plugin name> - Uses Modrinth to search the name given and returns the
-  results, which can be chosen from to download.
-- Changed permissions to reflect new command. "cogworks.plugin.ins.gen" - lets the user use the /plugin install
-  command. "cogworks.plugin.ins.modrinth" - lets the user use /plugin search & /plugin browse.
+- Split /plugin install into two commands:<br>
+  /plugin install <URL> - Downloads the file from the url to the \"./plugins\" folder.
+  <br>/plugin search <Plugin name> - Uses Modrinth to search the name given and returns the results, which can be chosen from to download.
+- Changed permissions to reflect new command:<br>
+  "cogworks.plugin.ins.gen" - lets the user use the /plugin install command.<br>
+  "cogworks.plugin.ins.modrinth" - lets the user use /plugin search & /plugin browse.

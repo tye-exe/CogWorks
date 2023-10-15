@@ -60,7 +60,7 @@ public String getFileName() {
 public void setCurrentPath(String newPath) {
   Path currentPath = Path.of(newPath).normalize();
   //guards against people trying to go higher in the file system
-  if (serverPath.startsWith(currentPath) && Files.exists(currentPath))
+  if (currentPath.startsWith(this.serverPath) && Files.exists(currentPath))
     this.currentPath = currentPath;
 }
 }

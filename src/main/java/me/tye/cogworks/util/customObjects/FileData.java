@@ -29,6 +29,7 @@ public String getSearchPhrase() {
 }
 
 /**
+ Instance refers to the index number of the matching word being viewed.
  @return The instance of the phrase that the player is searching for. */
 public int getSearchInstance() {
   return searchInstance;
@@ -51,12 +52,14 @@ public boolean getDeleteMode() {
  Default: 1
  @return Modified FileData object. */
 public FileData setCurrentLine(int lineNumber) {
-  if (lineNumber < 1) lineNumber = 1;
+  if (lineNumber < 1)
+    lineNumber = 1;
   this.currentLine = lineNumber;
   return this;
 }
 
 /**
+ Instance refers to the index number of the matching word being viewed.
  @param searchInstance Sets the instance of the phrase that the player is searching for. Default: 1
  @return Modified FileData object. */
 public FileData setSearchInstance(int searchInstance) {
@@ -68,8 +71,10 @@ public FileData setSearchInstance(int searchInstance) {
  @param searchPhrase Sets the current phrase that the player is searching for.
  @return Modified FileData object. */
 public FileData setSearchPhrase(String searchPhrase) {
-  if (searchPhrase == null) searchPhrase = "";
-  if (searchPhrase.startsWith("\u200B")) searchPhrase = searchPhrase.substring(1);
+  if (searchPhrase == null)
+    searchPhrase = "";
+  if (searchPhrase.startsWith("\u200B"))
+    searchPhrase = searchPhrase.substring(1);
   this.searchPhrase = searchPhrase;
   return this;
 }

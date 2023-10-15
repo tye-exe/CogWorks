@@ -60,6 +60,9 @@ public final class CogWorks extends JavaPlugin {
 //TODO: when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
 //TODO: make to try & install plugins for the correct server version if the server is updated
 //TODO: allow the sender to pass though an offset when using /plugin browse?
+//TODO: send lang update messages on op join
+//TODO: allow user to exit/go back from all states
+//TODO: make lang updates required to be confirmed to go away?
 
 @Override
 public void onEnable() {
@@ -88,7 +91,7 @@ public void onEnable() {
         //checks for new lang files & installs them.
         new Thread(() -> {
           try {
-            HashMap<String,Object> pluginMap = getKeysRecursive(new Yaml().load(new String(getResource("plugin.yml").readAllBytes())));
+            HashMap<String,Object> pluginMap = getKeysRecursive(new Yaml().load(new String(Objects.requireNonNull(getResource("plugin.yml")).readAllBytes())));
             String indexText = new String(new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/index.yml").openStream().readAllBytes());
             HashMap<String,Object> indexMap = getKeysRecursive(new Yaml().load(indexText));
 
@@ -112,7 +115,7 @@ public void onEnable() {
               //checks if the new lang file exists yet
               for (String fileName : filesNames) {
                 if (Util.getConfig("lang").equals(fileName)) {
-                  Util.setLang(returnFileConfigs(new File(langFolder.getAbsoluteFile()+File.separator+Util.getConfig("lang")+".yml"), "langFiles/"+Util.getConfig("lang")+".yml"));
+                  setLang(returnFileConfigs(new File(langFolder.getAbsoluteFile()+File.separator+Util.getConfig("lang")+".yml"), "langFiles/"+Util.getConfig("lang")+".yml"));
                   new Log("info.updatedLang", Level.WARNING, null).log();
                   return;
                 }
@@ -338,7 +341,7 @@ public void onEnable() {
   //checks for new lang files & installs them.
   new Thread(() -> {
     try {
-      HashMap<String,Object> pluginMap = getKeysRecursive(new Yaml().load(new String(getResource("plugin.yml").readAllBytes())));
+      HashMap<String,Object> pluginMap = getKeysRecursive(new Yaml().load(new String(Objects.requireNonNull(getResource("plugin.yml")).readAllBytes())));
       String indexText = new String(new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/index.yml").openStream().readAllBytes());
       HashMap<String,Object> indexMap = getKeysRecursive(new Yaml().load(indexText));
 

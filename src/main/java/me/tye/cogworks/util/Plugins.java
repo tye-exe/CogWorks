@@ -52,7 +52,8 @@ public static boolean registered(String pluginName) {
   try {
     ArrayList<PluginData> data = new ArrayList<>(readPluginData());
     for (PluginData plugin : data) {
-      if (plugin.getName().equals(pluginName)) return true;
+      if (plugin.getName().equals(pluginName))
+        return true;
     }
   } catch (IOException e) {
     new Log("execution.dataReadError", Level.WARNING, e).log();
@@ -78,12 +79,14 @@ public static Map<String,Object> getYML(File pluginJar) {
   try (ZipFile zip = new ZipFile(pluginJar)) {
     for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
       ZipEntry entry = e.nextElement();
-      if (!entry.getName().equals("plugin.yml")) continue;
+      if (!entry.getName().equals("plugin.yml"))
+        continue;
 
       StringBuilder out = new StringBuilder();
       BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
       String line;
-      while ((line = reader.readLine()) != null) out.append(line).append("\n");
+      while ((line = reader.readLine()) != null)
+        out.append(line).append("\n");
       reader.close();
 
       Yaml yaml = new Yaml();
@@ -132,7 +135,8 @@ public static void removePluginData(String pluginName) throws NoSuchPluginExcept
   PluginData pluginToRemove = null;
 
   for (PluginData data : pluginData) {
-    if (data.getName().equals(pluginName)) pluginToRemove = data;
+    if (data.getName().equals(pluginName))
+      pluginToRemove = data;
   }
 
   if (pluginToRemove == null) {
@@ -155,12 +159,14 @@ public static void appendPluginData(File newPlugin) throws IOException {
     ZipFile zip = new ZipFile(newPlugin);
     for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
       ZipEntry entry = e.nextElement();
-      if (!entry.getName().equals("plugin.yml")) continue;
+      if (!entry.getName().equals("plugin.yml"))
+        continue;
 
       StringBuilder out = new StringBuilder();
       BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
       String line;
-      while ((line = reader.readLine()) != null) out.append(line).append("\n");
+      while ((line = reader.readLine()) != null)
+        out.append(line).append("\n");
       reader.close();
 
       Yaml yaml = new Yaml();
@@ -191,7 +197,8 @@ public static ArrayList<PluginData> readPluginData() throws IOException {
   FileReader fr = new FileReader(Util.pluginDataFile);
   JsonReader jr = new JsonReader(fr);
   JsonElement jsonElement = JsonParser.parseReader(jr);
-  if (jsonElement.isJsonNull()) return pluginData;
+  if (jsonElement.isJsonNull())
+    return pluginData;
   Gson gsonReader = new Gson();
   for (JsonElement je : jsonElement.getAsJsonArray()) {
     pluginData.add(gsonReader.fromJson(je, PluginData.class));
@@ -209,7 +216,8 @@ public static ArrayList<PluginData> readPluginData() throws IOException {
  @throws IOException           Thrown if there was an error reading from the pluginData file. */
 public static PluginData readPluginData(String pluginName) throws NoSuchPluginException, IOException {
   for (PluginData data : readPluginData()) {
-    if (data.getName().equals(pluginName)) return data;
+    if (data.getName().equals(pluginName))
+      return data;
   }
   throw new NoSuchPluginException(getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
 }
@@ -227,7 +235,10 @@ public static void writePluginData(ArrayList<PluginData> pluginData) throws IOEx
   fileWriter.close();
 }
 
-
+/**
+ Checks if the config folder ./plugins/{pluginName} exists.
+ @param pluginName The name of the plugin to check the config folder of.
+ @return True if the config folder for this plugin exists. */
 public static boolean hasConfigFolder(String pluginName) {
   return new File(pluginFolder+File.separator+pluginName).exists();
 }
@@ -242,30 +253,31 @@ public static boolean hasConfigFolder(String pluginName) {
  @param addFileHash If downloading from a non api source the file hash can be added to the end of the file, as many downloads have generic names such as "download".
  @return True if and only if the file installed successfully. */
 public static boolean installPluginURL(@Nullable CommandSender sender, String state, String stringUrl, String fileName, Boolean addFileHash) {
-  File newPlugin = new File(temp.getAbsolutePath()+File.separator+fileName);
-  File destination;
+  File tempPlugin = new File(temp.getAbsolutePath()+File.separator+fileName);
+  File installedPlugin;
   boolean installed = false;
 
   try {
     URL Url = encodeUrl(stringUrl);
 
     if (new File(pluginFolder+File.separator+fileName).exists())
-      throw new FileAlreadyExistsException(newPlugin.getAbsolutePath());
+      throw new FileAlreadyExistsException(tempPlugin.getAbsolutePath());
 
     //downloads the file
     new Log(sender, state, "downloading").setFileName(fileName).log();
     ReadableByteChannel rbc = Channels.newChannel(Url.openStream());
-    FileOutputStream fos = new FileOutputStream(newPlugin);
+    FileOutputStream fos = new FileOutputStream(tempPlugin);
     fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
     fos.close();
     rbc.close();
 
-    if (registered(newPlugin)) throw new FileAlreadyExistsException(newPlugin.getAbsolutePath());
+    if (registered(tempPlugin))
+      throw new FileAlreadyExistsException(tempPlugin.getAbsolutePath());
 
     //adds the file hash to the name since alot of urls just have a generic filename like "download"
     String hash = "";
     if (addFileHash) {
-      InputStream is = new FileInputStream(newPlugin);
+      InputStream is = new FileInputStream(tempPlugin);
       DigestInputStream dis = new DigestInputStream(is, MessageDigest.getInstance("MD5"));
       dis.readAllBytes();
       dis.close();
@@ -274,18 +286,19 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
       hash += String.format("%032X", new BigInteger(1, dis.getMessageDigest().digest()));
     }
 
-    destination = new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
+    installedPlugin = new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
 
-    if (destination.exists()) throw new FileAlreadyExistsException(newPlugin.getAbsolutePath());
+    if (installedPlugin.exists())
+      throw new FileAlreadyExistsException(tempPlugin.getAbsolutePath());
 
     //moves the file to plugin folder
-    FileUtils.moveFile(newPlugin, destination);
+    FileUtils.moveFile(tempPlugin, installedPlugin);
 
-    appendPluginData(destination);
+    appendPluginData(installedPlugin);
     installed = true;
 
   } catch (FileNotFoundException noFile) {
-    new Log(sender, state, "noFile").setLevel(Level.WARNING).setUrl(stringUrl).setException(noFile).log();
+    new Log(sender, state, "noFiles").setLevel(Level.WARNING).setUrl(stringUrl).setException(noFile).log();
   } catch (MalformedURLException e) {
     new Log(sender, state, "badUrl").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).setFileName(fileName).log();
   } catch (FileAlreadyExistsException e) {
@@ -293,8 +306,9 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
   } catch (IOException | NoSuchAlgorithmException e) {
     new Log(sender, state, "installError").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).log();
   } finally {
-    if (newPlugin.exists()) if (!newPlugin.delete())
-      new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(newPlugin.getAbsolutePath()).log();
+    if (tempPlugin.exists())
+      if (!tempPlugin.delete())
+        new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(tempPlugin.getAbsolutePath()).log();
   }
   return installed;
 }
@@ -368,7 +382,10 @@ public static ModrinthSearch modrinthSearch(@Nullable CommandSender sender, Stri
   try {
     JsonElement relevantPlugins = modrinthAPI(sender, "ModrinthAPI", "https://api.modrinth.com/v2/search?query="+searchQuery+"&facets=[[%22versions:"+mcVersion+"%22],[%22categories:"+serverSoftware+"%22]]", "GET");
     JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
-    if (hits.isEmpty()) throw new ModrinthAPIException(Util.getLang("ModrinthAPI.empty"));
+    if (hits.isEmpty()) {
+      new Log(sender, "ModrinthAPI.empty").log();
+      return new ModrinthSearch(validPluginKeys, validPlugins);
+    }
 
     //gets the projects
     StringBuilder projectUrl = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
@@ -376,7 +393,10 @@ public static ModrinthSearch modrinthSearch(@Nullable CommandSender sender, Stri
       projectUrl.append("%22").append(je.getAsJsonObject().get("slug").getAsString()).append("%22").append(",");
     }
     JsonArray pluginProjects = modrinthAPI(sender, "ModrinthAPI", projectUrl.substring(0, projectUrl.length()-1)+"]", "GET").getAsJsonArray();
-    if (hits.isEmpty()) throw new ModrinthAPIException(Util.getLang("ModrinthAPI.empty"));
+    if (hits.isEmpty()) {
+      new Log(sender, "ModrinthAPI.empty").log();
+      return new ModrinthSearch(validPluginKeys, validPlugins);
+    }
 
     //gets the information for all the versions
     String baseUrl = "https://api.modrinth.com/v2/versions?ids=[";
@@ -403,19 +423,24 @@ public static ModrinthSearch modrinthSearch(@Nullable CommandSender sender, Stri
       boolean supportsServer = false;
 
       for (JsonElement supportedVersions : jo.get("game_versions").getAsJsonArray()) {
-        if (supportedVersions.getAsString().equals(mcVersion)) supportsVersion = true;
+        if (supportedVersions.getAsString().equals(mcVersion))
+          supportsVersion = true;
       }
       for (JsonElement supportedLoaders : jo.get("loaders").getAsJsonArray()) {
-        if (supportedLoaders.getAsString().equals(serverSoftware)) supportsServer = true;
+        if (supportedLoaders.getAsString().equals(serverSoftware))
+          supportsServer = true;
       }
 
-      if (!(supportsVersion && supportsServer)) continue;
+      if (!(supportsVersion && supportsServer))
+        continue;
 
       String projectID = jo.get("project_id").getAsString();
 
       JsonArray array;
-      if (compatibleFiles.containsKey(projectID)) array = compatibleFiles.get(projectID);
-      else array = new JsonArray();
+      if (compatibleFiles.containsKey(projectID))
+        array = compatibleFiles.get(projectID);
+      else
+        array = new JsonArray();
       array.add(jo);
       compatibleFiles.put(projectID, array);
     }
@@ -424,10 +449,12 @@ public static ModrinthSearch modrinthSearch(@Nullable CommandSender sender, Stri
     for (JsonElement je : hits) {
       JsonObject jo = je.getAsJsonObject();
       String projectID = jo.get("project_id").getAsString();
-      if (!compatibleFiles.containsKey(projectID)) continue;
+      if (!compatibleFiles.containsKey(projectID))
+        continue;
 
       JsonArray array = validPlugins.get(jo);
-      if (array == null) array = new JsonArray();
+      if (array == null)
+        array = new JsonArray();
       for (JsonElement jel : compatibleFiles.get(projectID).getAsJsonArray()) {
         array.add(jel);
       }
@@ -437,7 +464,8 @@ public static ModrinthSearch modrinthSearch(@Nullable CommandSender sender, Stri
 
     //adds them to the list in the order they were returned by Modrinth
     for (JsonElement je : hits)
-      if (validPlugins.containsKey(je.getAsJsonObject())) validPluginKeys.add(je.getAsJsonObject());
+      if (validPlugins.containsKey(je.getAsJsonObject()))
+        validPluginKeys.add(je.getAsJsonObject());
 
   } catch (ModrinthAPIException | MalformedURLException e) {
     new Log(sender, state, "modrinthSearchErr").setLevel(Level.WARNING).setException(e).log();
@@ -460,7 +488,8 @@ public static ModrinthSearch modrinthBrowse(@Nullable CommandSender sender, Stri
 
     JsonElement relevantPlugins = modrinthAPI(sender, "ModrinthAPI", "https://api.modrinth.com/v2/search?query=&facets=[[%22versions:"+mcVersion+"%22],[%22categories:"+serverSoftware+"%22]]&offset="+offset, "GET");
     JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
-    if (hits.isEmpty()) return new ModrinthSearch(validPluginKeys, validPlugins);
+    if (hits.isEmpty())
+      return new ModrinthSearch(validPluginKeys, validPlugins);
 
     StringBuilder projectUrl = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
     for (JsonElement je : hits) {
@@ -469,7 +498,8 @@ public static ModrinthSearch modrinthBrowse(@Nullable CommandSender sender, Stri
     }
 
     JsonArray pluginProjects = modrinthAPI(sender, "ModrinthAPI", projectUrl.substring(0, projectUrl.length()-1)+"]", "GET").getAsJsonArray();
-    if (hits.isEmpty()) return new ModrinthSearch(validPluginKeys, validPlugins);
+    if (hits.isEmpty())
+      return new ModrinthSearch(validPluginKeys, validPlugins);
     ExecutorService executorService = Executors.newCachedThreadPool();
     ArrayList<Future<JsonElement>> futures = new ArrayList<>();
 
@@ -479,7 +509,8 @@ public static ModrinthSearch modrinthBrowse(@Nullable CommandSender sender, Stri
 
     for (Future<JsonElement> future : futures) {
       JsonArray validVersions = future.get().getAsJsonArray();
-      if (validVersions.isEmpty()) continue;
+      if (validVersions.isEmpty())
+        continue;
 
       for (JsonElement projectElement : pluginProjects) {
         JsonObject project = projectElement.getAsJsonObject();
@@ -488,7 +519,8 @@ public static ModrinthSearch modrinthBrowse(@Nullable CommandSender sender, Stri
 
           for (JsonElement jel : validVersions) {
             JsonArray array = validPlugins.get(project);
-            if (array == null) array = new JsonArray();
+            if (array == null)
+              array = new JsonArray();
             array.add(jel.getAsJsonObject());
             validPlugins.put(project, array);
           }
@@ -521,11 +553,9 @@ public static JsonElement modrinthAPI(@Nullable CommandSender sender, String sta
     int status = con.getResponseCode();
     if (status == 410) {
       new Log(sender, state, "outDated").setLevel(Level.WARNING).log();
-    }
-    if (status == 429) {
+    } else if (status == 429) {
       new Log(sender, state, "ApiLimit").setLevel(Level.WARNING).log();
-    }
-    if (status != 200) {
+    } else if (status != 200) {
       throw new ModrinthAPIException(Util.getLang("ModrinthAPI.error"), new Throwable("URL: "+stringURL+"\n request method: "+requestMethod+"\n response message:"+con.getResponseMessage()));
     }
 
@@ -589,7 +619,8 @@ public static boolean installModrinthDependencies(@Nullable CommandSender sender
   if (!dependencies.isEmpty()) {
     new Log(sender, state, "installingDep").setPluginName(pluginName).log();
     for (JsonArray plugins : dependencies.values()) {
-      if (plugins.isEmpty()) continue;
+      if (plugins.isEmpty())
+        continue;
       boolean install = installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray());
       installed.add(install);
       if (install)
@@ -616,7 +647,8 @@ public static HashMap<String,JsonArray> getModrinthDependencies(@Nullable Comman
   for (JsonElement je : pluginDependencies) {
     JsonObject jo = je.getAsJsonObject();
     String dependencyType = jo.get("dependency_type").getAsString();
-    if (!dependencyType.equals("required")) continue;
+    if (!dependencyType.equals("required"))
+      continue;
 
     JsonElement versionID = jo.get("version_id");
     if (!versionID.isJsonNull()) {
@@ -637,7 +669,8 @@ public static HashMap<String,JsonArray> getModrinthDependencies(@Nullable Comman
   //gets the versions from the projects
   if (!projects.isEmpty()) {
     StringBuilder projectUrl = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
-    for (String projectID : projects) projectUrl.append("%22").append(projectID).append("%22").append(",");
+    for (String projectID : projects)
+      projectUrl.append("%22").append(projectID).append("%22").append(",");
 
     try {
       JsonElement pluginProjects = modrinthAPI(sender, "", projectUrl.substring(0, projectUrl.length()-1)+"]", "GET");
@@ -653,7 +686,8 @@ public static HashMap<String,JsonArray> getModrinthDependencies(@Nullable Comman
     }
   }
 
-  if (versions.isEmpty()) return compatibleFiles;
+  if (versions.isEmpty())
+    return compatibleFiles;
 
   //gets the information for all the versions
   StringBuilder versionsUrl = new StringBuilder("https://api.modrinth.com/v2/versions?ids=[");
@@ -678,18 +712,23 @@ public static HashMap<String,JsonArray> getModrinthDependencies(@Nullable Comman
     String projectID = jo.get("project_id").getAsString();
 
     for (JsonElement supportedVersions : jo.get("game_versions").getAsJsonArray()) {
-      if (supportedVersions.getAsString().equals(mcVersion)) supportsVersion = true;
+      if (supportedVersions.getAsString().equals(mcVersion))
+        supportsVersion = true;
     }
     for (JsonElement supportedLoaders : jo.get("loaders").getAsJsonArray()) {
-      if (supportedLoaders.getAsString().equals(serverSoftware)) supportsServer = true;
+      if (supportedLoaders.getAsString().equals(serverSoftware))
+        supportsServer = true;
     }
 
-    if (!(supportsVersion && supportsServer)) continue;
+    if (!(supportsVersion && supportsServer))
+      continue;
 
 
     JsonArray array;
-    if (compatibleFiles.containsKey(projectID)) array = compatibleFiles.get(projectID);
-    else array = new JsonArray();
+    if (compatibleFiles.containsKey(projectID))
+      array = compatibleFiles.get(projectID);
+    else
+      array = new JsonArray();
     array.add(jo);
     compatibleFiles.put(projectID, array);
   }
@@ -741,8 +780,10 @@ public static void reloadPluginData(@Nullable CommandSender sender, String state
     PluginLoop:
     for (PluginData data : identifiers) {
       for (File file : Objects.requireNonNull(pluginFolder.listFiles())) {
-        if (file.isDirectory()) continue;
-        if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
+        if (file.isDirectory())
+          continue;
+        if (!Files.getFileExtension(file.getName()).equals("jar"))
+          continue;
 
         if (data.getFileName().equals(file.getName())) {
           continue PluginLoop;
@@ -759,8 +800,10 @@ public static void reloadPluginData(@Nullable CommandSender sender, String state
 
     //adds any new plugins to the pluginData
     for (File file : Objects.requireNonNull(pluginFolder.listFiles())) {
-      if (file.isDirectory()) continue;
-      if (!Files.getFileExtension(file.getName()).equals("jar")) continue;
+      if (file.isDirectory())
+        continue;
+      if (!Files.getFileExtension(file.getName()).equals("jar"))
+        continue;
       try {
         appendPluginData(file);
       } catch (IOException e) {

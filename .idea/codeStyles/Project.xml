@@ -7,7 +7,12 @@
       <option name="JD_KEEP_INVALID_TAGS" value="false" />
       <option name="JD_LEADING_ASTERISKS_ARE_ENABLED" value="false" />
     </JavaCodeStyleSettings>
+    <Markdown>
+      <option name="WRAP_TEXT_IF_LONG" value="false" />
+      <option name="WRAP_TEXT_INSIDE_BLOCKQUOTES" value="false" />
+    </Markdown>
     <codeStyleSettings language="JAVA">
+      <option name="RIGHT_MARGIN" value="0" />
       <option name="KEEP_FIRST_COLUMN_COMMENT" value="false" />
       <option name="BLANK_LINES_AROUND_CLASS" value="2" />
       <option name="DO_NOT_INDENT_TOP_LEVEL_CLASS_MEMBERS" value="true" />
@@ -22,6 +27,14 @@
       <option name="SPACE_AROUND_MULTIPLICATIVE_OPERATORS" value="false" />
       <option name="SPACE_AFTER_COMMA_IN_TYPE_ARGUMENTS" value="false" />
       <option name="SPACE_BEFORE_ANOTATION_PARAMETER_LIST" value="true" />
+      <indentOptions>
+        <option name="INDENT_SIZE" value="2" />
+        <option name="CONTINUATION_INDENT_SIZE" value="4" />
+        <option name="TAB_SIZE" value="2" />
+      </indentOptions>
+    </codeStyleSettings>
+    <codeStyleSettings language="Markdown">
+      <option name="RIGHT_MARGIN" value="0" />
       <indentOptions>
         <option name="INDENT_SIZE" value="2" />
         <option name="CONTINUATION_INDENT_SIZE" value="4" />

@@ -17,8 +17,8 @@ public class Util {
 //constants
 public static final JavaPlugin plugin = JavaPlugin.getPlugin(CogWorks.class);
 
-public static final File pluginFolder = new File(plugin.getDataFolder().getParent());
-public static final File serverFolder = new File(pluginFolder.getParent());
+public static final File pluginFolder = new File(plugin.getDataFolder().getParentFile().getAbsolutePath());
+public static final File serverFolder = new File(pluginFolder.getParentFile().getAbsolutePath());
 public static final File configFile = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+"config.yml");
 public static final File dataStore = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+".data");
 public static final File pluginDataFile = new File(dataStore.getAbsolutePath()+File.separator+"pluginData.json");
@@ -34,21 +34,29 @@ public static final String serverSoftware = Bukkit.getServer().getVersion().spli
 private static HashMap<String,Object> lang = new HashMap<>();
 private static HashMap<String,Object> config = new HashMap<>();
 
+/**
+ Sets the lang responses the to the given HashMap.
+ @param lang New lang map. */
 public static void setLang(HashMap<String,Object> lang) {
   Util.lang = getKeysRecursive(lang);
 }
 
+/**
+ Sets the config responses to the given HashMap.
+ @param config New config map. */
 public static void setConfig(HashMap<String,Object> config) {
   Util.config = getKeysRecursive(config);
 }
 
 /**
- Formats the Map returned from Yaml.load() into a hashmap where the exact key corresponds to the value.
+ Formats the Map returned from Yaml.load() into a hashmap where the exact key corresponds to the value.<br>
+ E.G: key: "example.response" value: "test".
  @param baseMap The Map from Yaml.load().
  @return The formatted Map. */
 public static HashMap<String,Object> getKeysRecursive(Map<?,?> baseMap) {
   HashMap<String,Object> map = new HashMap<>();
-  if (baseMap == null) return map;
+  if (baseMap == null)
+    return map;
   for (Object key : baseMap.keySet()) {
     Object value = baseMap.get(key);
     if (value instanceof Map<?,?> subMap) {
@@ -66,7 +74,8 @@ public static HashMap<String,Object> getKeysRecursive(Map<?,?> baseMap) {
  @param baseMap The Map from Yaml.load().
  @return The formatted Map. */
 public static HashMap<String,Object> getKeysRecursive(String keyPath, Map<?,?> baseMap) {
-  if (!keyPath.isEmpty()) keyPath += ".";
+  if (!keyPath.isEmpty())
+    keyPath += ".";
   HashMap<String,Object> map = new HashMap<>();
   for (Object key : baseMap.keySet()) {
     Object value = baseMap.get(key);
@@ -83,7 +92,7 @@ public static HashMap<String,Object> getKeysRecursive(String keyPath, Map<?,?> b
  Gets value from loaded lang file.
  @param key     Key to the value from the loaded lang file.
  @param replace Should be inputted in "valueToReplace0", valueToReplaceWith0", "valueToReplace1", valueToReplaceWith2"... etc
- @return Lang response with the specified values replaced. */
+ @return The lang response with the specified values replaced. */
 public static String getLang(String key, String... replace) {
   String rawResponse = String.valueOf(lang.get(key));
   //if config doesn't contain the key it checks if it is present in default config files.
@@ -91,15 +100,18 @@ public static String getLang(String key, String... replace) {
     InputStream is = plugin.getResource("langFiles/"+getConfig("lang")+".yml");
     HashMap<String,Object> defaultLang;
 
-    if (is != null) defaultLang = getKeysRecursive(new Yaml().load(is));
-    else defaultLang = getKeysRecursive(new Yaml().load(plugin.getResource("langFiles/eng.yml")));
+    if (is != null)
+      defaultLang = getKeysRecursive(new Yaml().load(is));
+    else
+      defaultLang = getKeysRecursive(new Yaml().load(plugin.getResource("langFiles/eng.yml")));
 
     rawResponse = String.valueOf(defaultLang.get(key));
 
     if (rawResponse == null || rawResponse.equals("null")) {
       if (key.equals("exceptions.noSuchResponse"))
         return "Unable to get key \"exceptions.noSuchResponse\" from lang file. This message is in english to prevent a stack overflow error.";
-      else rawResponse = getLang("exceptions.noSuchResponse", "key", key);
+      else
+        rawResponse = getLang("exceptions.noSuchResponse", "key", key);
     }
 
     lang.put(key, defaultLang.get(key));
@@ -107,7 +119,8 @@ public static String getLang(String key, String... replace) {
   }
 
   for (int i = 0; i <= replace.length-1; i += 2) {
-    if (replace[i+1] == null || replace[i+1].equals("null")) continue;
+    if (replace[i+1] == null || replace[i+1].equals("null"))
+      continue;
     rawResponse = rawResponse.replaceAll("\\{"+replace[i]+"}", replace[i+1]);
   }
 
@@ -134,7 +147,8 @@ public static <T> T getConfig(String key) {
     config.put(key, response);
     new Log("exceptions.noExternalResponse", Level.WARNING, null).setKey(key).log();
 
-  } else response = String.valueOf(config.get(key));
+  } else
+    response = String.valueOf(config.get(key));
 
   switch (key) {
   case "lang" -> {

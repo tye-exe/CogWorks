@@ -75,14 +75,20 @@ public Log(String langPath, @NonNull Level level, @Nullable Exception e) {
 /**
  Outputs the log message. */
 public void log() {
+  if (level.getName().equals("SEVERE"))
+    SendErrorSummary.severe++;
   if (langPath == null) return;
 
   String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile, "pluginNames", pluginNames, "state", state, "fileNames", fileNames);
 
   if (sender != null) {
-    for (String line : message.split("\\{n}")) {
-      sender.sendMessage("[CogWorks] "+line);
-    }
+    if (sender instanceof Player)
+      sender.sendMessage(message.split("\\{n}"));
+
+    else
+      for (String line : message.split("\\{n}"))
+        sender.sendMessage("[CogWorks] "+line);
+
 
   } else {
     char[] messageChars = message.toCharArray();

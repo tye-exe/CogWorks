@@ -25,6 +25,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static me.tye.cogworks.CogWorks.itemProperties;
 import static me.tye.cogworks.util.Util.plugin;
@@ -41,6 +42,12 @@ public void clickEvent(InventoryClickEvent e) {
   if (e.getCurrentItem() == null || e.getCurrentItem().getItemMeta() == null) return;
   String identifier = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING);
 
+  ItemStack itemStack = e.getCurrentItem();
+  ItemMeta itemMeta = itemStack.getItemMeta();
+  if (itemMeta == null)
+    return;
+  String itemDisplay = itemMeta.getDisplayName();
+
   //Prevents stealing
   if (identifier != null) {
     e.setCancelled(true);
@@ -51,27 +58,28 @@ public void clickEvent(InventoryClickEvent e) {
   FileData data = fileData.get(player.getUniqueId());
   PathHolder pathHolder = position.get(player.getName());
   if (identifier.equals("file")) {
-    if (e.getCurrentItem().getItemMeta().getDisplayName().startsWith(String.valueOf(ChatColor.YELLOW)))
-      pathHolder.setCurrentPath(pathHolder.getCurrentPath()+File.separator+e.getCurrentItem().getItemMeta().getDisplayName().substring(2));
+    if (itemDisplay.startsWith(String.valueOf(ChatColor.YELLOW)))
+      pathHolder.setCurrentPath(pathHolder.getCurrentPath()+File.separator+itemDisplay.substring(2));
     else
-      pathHolder.setCurrentPath(pathHolder.getCurrentPath()+File.separator+e.getCurrentItem().getItemMeta().getDisplayName());
+      pathHolder.setCurrentPath(pathHolder.getCurrentPath()+File.separator+itemDisplay);
   }
   File lastFileClicked = new File(pathHolder.getCurrentPath());
 
 
   //file navigation
-  if (identifier.equals("up")) {
+  switch (identifier) {
+  case "up" -> {
     pathHolder.setCurrentPath(Path.of(pathHolder.getCurrentPath()).getParent().toString());
     open(player);
   }
 
-  if (identifier.equals("exit")) {
+  case "exit" -> {
     player.closeInventory();
     position.remove(player.getName());
     fileData.remove(player.getUniqueId());
   }
 
-  if (identifier.equals("file")) {
+  case "file" -> {
     if (data.getDeleteMode()) {
       if (!player.hasPermission("cogworks.file.rm")) return;
       Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, Util.getLang("fileGui.confirmDel.title"));
@@ -82,7 +90,7 @@ public void clickEvent(InventoryClickEvent e) {
           content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), Util.getLang("fileGui.confirmDel.deny"), null, "up"));
         } else if (i == 5) {
           String newIdentifier = "confirmedDelete";
-          if (lastFileClicked.isDirectory() && (lastFileClicked.list() == null || lastFileClicked.list().length != 0))
+          if (lastFileClicked.isDirectory() && (lastFileClicked.list() == null || Objects.requireNonNull(lastFileClicked.list()).length != 0))
             newIdentifier = "confirmDirDelete";
 
           content.add(itemProperties(new ItemStack(Material.GREEN_CONCRETE), Util.getLang("fileGui.confirmDel.confirm"), null, newIdentifier));
@@ -98,48 +106,47 @@ public void clickEvent(InventoryClickEvent e) {
       fileData.put(player.getUniqueId(), data.setCurrentLine(1));
       open(player);
     }
-
   }
 
-  if (identifier.equals("scrollUp") || identifier.equals("scrollDown")) {
+  case "scrollUp", "scrollDown" -> {
     if (identifier.equals("scrollDown"))
       data.setCurrentLine(data.getCurrentLine()+5);
     if (identifier.equals("scrollUp"))
       data.setCurrentLine(Math.max(1, data.getCurrentLine()-5));
-
     data.setSearchInstance(0);
     fileData.put(player.getUniqueId(), data);
     open(player);
   }
 
-  if (identifier.equals("goto")) {
-    new AnvilGUI.Builder()
-        .plugin(plugin)
-        .preventClose()
-        .title(Util.getLang("fileGui.goto.title"))
-        .itemLeft(itemProperties(new ItemStack(Material.PAPER), String.valueOf(data.getCurrentLine()), null, null))
-        .onClick((slot, stateSnapshot) -> {
-          if (slot == AnvilGUI.Slot.OUTPUT) {
-            return List.of(AnvilGUI.ResponseAction.close());
-          }
-          return Collections.emptyList();
-        })
-        .onClose(stateSnapshot -> {
-          if (stateSnapshot.getOutputItem().getItemMeta() != null) {
-            try {
-              int line = Integer.parseInt(stateSnapshot.getOutputItem().getItemMeta().getDisplayName().trim());
-              if (line < 1) line = 1;
-              fileData.put(stateSnapshot.getPlayer().getUniqueId(), fileData.get(stateSnapshot.getPlayer().getUniqueId()).setCurrentLine(line));
-            } catch (Exception ignore) {
+  case "goto" ->
+      new AnvilGUI.Builder()
+          .plugin(plugin)
+          .preventClose()
+          .title(Util.getLang("fileGui.goto.title"))
+          .itemLeft(itemProperties(new ItemStack(Material.PAPER), String.valueOf(data.getCurrentLine()), null, null))
+          .onClick((slot, stateSnapshot) -> {
+            if (slot == AnvilGUI.Slot.OUTPUT) {
+              return List.of(AnvilGUI.ResponseAction.close());
             }
-          }
-          open(stateSnapshot.getPlayer());
-        })
-        .open(player);
-  }
+            return Collections.emptyList();
+          })
+          .onClose(stateSnapshot -> {
+            if (stateSnapshot.getOutputItem().getItemMeta() != null) {
+              try {
+                int line = Integer.parseInt(stateSnapshot.getOutputItem().getItemMeta().getDisplayName().trim());
+                if (line < 1)
+                  line = 1;
+                fileData.put(stateSnapshot.getPlayer().getUniqueId(), fileData.get(stateSnapshot.getPlayer().getUniqueId()).setCurrentLine(line));
+              } catch (Exception ignore) {
+              }
+            }
+            open(stateSnapshot.getPlayer());
+          })
+          .open(player);
 
-  if (identifier.equals("search")) {
+  case "search" -> {
     if (e.isLeftClick()) {
+
       ItemStack paper = itemProperties(new ItemStack(Material.PAPER), "\u200B", null, null);
 
       new AnvilGUI.Builder()
@@ -155,7 +162,7 @@ public void clickEvent(InventoryClickEvent e) {
             return Collections.emptyList();
           })
           .onClose(stateSnapshot -> {
-            fileData.put(stateSnapshot.getPlayer().getUniqueId(), fileData.get(stateSnapshot.getPlayer().getUniqueId()).setSearchPhrase(stateSnapshot.getOutputItem().getItemMeta().getDisplayName()));
+            fileData.put(stateSnapshot.getPlayer().getUniqueId(), fileData.get(stateSnapshot.getPlayer().getUniqueId()).setSearchPhrase(Objects.requireNonNull(stateSnapshot.getOutputItem().getItemMeta()).getDisplayName()));
             open(stateSnapshot.getPlayer());
           })
           .open(player);
@@ -166,32 +173,38 @@ public void clickEvent(InventoryClickEvent e) {
           player.playNote(player.getLocation(), Instrument.PLING, Note.sharp(2, Note.Tone.F));
           return;
         }
-
-        BufferedReader fileReader = new BufferedReader(new FileReader(position.get(player.getName()).getCurrentPath()));
+        FileReader reader = new FileReader(position.get(player.getName()).getCurrentPath());
+        BufferedReader fileReader = new BufferedReader(reader);
 
         String text;
         int i = 0;
         int instance = data.getSearchInstance();
         int instances = 1;
-        int firstInstance = 0;
+        int firstInstanceLine = 0;
 
         while ((text = fileReader.readLine()) != null) {
           i++;
           if (instance == 0) {
             if (text.contains(searchPhrase)) {
-              if (firstInstance == 0) firstInstance = i;
+              if (firstInstanceLine == 0)
+                firstInstanceLine = i;
               instances++;
               if (i < data.getCurrentLine()) continue;
               fileData.put(player.getUniqueId(), data.setCurrentLine(i).setSearchInstance(instances));
               open(player);
+              fileReader.close();
+              reader.close();
               return;
             }
           } else {
             if (text.contains(searchPhrase)) {
-              if (firstInstance == 0) firstInstance = i;
+              if (firstInstanceLine == 0)
+                firstInstanceLine = i;
               if (instances == instance) {
                 fileData.put(player.getUniqueId(), data.setSearchInstance(instance+1).setCurrentLine(i));
                 open(player);
+                fileReader.close();
+                reader.close();
                 return;
               }
               instances++;
@@ -199,12 +212,15 @@ public void clickEvent(InventoryClickEvent e) {
           }
         }
 
-        if (firstInstance == 0) {
+        fileReader.close();
+        reader.close();
+
+        if (firstInstanceLine == 0) {
           player.playNote(player.getLocation(), Instrument.PLING, Note.sharp(2, Note.Tone.F));
           return;
         }
 
-        fileData.put(player.getUniqueId(), data.setSearchInstance(firstInstance));
+        fileData.put(player.getUniqueId(), data.setCurrentLine(firstInstanceLine).setSearchInstance(2));
         open(player);
 
       } catch (IOException ex) {
@@ -214,7 +230,7 @@ public void clickEvent(InventoryClickEvent e) {
   }
 
   //file creation
-  if (identifier.equals("createFileMenu")) {
+  case "createFileMenu" -> {
     if (!player.hasPermission("cogworks.file.mk")) return;
     player.closeInventory();
     Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, Util.getLang("fileGui.createFileMenu.title"));
@@ -226,7 +242,7 @@ public void clickEvent(InventoryClickEvent e) {
       } else if (i == 5) {
         content.add(itemProperties(new ItemStack(Material.YELLOW_WOOL), Util.getLang("fileGui.createFileMenu.folder"), null, "createFolder"));
       } else {
-        content.add(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE));
+        content.add(itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, null));
       }
     }
 
@@ -234,26 +250,22 @@ public void clickEvent(InventoryClickEvent e) {
     player.openInventory(gui);
   }
 
-  if (identifier.equals("createFile") || identifier.equals("createFolder")) {
+  case "createFile", "createFolder" -> {
     if (!player.hasPermission("cogworks.file.mk")) return;
     player.closeInventory();
-
-    ItemStack item = e.getCurrentItem();
     if (identifier.equals("createFolder")) {
-      ItemMeta meta = item.getItemMeta();
-      if (meta.getDisplayName().startsWith(String.valueOf(ChatColor.YELLOW)))
-        meta.setDisplayName(meta.getDisplayName().substring(2));
-      item.setItemMeta(meta);
-      itemProperties(item, null, null, "confirmCreateFolder");
+      if (itemDisplay.startsWith(String.valueOf(ChatColor.YELLOW)))
+        itemMeta.setDisplayName(itemDisplay.substring(2));
+      itemStack.setItemMeta(itemMeta);
+      itemProperties(itemStack, null, null, "confirmCreateFolder");
     } else {
-      itemProperties(item, null, null, "confirmCreateFile");
+      itemProperties(itemStack, null, null, "confirmCreateFile");
     }
-
     new AnvilGUI.Builder()
         .plugin(plugin)
         .preventClose()
         .title(Util.getLang("fileGui.createFile.title"))
-        .itemLeft(item)
+        .itemLeft(itemStack)
         .onClick((slot, stateSnapshot) -> {
           if (slot == AnvilGUI.Slot.OUTPUT) {
             return List.of(AnvilGUI.ResponseAction.close());
@@ -281,13 +293,13 @@ public void clickEvent(InventoryClickEvent e) {
   }
 
   //file deleting
-  if (identifier.equals("deleteFileToggle")) {
+  case "deleteFileToggle" -> {
     if (!player.hasPermission("cogworks.file.rm")) return;
     fileData.put(player.getUniqueId(), data.setDeleteMode(!data.getDeleteMode()));
     open(player);
   }
 
-  if (identifier.equals("confirmedDelete")) {
+  case "confirmedDelete" -> {
     if (!player.hasPermission("cogworks.file.rm")) return;
     try {
       if (lastFileClicked.isFile()) FileUtils.delete(lastFileClicked);
@@ -299,7 +311,7 @@ public void clickEvent(InventoryClickEvent e) {
     open(player);
   }
 
-  if (identifier.equals("confirmDirDelete")) {
+  case "confirmDirDelete" -> {
     if (!player.hasPermission("cogworks.file.rm")) return;
     player.closeInventory();
     Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, Util.getLang("fileGui.confirmDirDelete.title"));
@@ -308,9 +320,9 @@ public void clickEvent(InventoryClickEvent e) {
       if (i == 1) {
         content.add(itemProperties(new ItemStack(Material.OAK_SIGN), Util.getLang("fileGui.confirmDirDelete.sign"), null, null));
       } else if (i == 3) {
-        content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), Util.getLang("fileGui.confirmDirDelete.no"), null, "up"));
+        content.add(itemProperties(new ItemStack(Material.RED_CONCRETE), Util.getLang("fileGui.confirmDirDelete.deny"), null, "up"));
       } else if (i == 5) {
-        content.add(itemProperties(new ItemStack(Material.GREEN_CONCRETE), Util.getLang("fileGui.confirmDirDelete.yes"), null, "confirmedDelete"));
+        content.add(itemProperties(new ItemStack(Material.GREEN_CONCRETE), Util.getLang("fileGui.confirmDirDelete.confirm"), null, "confirmedDelete"));
       } else {
         content.add(itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, null));
       }
@@ -321,23 +333,19 @@ public void clickEvent(InventoryClickEvent e) {
   }
 
   //file editing
-  if (identifier.equals("text")) {
+  case "text" -> {
     if (!player.hasPermission("cogworks.file.edit")) return;
-    if (Boolean.TRUE.equals(e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "edited"), PersistentDataType.BOOLEAN)))
+    if (Boolean.TRUE.equals(itemMeta.getPersistentDataContainer().get(new NamespacedKey(plugin, "edited"), PersistentDataType.BOOLEAN)))
       return;
-
-    ItemStack paper = e.getCurrentItem();
-    ItemMeta meta = paper.getItemMeta();
-    meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "edited"), PersistentDataType.BOOLEAN, true);
-    meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING, "edit");
-    paper.setItemMeta(meta);
-
+    itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "edited"), PersistentDataType.BOOLEAN, true);
+    itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING, "edit");
+    itemStack.setItemMeta(itemMeta);
     new AnvilGUI.Builder()
         .plugin(plugin)
         .preventClose()
         .title(Util.getLang("fileGui.fileEditor.title"))
         .itemLeft(e.getCurrentItem())
-        .itemOutput(paper)
+        .itemOutput(itemStack)
         .onClick((slot, stateSnapshot) -> {
           if (slot == AnvilGUI.Slot.OUTPUT) {
             return List.of(AnvilGUI.ResponseAction.close());
@@ -378,17 +386,15 @@ public void clickEvent(InventoryClickEvent e) {
         .open(player);
   }
 
-  if (identifier.equals("fileBackground")) {
+  case "fileBackground" -> {
     if (!player.hasPermission("cogworks.file.edit")) return;
-
-    Integer line = e.getCurrentItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "line"), PersistentDataType.INTEGER);
+    Integer line = itemMeta.getPersistentDataContainer().get(new NamespacedKey(plugin, "line"), PersistentDataType.INTEGER);
     if (line == null) return;
-
     ItemStack paper = itemProperties(new ItemStack(Material.PAPER), "\u200B", null, "");
     ItemMeta meta = paper.getItemMeta();
+    assert meta != null;
     meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "line"), PersistentDataType.INTEGER, line);
     paper.setItemMeta(meta);
-
     new AnvilGUI.Builder()
         .plugin(getPlugin(CogWorks.class))
         .preventClose()
@@ -444,7 +450,7 @@ public void clickEvent(InventoryClickEvent e) {
         })
         .open(player);
   }
-
+  }
 
   fileData.put(player.getUniqueId(), data);
   position.put(player.getName(), pathHolder);
@@ -465,20 +471,13 @@ public static void open(Player player) {
 
   Inventory gui = Bukkit.createInventory(player, 54, ChatColor.BLUE+"~"+position.get(player.getName()).getRelativePath()+ChatColor.GOLD+" $");
   ArrayList<ItemStack> content = new ArrayList<>();
+  ArrayList<ItemStack> files = new ArrayList<>();
+  ArrayList<ItemStack> folders = new ArrayList<>();
 
   if (file.isDirectory()) {
-    List<Path> paths;
-    try {
-      paths = Files.list(Path.of(pathHolder.getCurrentPath())).toList();
-    } catch (Exception e) {
-      new Log(player, "fileGui.open.getFilesErr").setFilePath(file.getAbsolutePath()).log();
-      return;
-    }
-
-    //creates file and folder objects, then sorts them
-    ArrayList<ItemStack> files = new ArrayList<>();
-    ArrayList<ItemStack> folders = new ArrayList<>();
-    for (Path path : paths) {
+    try (Stream<Path> paths = Files.list(Path.of(pathHolder.getCurrentPath()))) {
+      //sorts the files & folders
+      for (Path path : paths.toList()) {
       if (Files.isDirectory(path)) {
         ItemStack item = new ItemStack(Material.YELLOW_WOOL);
         if (data.getDeleteMode()) item = new ItemStack(Material.RED_WOOL);
@@ -490,6 +489,10 @@ public static void open(Player player) {
       }
     }
     folders.addAll(files);
+    } catch (Exception e) {
+      new Log(player, "fileGui.open.getFilesErr").setFilePath(file.getAbsolutePath()).log();
+      return;
+    }
 
     for (int i = 0; i <= 53; i++) {
       if (i == 0) {
@@ -548,7 +551,7 @@ public static void open(Player player) {
       } else if (i == 2) {
         content.add(itemProperties(new ItemStack(Material.OAK_SIGN), Util.getLang("fileGui.open.lineNum", "lineNum", String.valueOf(lineNumber)), List.of(Util.getLang("fileGui.open.lineNumDesc")), null));
       } else if (i == 3) {
-        content.add(itemProperties(new ItemStack(Material.WRITABLE_BOOK), Util.getLang("fileGui.open.search"), List.of(Util.getLang("fileGui.open.searchDesc0"), Util.getLang("fileGui.open.searchDesc1"), Util.getLang("fileGui.open.searchDesc2")), "search"));
+        content.add(itemProperties(new ItemStack(Material.WRITABLE_BOOK), Util.getLang("fileGui.open.search", "searchPhrase", searchPhrase), List.of(Util.getLang("fileGui.open.searchDesc0"), Util.getLang("fileGui.open.searchDesc1"), Util.getLang("fileGui.open.searchDesc2")), "search"));
       } else if (i == 4) {
         content.add(itemProperties(new ItemStack(Material.SPECTRAL_ARROW), Util.getLang("fileGui.open.goto"), List.of(Util.getLang("fileGui.open.gotoDesc")), "goto"));
       } else if (i == 7) {
@@ -574,6 +577,7 @@ public static void open(Player player) {
             }
 
             ItemMeta paperMeta = paper.getItemMeta();
+            assert paperMeta != null;
             paperMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "line"), PersistentDataType.INTEGER, i+lineNumber);
             paperMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "offset"), PersistentDataType.INTEGER, ii);
             paperMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "edited"), PersistentDataType.BOOLEAN, false);
@@ -582,6 +586,7 @@ public static void open(Player player) {
           } else {
             ItemStack background = itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, "fileBackground");
             ItemMeta meta = background.getItemMeta();
+            assert meta != null;
             meta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "line"), PersistentDataType.INTEGER, i+lineNumber);
             background.setItemMeta(meta);
             content.add(background);
@@ -591,6 +596,7 @@ public static void open(Player player) {
         for (int ii = 0; ii <= 8; ii++) {
           ItemStack background = itemProperties(new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE), " ", null, "fileBackground");
           ItemMeta meta = background.getItemMeta();
+          assert meta != null;
           meta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "line"), PersistentDataType.INTEGER, i+lineNumber);
           background.setItemMeta(meta);
           content.add(background);
