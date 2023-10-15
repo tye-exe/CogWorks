@@ -64,6 +64,7 @@ public final class CogWorks extends JavaPlugin {
 //TODO: allow user to exit/go back from all states
 //TODO: make lang updates required to be confirmed to go away?
 //TODO: make user invariable whilst in ./file menu
+//TODO: put char limit on file gui title so it doesn't overflow (take chars away from start of path?)
 
 @Override
 public void onEnable() {
