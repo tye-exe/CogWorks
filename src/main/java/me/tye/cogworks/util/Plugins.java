@@ -611,6 +611,7 @@ public static boolean installModrinthPlugin(@Nullable CommandSender sender, Stri
  @param sender        The command sender performing this action.
  @param state         The lang path to get the responses from.
  @param pluginVersion The plugin version to get the dependencies from.
+ @param pluginName    The name of the plugin to use ion log messages.
  @return True if all of the plugins installed successfully. */
 public static boolean installModrinthDependencies(@Nullable CommandSender sender, String state, JsonObject pluginVersion, String pluginName) {
   HashMap<String,JsonArray> dependencies = getModrinthDependencies(sender, state, pluginVersion);

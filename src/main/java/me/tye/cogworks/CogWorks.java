@@ -63,6 +63,7 @@ public final class CogWorks extends JavaPlugin {
 //TODO: send lang update messages on op join
 //TODO: allow user to exit/go back from all states
 //TODO: make lang updates required to be confirmed to go away?
+//TODO: make user invariable whilst in ./file menu
 
 @Override
 public void onEnable() {

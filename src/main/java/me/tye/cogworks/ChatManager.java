@@ -345,9 +345,9 @@ public static void checks(String name, String message) {
 
               //if there is only one file to install from that version it installs it
               if (files.size() == 1) {
-                Plugins.installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), compatibleFiles.get(0).getAsJsonObject().get("title").getAsString());
+                Plugins.installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), plugin.get("title").getAsString());
                 if (Plugins.installModrinthPlugin(sender, state, files))
-                  new Log(sender, state, "finish").setPluginName(compatibleFiles.get(0).getAsJsonObject().get("title").getAsString()).log();
+                  new Log(sender, state, "finish").setPluginName(plugin.get("title").getAsString()).log();
 
                 // if there are more than one file for that version you get prompted to choose which one(s) to install
               } else {
