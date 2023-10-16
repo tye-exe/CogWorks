@@ -2,23 +2,32 @@ package me.tye.cogworks.util.yamlClasses;
 
 public class DependencyInfo {
 
-    String name;
-    String version;
+String name;
+String version;
 
-    public DependencyInfo(String name, String version) {
-        this.name = name;
-        this.version = version;
-    }
+/**
+ Stores information about the dependencies of a plugin.
+ @param name    The name of the plugin.
+ @param version The version of the plugin. */
+public DependencyInfo(String name, String version) {
+  this.name = name;
+  this.version = version;
+}
 
-    public String getName() {
-        return name;
-    }
-    public String getVersion() {
-        return version;
-    }
+/**
+ @return The plugin name of the dependency. */
+public String getName() {
+  return name;
+}
 
-    @Override
-    public String toString() {
-        return " name:" + name + "version:" + version;
-    }
+/**
+ @return The plugin version of the dependency. */
+public String getVersion() {
+  return version;
+}
+
+@Override
+public String toString() {
+  return "Name: \""+name+"\". Version: \""+version+"\".";
+}
 }

@@ -5,47 +5,65 @@ import java.util.Map;
 
 public class PluginData {
 
-    String fileName;
-    String name;
-    String version;
-    ArrayList<DependencyInfo> dependencies = new ArrayList<>();
-    ArrayList<DependencyInfo> softDependencies = new ArrayList<>();
+String fileName;
+String name;
+String version;
+ArrayList<DependencyInfo> dependencies = new ArrayList<>();
+ArrayList<DependencyInfo> softDependencies = new ArrayList<>();
 
-    public PluginData(String fileName, Map<String, Object> data) {
-        this.fileName = fileName;
-        this.name = data.get("name").toString();
-        this.version = data.get("version").toString();
+/**
+ Contains information about a plugin.
+ @param fileName      The file name of the plugin.
+ @param rawPluginData The raw data of the "plugin.yml" file. */
+public PluginData(String fileName, Map<String,Object> rawPluginData) {
+  this.fileName = fileName;
+  this.name = rawPluginData.get("name").toString();
+  this.version = rawPluginData.get("version").toString();
 
-        if (data.get("depend") != null) {
-            for (String dependency : (ArrayList<String>) data.get("depend")) {
-                this.dependencies.add(new DependencyInfo(dependency, null));
-            }
-        }
-        if (data.get("softdepend") != null) {
-            for (String dependency : (ArrayList<String>) data.get("softdepend")) {
-                this.softDependencies.add(new DependencyInfo(dependency, null));
-            }
-        }
+  if (rawPluginData.get("depend") != null) {
+    for (String dependency : (ArrayList<String>) rawPluginData.get("depend")) {
+      this.dependencies.add(new DependencyInfo(dependency, null));
     }
+  }
+  if (rawPluginData.get("softdepend") != null) {
+    for (String dependency : (ArrayList<String>) rawPluginData.get("softdepend")) {
+      this.softDependencies.add(new DependencyInfo(dependency, null));
+    }
+  }
+}
 
-    public String getFileName() {
-        return fileName;
-    }
-    public String getName() {
-        return name;
-    }
-    public String getVersion() {
-        return version;
-    }
-    public ArrayList<DependencyInfo> getDependencies() {
-        return dependencies;
-    }
-    public ArrayList<DependencyInfo> getSoftDependencies() {
-        return softDependencies;
-    }
+/**
+ @return The file name of the plugin. */
+public String getFileName() {
+  return fileName;
+}
 
-    @Override
-    public String toString() {
-        return "fileName:" + fileName + " name:" + name + " version:" + version + " dependencies:" + dependencies + " softDependencies:" + softDependencies;
-    }
+/**
+ @return The internal plugin name. */
+public String getName() {
+  return name;
+}
+
+/**
+ @return The internal plugin version. */
+public String getVersion() {
+  return version;
+}
+
+/**
+ @return The internal dependencies for the plugin. */
+public ArrayList<DependencyInfo> getDependencies() {
+  return dependencies;
+}
+
+/**
+ @return The internal soft dependencies for the plugin. */
+public ArrayList<DependencyInfo> getSoftDependencies() {
+  return softDependencies;
+}
+
+@Override
+public String toString() {
+  return "File name: \""+fileName+"\". Name: \""+name+"\". Version: \""+version+"\". Dependencies: \""+dependencies+"\". Soft dependencies: \""+softDependencies+"\".";
+}
 }

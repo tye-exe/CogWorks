@@ -11,23 +11,31 @@ commands:
     permission: plugin
   file:
     usage: /<command>
-    description: The command allows the user to navigate around the file system and to edit files.
+    description: The command allows the user to navigate around the file system and to edit, create, & delete files.
     permission: file
 
 permissions:
 
-  cogworks.plugin.ins:
-    default: op
-  cogworks.plugin.rm:
-    default: op
+  cogworks:
+    plugin:
+      ins:
+        modrinth:
+          default: op
+        gen:
+          default: op
+      rm:
+        default: op
+      reload:
+        default: op
 
-  cogworks.file.nav:
-    default: op
-  cogworks.file.read:
-    default: op
-  cogworks.file.edit:
-    default: op
-  cogworks.file.mk:
-    default: op
-  cogworks.file.rm:
-    default: op
+    file:
+      nav:
+        default: op
+      read:
+        default: op
+      edit:
+        default: op
+      mk:
+        default: op
+      rm:
+        default: op

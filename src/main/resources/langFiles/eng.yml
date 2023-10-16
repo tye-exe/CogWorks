@@ -1,9 +1,336 @@
 #English lang file for the CogWorks plugin.
-#
-#Info: If q value for the key can't be got for a string it will not be replaced.
+
+#Info: If a value for the key can't be got for a string it will not be replaced.
+#Info: the keys need to be surrounded with "{" & "}".
 #Keys:
-#fileName = The name of the file
+#fileName = The name of the file.
+#fileNames = The names of multiple files.
 #filePath = The path to the file.
+#depName = The name of the dependency.
+#pluginName = The name of the plugin.
+#pluginNames = The name of multiple plugins.
+#key = The value used to retrieve an element from a group.
+#URL = The URL.
+#isFile = Whether it is a file or not.
+#errors = Amount of severe errors that have occurred since last reload/restart.
+#lineNum = The number of the line inside a file.
+#searchPhrase = The current phrase being searched.
+#state = The current chat state that the user is in.
+#n = newLine.
+
+info:
+  menuClose: "§e[CogWorks] Menu closed due to reload, this is to prevent errors."
+  errorSum: "§e[CogWorks] There have been {errors} severe error(s) since last reload/restart, this could cause unpredictable behaviour. Please report these issues."
+  newLang: "§aThe language file {fileName} is now available for this version of the plugin and has been automatically downloaded."
+  updatedLang: "§aYour lang file has been changed to the one designed for this version of CogWorks."
+
+
+help:
+  #Don't translate anything before the "-" in this section.
+  #E.G "§9/plugin help - §a{translated text}."
+  plugin:
+    help: "§9/plugin help - §aShows this message."
+    install: "§9/plugin install <URL> - §aDownloads the file from the url to the \"./plugins\" folder."
+    search: "§9/plugin search <Plugin name> - §aUses Modrinth to search the name given and returns the results, which can be chosen from to download."
+    browse: "§9/plugin browse - §aAllows the user to search though the most popular plugins on modrinth that are compatible with your server type and install them with the press of a button."
+    reload: "§9/plugin reload - §aForces CogWorks to rescan the \"./plugins\" folder."
+    remove: "§9/plugin remove <Plugin name> - §aDisables and uninstalls the given plugin."
+  file:
+    help: "§9/file help - §aShows this message."
+    chat: "§9/file chat - §a(WIP) Turns your chat into a mock command line which lets you interact with files on the server."
+    gui: "§9/file gui - §aOpens an inventory that lets you interact with the files on the server visually."
+
+
+tabComplete:
+  plugin:
+    install: "<URL>"
+    search: "<Plugin name>"
+    remove: "<Plugin name>"
+
+  dataReadError: "§eThere was an error getting the plugin names."
+
+reload:
+  reloading: "§aReloading Plugins."
+  reloaded: "§aPlugins reloaded."
+
+  noAccessPluginYML: "§cUnable to access plugin.yml file."
+  deletingRemovedPlugin: "§eError deleting removed plugin {pluginName} from pluginData."
+  noAccessDeleteRemovedPlugins: "§cUnable to remove {pluginName}. This will cause {pluginName} to appear present when interacting with CogWorks."
+  badYmlAccess: "§cUnable to access plugin.yml file for {fileName}. {fileName} won't work for many features of this plugin."
+  gettingFilesErr: "§eThere was an error getting the files in \"{filePath}\"."
+
+
+pluginSelect:
+  start: "§aInstalling {pluginName}."
+  installingDep: "§aInstalling dependencies for {pluginName}."
+  downloading: "§aDownloading {fileName}."
+  installed: "§e{fileName} is already installed."
+  installedDep: "§aDependencies installed."
+  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
+  #Do translate the world (Primary)
+  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
+
+  quit: "§eQuitting."
+  NAN: "§ePlease enter a listed number."
+  noFiles: "§eFailed to find compatible file to download."
+  pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
+  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
+  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
+  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
+  alreadyExists: "§e{fileName} is already installed on your system."
+  installError: "§eThere was an error installing {fileName}."
+  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
+
+
+pluginVersionSelect:
+  start: "§aInstalling {pluginName}."
+  installingDep: "§aInstalling dependencies for {pluginName}."
+  downloading: "§aDownloading {fileName}."
+  installed: "§e{fileName} is already installed."
+  installedDep: "§aDependencies installed."
+  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
+  #Do translate the world (Primary)
+  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
+
+  quit: "§eQuitting."
+  NAN: "§ePlease enter a listed number."
+  noFiles: "§eFailed to find compatible file to download."
+  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
+  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
+  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
+  alreadyExists: "§e{fileName} is already installed on your system."
+  installError: "§eThere was an error installing {fileName}."
+  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
+
+
+pluginFileSelect:
+  start: "§aInstalling {fileNames}."
+  installingDep: "§aInstalling dependencies for {pluginName}.{n}§eNote: This will install the dependencies listed for the version, not for the specified file(s)."
+  downloading: "§aDownloading {fileName}."
+  installed: "§e{fileName} is already installed."
+  installedDep: "§aDependencies installed."
+  finish: "§aFinished installing {fileNames}.{n}§aReload or restart for the plugin(s) to activate."
+  #Do translate the world (Primary)
+  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
+  primary: "(Primary)"
+
+  quit: "§eQuitting."
+  NAN: "§ePlease enter a listed number."
+  noFiles: "§eFailed to find compatible file to download."
+  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
+  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
+  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
+  alreadyExists: "§e{fileName} is already installed on your system."
+  installError: "§eThere was an error installing {fileName}."
+  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
+  noneSelected: "§eNo valid files were selected."
+
+
+pluginBrowse:
+  pluginBrowse: "§aSend the number corresponding to the plugin to install it in chat, or the number next to an arrow to scroll, or send q to quit."
+  pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
+  start: "§aInstalling {pluginName}."
+  installingDep: "§aInstalling dependencies for {pluginName}."
+  downloading: "§aDownloading {fileName}."
+  installed: "§e{fileName} is already installed."
+  installedDep: "§aDependencies installed."
+  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
+  #Do translate the world (Primary)
+  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
+
+  quit: "§eQuitting."
+  NAN: "§ePlease enter a listed number."
+  noFiles: "§eFailed to find compatible file to download."
+  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
+  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
+  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
+  browsePluginErr: "§eThere was an error getting plugins from Modrinth."
+  modrinthSearchErr: "§eThere was an error getting plugins with that name from Modrinth."
+  alreadyExists: "§e{fileName} is already installed on your system."
+  installError: "§eThere was an error installing {fileName}."
+  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
+
+
+pluginInstall:
+  downloading: "§aDownloading {fileName}."
+  finish: "§aFinished installing {fileName}.{n}§aReload or restart for {fileName} to activate."
+
+  noFiles: "§eFailed to find compatible file to download."
+  alreadyExists: "§eThat {fileName} is already installed on your system."
+  pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
+  installError: "§eThere was an error installing {fileName}."
+  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
+  noInput: "§ePlease provide a plugin name to search or an url to download from."
+  modrinthSearchErr: "§eThere was an error getting plugins with that name from Modrinth."
+  badUrl: "§eInvalid download URL.{n}§eURL: \"{URL}\""
+
+
+deletePlugin:
+  dependsOn: "§e{pluginNames} depend on {pluginName} to function.{n}§a1: Force delete {pluginName}.{n}§a2: Delete {pluginName} & {pluginNames}.{n}§a3: Do nothing (exit)."
+  deleteConfig: "§eDo you wish to delete the {pluginName} config files?{n}§eSend y or n in chat to choose."
+  note: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
+
+  quit: "§eQuitting."
+  confirm: "§ePlease enter either \"y\" or \"n\"."
+  configRemove: "§aConfig files for {pluginName} deleted."
+  pluginDelete: "§a{pluginName} deleted."
+  reloadWarn: "§eImmediately reload or restart to avoid errors."
+  provideName: "§ePlease provide a plugin name!"
+  noConfigsFound: "§eNo config folder could be found for {pluginName}. Won't prompt for config delete."
+
+  noSuchPlugin: "§e{pluginName} couldn't be found on your system."
+  deleteError: "§e{pluginName} couldn't be deleted."
+  scheduleDelete: "§e{pluginName} will be scheduled for attempted deletion on server restart."
+
+
+pluginsDeleteEval:
+  dependsOn: "§e{pluginNames} depend on {pluginName} to function.{n}§a1: Force delete {pluginName}.{n}§a2: Delete {pluginName} & {pluginNames}.{n}§a3: Do nothing (exit)."
+  deleteConfig: "§eDo you wish to delete the {pluginName} config files?{n}§eSend y or n in chat to choose."
+  note: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
+
+  quit: "§eQuitting."
+  NAN: "§ePlease enter a listed number."
+  configRemove: "§aConfig files for {pluginName} deleted."
+  pluginDelete: "§a{pluginName} deleted."
+  reloadWarn: "§eImmediately reload or restart to avoid errors."
+  provideName: "§ePlease provide a plugin name!"
+  noConfigsFound: "§eNo config folder could be found for {pluginName}. Won't prompt for config delete."
+
+  noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
+  deleteError: "§ePlugin {pluginName} couldn't be deleted."
+  scheduleDelete: "§e{pluginName} will be scheduled for attempted deletion on server restart."
+
+
+ModrinthAPI:
+  outdated: "§cThis version of CogWorks is using an outdated version of the Modrinth API. It is recommended to install a newer version of CogWorks as many features won't work."
+  APILimit: "§eYou've exceeded the Modrinth API rate limit. Please stop using \"/plugin\" commands for a minuet."
+  error: "§eThere was a problem using the Modrinth API."
+  empty: "§eNone matching found on Modrinth."
+
+
+fileGui:
+  goto.title: "Goto:"
+
+  search:
+    title: "Search:"
+    readingErr: "§eThere was an error reading {filePath} while trying to search."
+
+  createFileMenu:
+    title: "File or Folder"
+    file: "File"
+    folder: "§eFolder"
+
+  createFile:
+    title: "Name:"
+    fileExists: "§eThere is already a {isFile} with that name."
+    creationErr: "§eThere was an error creating that {isFile}."
+
+  confirmDel:
+    title: "Confirm Deletion"
+    deny: "§cDeny"
+    confirm: "§aConfirm"
+
+  confirmDirDelete:
+    title: "See sign."
+    sign: "§l§cThis folder contains files within it! Are you sure?"
+    deny: "§cNo"
+    confirm: "§aYes"
+
+  confirmedDelete.error: "§eFailed to delete {fileName}."
+
+  fileEditor:
+    title: "File editor:"
+    editingErr: "There was an error editing {filePath}."
+
+  open:
+    folder: "Folder"
+    file: "File"
+    up: "Up"
+    upDesc: "Goes up a file."
+    exit: "Exit"
+    exitDesc: "Closes the menu."
+    delete: "Delete"
+    deleteDesc: "Toggles delete mode."
+    create: "Create"
+    createDesc: "Creates a new file/folder in the current folder."
+
+    scrollDown: "Scroll Down"
+    scrollDownDesc: "Scrolls down in the file."
+    scrollUp: "Scroll Up"
+    scrollUpDesc: "Scrolls up in the file."
+    lineNum: "Line number: {lineNum}"
+    lineNumDesc: "The line number of the first visible line."
+    search: "Search: {searchPhrase}"
+    searchDesc0: "Finds instances of certain words."
+    searchDesc1: "Left click: Input search word."
+    searchDesc2: "Right click: Moves to searched words."
+    goto: "Go to"
+    gotoDesc: "Go to a certain line by it's line number."
+    back: "Back"
+    backDesc: "Exists the file."
+
+    readErr: "§eThere was an error when trying to read {filePath}."
+    fileCloseErr: "§eThere was an error closing {filePath}. This file will not be able to be used until the server is restarted."
+    getFilesErr: "§eThere was an error trying to get the files in {filePath}."
+
+
+terminal:
+  init: "§aYou've entered the CogWorks terminal.{n}§aType \"help\" in chat for help or \"exit\" to leave the terminal."
+  WIP: "§cWARNING: THIS A VERY MUCH A WIP AND NOT YET IMPLEMENTED"
+  blank: ""
+  path: "§9{filePath} §6$"
+  noGui: "§eThis command is only available to online players, being redirected to terminal."
+
+  #Don't translate anything before the "-" in this section.
+  #E.G "§9help - §a{translated text}."
+  help:
+    help: "§9help - §aShows this message."
+    exit: "§9exit - §aLeaves the terminal."
+    say: "§9say - §aPasses the following text into the chat like normal. The \"say\" is removed."
+    ls: "§9ls - §aLists the current folders and files that are in a folder."
+    cd: "§9cd - §aChanges the current folder to the one specified. Input \"..\" to go back a folder."
+
+  exit: "§eExited terminal."
+  ls.error: "§eError trying to get files from current folder."
+
+
+ADR:
+  attempting: "§aAttempting to automatically resolve missing dependency \"{depName}\" for \"{fileName}\"."
+  success: "§aUnmet dependency for \"{fileName}\" successfully resolved by installing \"{depName}\".{n}Reload or restart for this to take effect."
+  fail: "§eUnmet dependency for \"{fileName}\" could not be automatically resolved."
+
+  getErr: "§eError checking if the installed dependency has any dependencies."
+  modrinthSearchErr: "§eError querying Modrinth for automatic dependency resolution."
+  downloadingErr: "§eError downloading {fileName} to check plugin as possible dependency."
+  threadTime: "§ePlugins took too long to download."
+  pluginYMLCheck: "§eError checking plugin name for {fileName}. Skipping {fileName} as possible dependency."
+  cleanUpPossiblePlugins: "§eError trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder \"{filePath}\" at your earliest convince."
+
 
 exceptions:
-  fileCreation: "Unable to create {fileName} file in {filePath}."
+  seeConsole: "§ePlease see the console for stack trace."
+  noSuchResponse: "§cNo lang response could be found for \"{key}\". Please inform the devs about this."
+
+  fileCreation: "§eUnable to create {fileName} file in \"{filePath}\"."
+  removeLeftoverFiles: "§eUnable to clean up unused file \"{filePath}\". Please manually delete this file at your earliest convenience."
+  noAccessPluginYML: "§cUnable to access plugin.yml file, many features of this plugin WILL break."
+  deletingRemovedPlugin: "§eError deleting removed plugin {pluginName} from pluginData."
+  noAccessDeleteRemovedPlugins: "§cUnable to access pluginData file to remove {pluginName}. This will cause {pluginName} to appear present when interacting with CogWorks."
+  badYmlAccess: "§cUnable to access plugin.yml file for {fileName}. {fileName} won't work for many features of this plugin."
+  errorWritingConfigs: "§eError writing configurations to \"{filePath}\". Reverting to default settings."
+  pluginNotRegistered: "§e{pluginName} either not installed or not indexed by CogWorks."
+  badModrinthUrl: "§eCreating a url to send request to Modrinth failed. An invalid url was created."
+  dataReadError: "§eThere was an error reading the plugin names from the pluginData file."
+  noExternalResponse: "§eUnable to get external lang response for \"{key}\". Using internal value."
+  gettingFilesErr: "§eThere was an error getting the files in \"{filePath}\"."
+  newLangCheck: "§eThere was an error checking for new lang files."
+  newLangInstall: "§eThere was an error installing the new lang file {fileName}. You can manually download it from \"{URL}\"."
+  clearTemp: "§eThere was an error clearing the temp folder - \"{filePath}\". This folder might fill up with unused files."
+  stateNotFound: "§cThere was an error matching the state your in. Please report this to the devs. State: \"{state}\"."
+  noConfigMatch: "§cA value could not be matched to the value file. Please report this to the devs. Key: \"{key}\"."
+  chatError: "§eThere was a general error when interacting with the chat system for CogWorks."
+  langUpdateFail: "§eA valid lang file couldn't be found for your version, defaulting to english."
+
+
+#DO NOT CHANGE!
+langVer: 0.3

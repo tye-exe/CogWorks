@@ -1,68 +1,62 @@
 package me.tye.cogworks.commands;
 
 import me.tye.cogworks.FileGui;
-import me.tye.cogworks.CogWorks;
-import me.tye.cogworks.util.ChatParams;
-import me.tye.cogworks.util.FileData;
-import me.tye.cogworks.util.PathHolder;
-import org.bukkit.ChatColor;
+import me.tye.cogworks.util.customObjects.ChatParams;
+import me.tye.cogworks.util.customObjects.FileData;
+import me.tye.cogworks.util.customObjects.Log;
+import me.tye.cogworks.util.customObjects.PathHolder;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.nio.file.Path;
-
 import static me.tye.cogworks.ChatManager.response;
-import static me.tye.cogworks.FileGui.fileData;
-import static me.tye.cogworks.FileGui.open;
+import static me.tye.cogworks.FileGui.*;
 
 
 public class FileCommand implements CommandExecutor {
-    //TODO: redirect to terminal if you try to use the gui when in console.
-    @Override
-    public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String[] args) {
-        if (!sender.hasPermission("cogworks.file.nav")) return true;
-        if (args.length == 1 && args[0].equals("chat")) {
-            String serverFolder = Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
-            if (sender instanceof Player) FileGui.position.put(sender.getName(), new PathHolder(serverFolder, serverFolder));
-            else FileGui.position.put("~", new PathHolder(serverFolder, serverFolder));
 
-            ChatParams newParams = new ChatParams(sender, "Terminal");
-            if (sender instanceof Player) response.put(sender.getName(), newParams);
-            else response.put("~", newParams);
+@Override
+public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, @NonNull String[] args) {
+  if (!sender.hasPermission("cogworks.file.nav")) return true;
 
-            sender.sendMessage(ChatColor.GREEN+"You've entered the CogWorks terminal.\nType \"help\" in chat for help or \"exit\" to leave the terminal.\n");
-            sender.sendMessage(ChatColor.RED + "WARNING: THIS A VERY MUCH A WIP AND NOT YET IMPLEMENTED");
-            sender.sendMessage(ChatColor.GOLD+"-----------------"+ChatColor.BLUE+new PathHolder(serverFolder, serverFolder).getRelativePath()+ChatColor.GOLD+" $");
+  if (args.length == 1 && args[0].equals("chat")) {
+    if (sender instanceof Player) FileGui.position.put(sender.getName(), new PathHolder());
+    else FileGui.position.put("~", new PathHolder());
 
-        } else if (args.length == 0 || args[0].equals("gui")) {
-            if (sender instanceof Player player) {
-                String serverFolder = Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
-                FileGui.position.put(player.getName(), new PathHolder(serverFolder, serverFolder));
-                fileData.put(player.getUniqueId(), new FileData(1, null, 1, false));
-                open(player);
-            } else {
-                sender.sendMessage(ChatColor.YELLOW + "This command is only available to online players, being redirected to terminal.");
+    ChatParams params = new ChatParams(sender, "terminal");
+    if (sender instanceof Player) response.put(sender.getName(), params);
+    else response.put("~", params);
 
-                String serverFolder = Path.of(JavaPlugin.getPlugin(CogWorks.class).getDataFolder().getAbsolutePath()).getParent().getParent().toString();
-                FileGui.position.put("~", new PathHolder(serverFolder, serverFolder));
-                response.put("~", new ChatParams(sender, "Terminal"));
+    new Log(sender, "terminal.init").log();
+    new Log(sender, "terminal.WIP").log();
+    new Log(sender, "terminal.path").setFilePath(position.get("~").getRelativePath()).log();
 
-                sender.sendMessage(ChatColor.GREEN+"You've entered the CogWorks terminal.\nType \"help\" in chat for help or \"exit\" to leave the terminal.\n");
-                sender.sendMessage(ChatColor.RED + "WARNING: THIS A VERY MUCH A WIP AND NOT YET IMPLEMENTED");
-                sender.sendMessage(ChatColor.GOLD+"-----------------"+ChatColor.BLUE+new PathHolder(serverFolder, serverFolder).getRelativePath()+ChatColor.GOLD+" $");
-            }
+  } else if (args.length == 0 || args[0].equals("gui")) {
+    if (sender instanceof Player player) {
+      FileGui.position.put(player.getName(), new PathHolder());
+      fileData.put(player.getUniqueId(), new FileData(1, null, 1, false));
+      open(player);
 
-        } else {
-            sender.sendMessage(ChatColor.BLUE+"/file help -"+ChatColor.GREEN+" Shows this list."+ChatColor.GRAY+"\n" + ChatColor.BLUE +
-                    "/file chat -"+ChatColor.GREEN+" (WIP) Turns your chat into a mock command line which lets you interact with files on the server."+ChatColor.GRAY+"\n" + ChatColor.BLUE +
-                    "/file gui -"+ChatColor.GREEN+" Opens an inventory that lets you interact with the files on the server visually.");
-        }
-        return true;
+    } else {
+      new Log(sender, "terminal.noGui").log();
+
+      FileGui.position.put("~", new PathHolder());
+      response.put("~", new ChatParams(sender, "terminal"));
+
+      new Log(sender, "terminal.init").log();
+      new Log(sender, "terminal.WIP").log();
+      new Log(sender, "terminal.path").setFilePath(position.get("~").getRelativePath()).log();
     }
+
+  } else {
+    new Log(sender, "help.file.help").log();
+    new Log(sender, "help.file.chat").log();
+    new Log(sender, "help.file.gui").log();
+  }
+  return true;
+}
 
 
 }

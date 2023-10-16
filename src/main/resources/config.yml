@@ -1,0 +1,14 @@
+#Config file for the CogWorks plugin.
+
+#Determins the current lang file.
+#Keys: eng - English
+lang: eng
+
+
+#Displays stack trace to help with debugging.
+#Turn this on before reporting a bug.
+#This will be enabled by default until release.
+showErrorTrace: true
+
+#On join send op players the amount of errors and warnings have happened with this plugin since last reload/restart.
+showOpErrorSummary: true
