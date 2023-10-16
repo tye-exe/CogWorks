@@ -60,4 +60,4 @@ The latest public version of the plugin will always be available on [Modrinth](h
 
 ## Translators Wanted!
 
-If you are willing to help by translating the plugin language file into any new languages (for past versions or the current version). Please join the discord server and ping @IWantToTranslate [discord](https://discord.gg/3CC6kVcdQH)
+If you are willing to help by translating the plugin language file into any new languages (for past versions or the current version). Please join the [discord server](https://discord.gg/3CC6kVcdQH) and ping @IWantToTranslate.

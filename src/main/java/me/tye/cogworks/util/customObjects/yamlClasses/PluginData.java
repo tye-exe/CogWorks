@@ -1,4 +1,4 @@
-package me.tye.cogworks.util.yamlClasses;
+package me.tye.cogworks.util.customObjects.yamlClasses;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -8,6 +8,7 @@ public class PluginData {
 String fileName;
 String name;
 String version;
+Integer deleteState = 0;
 ArrayList<DependencyInfo> dependencies = new ArrayList<>();
 ArrayList<DependencyInfo> softDependencies = new ArrayList<>();
 
@@ -61,6 +62,32 @@ public ArrayList<DependencyInfo> getDependencies() {
 public ArrayList<DependencyInfo> getSoftDependencies() {
   return softDependencies;
 }
+
+/**
+ Sets the delete state of the plugin. This will only be relevant during failed deletions.<br>
+ 0 - Not to delete<br>
+ 1 - Delete the plugin.<br>
+ 2 - Delete the plugin & config folders.<br>
+ If an int which isn't in the list is entered then no change to the delete state will occur.
+ @param deleteState The delete state.
+ @return The modified PluginData. */
+public PluginData setDeleteState(int deleteState) {
+  if (!(deleteState == 0 || deleteState == 1 || deleteState == 2))
+    return this;
+  this.deleteState = deleteState;
+  return this;
+}
+
+/**
+ Gets the delete state of the plugin.<br>
+ 0 - Not to delete<br>
+ 1 - Delete the plugin.<br>
+ 2 - Delete the plugin & config folders.<br>
+ @return The delete state. */
+public int getDeleteState() {
+  return this.deleteState;
+}
+
 
 @Override
 public String toString() {

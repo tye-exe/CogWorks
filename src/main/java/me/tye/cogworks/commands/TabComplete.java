@@ -1,9 +1,9 @@
 package me.tye.cogworks.commands;
 
-import me.tye.cogworks.util.Plugins;
+import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -43,7 +43,7 @@ public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Comman
       ArrayList<String> plugins = new ArrayList<>();
 
       try {
-        for (PluginData data : Plugins.readPluginData())
+        for (PluginData data : StoredPlugins.readPluginData())
           plugins.add(data.getName());
       } catch (IOException e) {
         new Log(sender, "tabComplete.dataReadError").log();

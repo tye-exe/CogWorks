@@ -1,4 +1,4 @@
-package me.tye.cogworks.util.yamlClasses;
+package me.tye.cogworks.util.customObjects.yamlClasses;
 
 public class DependencyInfo {
 
