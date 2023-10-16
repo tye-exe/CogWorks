@@ -4,12 +4,13 @@ import com.google.common.io.Files;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import me.tye.cogworks.util.Plugins;
+import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.customObjects.ChatParams;
 import me.tye.cogworks.util.customObjects.DeleteQueue;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.ModrinthSearch;
-import me.tye.cogworks.util.exceptions.NoSuchPluginException;
-import me.tye.cogworks.util.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.exceptions.NoSuchPluginException;
+import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.ChatColor;
@@ -44,7 +45,7 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
         //checks if the plugin & config folders exist
         PluginData pluginData;
         try {
-          pluginData = Plugins.readPluginData(pluginName);
+          pluginData = StoredPlugins.readPluginData(pluginName);
           if (!Plugins.hasConfigFolder(pluginName)) {
             deleteConfig = false;
             new Log(sender, "deletePlugin.noConfigsFound").setPluginName(pluginName).log();
@@ -212,7 +213,7 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
 
           case "reload" -> {
             new Log(sender, "reload.reloading").log();
-            Plugins.reloadPluginData(sender, "reload");
+            StoredPlugins.reloadPluginData(sender, "reload");
             new Log(sender, "reload.reloaded").log();
           }
 

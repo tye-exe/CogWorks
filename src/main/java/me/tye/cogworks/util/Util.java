@@ -3,14 +3,22 @@ package me.tye.cogworks.util;
 import me.tye.cogworks.CogWorks;
 import me.tye.cogworks.util.customObjects.Log;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+import static me.tye.cogworks.ChatManager.response;
 
 public class Util {
 
@@ -164,4 +172,54 @@ public static <T> T getConfig(String key) {
 }
 
 
+/**
+ Warning! The plugin needs to be installed to the file path for this to work!
+ @param pluginJar File of the plugin to get the yml of
+ @return The content of the yml file. */
+public static Map<String,Object> getYML(File pluginJar) {
+  try (ZipFile zip = new ZipFile(pluginJar)) {
+    for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
+      ZipEntry entry = e.nextElement();
+      if (!entry.getName().equals("plugin.yml"))
+        continue;
+
+      StringBuilder out = new StringBuilder();
+      BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
+      String line;
+      while ((line = reader.readLine()) != null)
+        out.append(line).append("\n");
+      reader.close();
+
+      Yaml yaml = new Yaml();
+      return yaml.load(out.toString());
+    }
+  } catch (Exception e) {
+    new Log("exceptions.noAccessPluginYML", Level.WARNING, e).log();
+  }
+  return new HashMap<>();
+}
+
+/**
+ Parses the value a user sent for selecting a single choice for a user interacting with the chat system.
+ @return -1 if there was an error. Else the value parsed. */
+public static int parseNumInput(CommandSender sender, String state, String message, String name, int max, int min) {
+  if (message.equals("q")) {
+    response.remove(name);
+    new Log(sender, state, "quit").log();
+    return -1;
+  }
+
+  int chosen;
+  try {
+    chosen = Integer.parseInt(message);
+  } catch (NumberFormatException e) {
+    new Log(sender, state, "NAN").log();
+    return -1;
+  }
+  if (chosen > max || chosen < min) {
+    new Log(sender, state, "NAN").log();
+    return -1;
+  }
+  return chosen;
+}
 }

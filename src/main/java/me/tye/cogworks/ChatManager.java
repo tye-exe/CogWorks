@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.customObjects.*;
-import me.tye.cogworks.util.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.logging.Level;
 
 import static me.tye.cogworks.FileGui.position;
-import static me.tye.cogworks.util.Plugins.parseNumInput;
 import static me.tye.cogworks.util.Util.getLang;
+import static me.tye.cogworks.util.Util.parseNumInput;
 
 public class ChatManager implements Listener {
 

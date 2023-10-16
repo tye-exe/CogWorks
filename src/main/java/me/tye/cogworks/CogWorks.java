@@ -6,12 +6,12 @@ import com.google.gson.JsonObject;
 import me.tye.cogworks.commands.FileCommand;
 import me.tye.cogworks.commands.PluginCommand;
 import me.tye.cogworks.commands.TabComplete;
-import me.tye.cogworks.util.Plugins;
+import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.ModrinthSearch;
-import me.tye.cogworks.util.yamlClasses.DependencyInfo;
-import me.tye.cogworks.util.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.yamlClasses.DependencyInfo;
+import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -158,12 +158,12 @@ public void onEnable() {
   } catch (Exception ignore) {
   }
 
-  Plugins.reloadPluginData(null, "exceptions");
+  StoredPlugins.reloadPluginData(null, "exceptions");
 
   //ADR
   ArrayList<PluginData> identifiers = new ArrayList<>();
   try {
-    identifiers = Plugins.readPluginData();
+    identifiers = StoredPlugins.readPluginData();
   } catch (IOException e) {
     new Log("exceptions.noAccessPluginYML", Level.SEVERE, e).log();
   }
@@ -293,7 +293,7 @@ public void onEnable() {
                   zip.close();
                   FileUtils.moveFile(dependecyFile, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+dependecyFile.getName()));
                   new Log("ADR.success", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).setDepName((String) yamlData.get("name")).log();
-                  Plugins.reloadPluginData(null, "exceptions");
+                  StoredPlugins.reloadPluginData(null, "exceptions");
                   return versionInfo;
                 }
               }
