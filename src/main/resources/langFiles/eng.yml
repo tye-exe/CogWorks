@@ -45,7 +45,6 @@ tabComplete:
   plugin:
     install: "<URL>"
     search: "<Plugin name>"
-    remove: "<Plugin name>"
 
   dataReadError: "§eThere was an error getting the plugin names."
 

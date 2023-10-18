@@ -77,7 +77,7 @@ public static void checks(String name, String message) {
         String state = params.getState();
 
         switch (state) {
-        case "pluginSelect": {
+        case "pluginSelect" -> {
           HashMap<JsonObject,JsonArray> validPlugins = params.getValidPlugins();
           ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
           int chosenPlugin = parseNumInput(sender, state, message, name, validPluginKeys.size(), 1);
@@ -96,8 +96,6 @@ public static void checks(String name, String message) {
           if (compatibleFiles.size() == 1) {
             String title = plugin.get("title").getAsString();
             new Log(sender, state, "start").setPluginName(title).log();
-
-            Plugins.installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), title);
 
             JsonArray files = compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray();
             if (files.isEmpty()) {
@@ -154,10 +152,8 @@ public static void checks(String name, String message) {
           }
 
           response.remove(name);
-          break;
         }
-
-        case "pluginVersionSelect": {
+        case "pluginVersionSelect" -> {
           ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
           JsonObject plugin = params.getPlugin();
           int chosenVersion = parseNumInput(sender, state, message, name, chooseableFiles.size(), 1);
@@ -168,7 +164,6 @@ public static void checks(String name, String message) {
           String title = plugin.get("title").getAsString();
           new Log(sender, state, "start").setPluginName(title).log();
 
-          Plugins.installModrinthDependencies(sender, state, chosen, title);
 
           JsonArray files = chosen.get("files").getAsJsonArray();
           if (files.isEmpty()) {
@@ -177,6 +172,7 @@ public static void checks(String name, String message) {
           }
 
           if (files.size() == 1) {
+            Plugins.installModrinthDependencies(sender, state, chosen, title);
             if (Plugins.installModrinthPlugin(sender, state, files))
               new Log(sender, state, "finish").setPluginName(title).log();
 
@@ -202,10 +198,8 @@ public static void checks(String name, String message) {
           }
 
           response.remove(name);
-          break;
         }
-
-        case "pluginFileSelect": {
+        case "pluginFileSelect" -> {
           ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
           JsonObject plugin = params.getPlugin();
           JsonObject pluginVersion = params.getPluginVersion();
@@ -263,12 +257,9 @@ public static void checks(String name, String message) {
           }
 
           new Log(sender, state, "finish").setFileNames(fileNames).log();
-
           response.remove(name);
-          return;
         }
-
-        case "pluginBrowse": {
+        case "pluginBrowse" -> {
           HashMap<JsonObject,JsonArray> validPlugins = params.getValidPlugins();
           ArrayList<JsonObject> validPluginKeys = params.getValidPluginKeys();
           int offset = params.getOffset();
@@ -395,10 +386,8 @@ public static void checks(String name, String message) {
             }
             response.remove(name);
           }
-          break;
         }
-
-        case "deletePlugin": {
+        case "deletePlugin" -> {
           DeleteQueue deleteQueue = params.getDeleteQueue();
           ArrayList<PluginData> toDeleteEval = params.getToDeleteEval();
           String pluginName = toDeleteEval.get(0).getName();
@@ -442,25 +431,18 @@ public static void checks(String name, String message) {
 
               new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
               params.reset(sender, "pluginsDeleteEval").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
-              if (sender instanceof Player)
-                response.put(sender.getName(), params);
-              else
-                response.put("~", params);
             } else {
-
-
               new Log(sender, "deletePlugin.deleteConfig").setPluginName(toDeleteEval.get(0).getName()).log();
               params.reset(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
-              if (sender instanceof Player)
-                response.put(sender.getName(), params);
-              else
-                response.put("~", params);
             }
-          }
-          break;
-        }
 
-        case "pluginsDeleteEval": {
+            if (sender instanceof Player)
+              response.put(sender.getName(), params);
+            else
+              response.put("~", params);
+          }
+        }
+        case "pluginsDeleteEval" -> {
           ArrayList<PluginData> deleteEval = params.getToDeleteEval();
           DeleteQueue deleteQueue = params.getDeleteQueue();
           Boolean deleteConfig = params.getDeleteConfigs();
@@ -546,10 +528,8 @@ public static void checks(String name, String message) {
 
             new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
           }
-          break;
         }
-
-        case "terminal": {
+        case "terminal" -> {
           PathHolder pathHolder = position.get(name);
           new Log(sender, state, "path").setFilePath(pathHolder.getRelativePath());
 
@@ -588,14 +568,11 @@ public static void checks(String name, String message) {
             pathHolder.setCurrentPath(pathHolder.getCurrentPath()+File.separator+message.split(" ")[1]);
           }
           position.put(name, pathHolder);
-          break;
         }
-
-        default: {
+        default -> {
           new Log(sender, "exceptions.stateNotFound").setState(state).log();
           response.remove(name);
         }
-
         }
       } catch (Exception e) {
         new Log("exceptions.chatError", Level.WARNING, e).log();

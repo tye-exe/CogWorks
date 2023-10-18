@@ -27,8 +27,9 @@ The latest public version of the plugin will always be available on [Modrinth](h
 - /plugin - The base command for installing or removing plugins from the server.
 - /file - Opens a GUI for navigating around the file system, alongside editing, creating, & deleting files.
 
-### Currently Supports:
-- Installing jar files from web links.
+### Features:
+
+- Install jar files from the web using /plugin install <URL>
 - Installing jar files from Modrinth.
 - Will prompt to install plugin dependencies, if present.
 - Deleting plugins.

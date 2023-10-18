@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static me.tye.cogworks.CogWorks.itemProperties;
+import static me.tye.cogworks.util.Util.itemProperties;
 import static me.tye.cogworks.util.Util.plugin;
 import static org.bukkit.plugin.java.JavaPlugin.getPlugin;
 

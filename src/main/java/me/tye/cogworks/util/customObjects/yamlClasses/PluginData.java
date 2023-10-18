@@ -10,7 +10,7 @@ String name;
 String version;
 ArrayList<DependencyInfo> dependencies = new ArrayList<>();
 ArrayList<DependencyInfo> softDependencies = new ArrayList<>();
-boolean deletePlugin = false;
+boolean deletePending = false;
 
 /**
  Contains information about a plugin.
@@ -66,16 +66,16 @@ public ArrayList<DependencyInfo> getSoftDependencies() {
 /**
  Will only be set to true if the plugin was attempted to be deleted but was unsuccessful.
  */
-public boolean getDeletePlugin() {
-  return deletePlugin;
+public boolean isDeletePending() {
+  return deletePending;
 }
 
 /**
  Will only be set to true if the plugin was attempted to be deleted but was unsuccessful.
- * @param deletePlugin Whether the plugin was attempted to be deleted.
+ * @param deletePending Whether the plugin was attempted to be deleted.
  */
-public void setDeletePlugin(boolean deletePlugin) {
-  this.deletePlugin = deletePlugin;
+public void setDeletePending(boolean deletePending) {
+  this.deletePending = deletePending;
 }
 
 @Override

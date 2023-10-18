@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static me.tye.cogworks.ChatManager.response;
-import static me.tye.cogworks.CogWorks.encodeUrl;
+import static me.tye.cogworks.util.Util.encodeUrl;
 
 public class PluginCommand implements CommandExecutor {
 
@@ -69,6 +69,9 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
           browsePlugins(sender, 0);
 
       case "reload" -> {
+        if (!sender.hasPermission("cogworks.plugin.reload"))
+          return;
+
         new Log(sender, "reload.reloading").log();
         StoredPlugins.reloadPluginData(sender, "reload");
         new Log(sender, "reload.reloaded").log();

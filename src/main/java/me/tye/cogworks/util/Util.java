@@ -3,17 +3,20 @@ package me.tye.cogworks.util;
 import me.tye.cogworks.CogWorks;
 import me.tye.cogworks.util.customObjects.Log;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -221,5 +224,159 @@ public static int parseNumInput(CommandSender sender, String state, String messa
     return -1;
   }
   return chosen;
+}
+
+/**
+ Easy method for setting some basic item properties.
+ @param item        The item to apply the properties to.
+ @param displayName The desired item name.
+ @param lore        The desired item lore.
+ @param identifier  Gives an item a persistent data with the tag "identifier". This is used to uniquely identify items when using guis.
+ @return The modified item. */
+public static ItemStack itemProperties(ItemStack item, @Nullable String displayName, @Nullable List<String> lore, @Nullable String identifier) {
+  ItemMeta itemMeta = item.getItemMeta();
+  if (itemMeta == null)
+    return item;
+  if (displayName != null)
+    itemMeta.setDisplayName(displayName);
+  if (lore != null)
+    itemMeta.setLore(lore);
+  if (identifier == null)
+    identifier = "";
+  itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING, identifier);
+  item.setItemMeta(itemMeta);
+  return item;
+}
+
+/**
+ @param filepath Path to the file inside the resource folder.
+ @return The default YAML values of the resource. */
+public static HashMap<String,Object> getDefault(String filepath) {
+  InputStream is = plugin.getResource(filepath);
+  if (is != null)
+    return new Yaml().load(is);
+  return new HashMap<>();
+}
+
+/**
+ Encodes the given string URL into a valid URL.
+ @return The valid URL.
+ @throws MalformedURLException When the given URL can't be encoded to a valid URL. */
+public static URL encodeUrl(@NonNull String text) throws MalformedURLException {
+  try {
+    URL url = new URL(URLDecoder.decode(text, StandardCharsets.UTF_8));
+    URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+    return uri.toURL();
+
+  } catch (MalformedURLException | URISyntaxException | IllegalArgumentException e) {
+    throw new MalformedURLException();
+  }
+}
+
+/**
+ Copies the content of an internal file to an external one.
+ @param file     External file destination
+ @param resource Input stream for the data to write, or null if target is an empty file/dir. */
+public static void createFile(File file, @Nullable InputStream resource, boolean isFile) {
+  try {
+    if (!file.exists()) {
+      if (isFile) {
+        if (!file.createNewFile())
+          throw new IOException();
+      } else if (!file.mkdir())
+        throw new IOException();
+
+      if (resource != null) {
+        String text = new String(Objects.requireNonNull(resource).readAllBytes());
+        FileWriter fw = new FileWriter(file);
+        fw.write(text);
+        fw.close();
+      }
+    }
+  } catch (IOException | NullPointerException e) {
+    new Log("exceptions.fileCreation", Level.SEVERE, e).setFilePath(file.getAbsolutePath()).log();
+  }
+}
+
+/**
+ Reads the data from an external specified yaml file and returns the data in a hashmap of Key, Value. Appending any missing values to the external file, making use of the resourcePath of the file inside the jar.<br>
+ If the resource path doesn't return any files then no repairing will be done to the file.
+ @param externalFile External config file.
+ @param resourcePath Path to the internal file from the resource folder.
+ @return The data from the external file with any missing values being loaded in as defaults. */
+public static HashMap<String,Object> returnFileConfigs(File externalFile, String resourcePath) {
+  HashMap<String,Object> loadedValues;
+
+  try {
+    //reads data from config file and formats it
+    FileReader fr = new FileReader(externalFile);
+    HashMap<String,Object> unformattedloadedValues = new Yaml().load(fr);
+    fr.close();
+    if (unformattedloadedValues == null)
+      unformattedloadedValues = new HashMap<>();
+
+    loadedValues = getKeysRecursive(unformattedloadedValues);
+    HashMap<String,Object> defaultValues = getKeysRecursive(getDefault(resourcePath));
+
+    //checks if there is a key missing in the file
+    if (loadedValues.keySet().containsAll(defaultValues.keySet()))
+      return loadedValues;
+
+    //gets the missing keys
+    HashMap<String,Object> missing = new HashMap<>();
+    for (String key : defaultValues.keySet()) {
+      if (loadedValues.containsKey(key))
+        continue;
+      missing.put(key, defaultValues.get(key));
+    }
+
+    StringBuilder toAppend = new StringBuilder();
+    InputStream is = plugin.getResource(resourcePath);
+    if (is == null)
+      return new HashMap<>();
+    Object[] internalFileText = new String(Objects.requireNonNull(is).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
+
+
+    //appends the missing keys with default values and comments that are above them in the default file.
+    for (String missingKey : missing.keySet()) {
+      toAppend.append("\n");
+
+      if (missingKey.contains(".")) {
+        toAppend.append(missingKey).append(": \"").append(defaultValues.get(missingKey).toString().replace("\"", "\\\"")).append("\"");
+      } else {
+        //searches though internal file to retrieve keys, values,  & comments
+        for (int i = 0; i < internalFileText.length; i++) {
+          if (!internalFileText[i].toString().startsWith(missingKey))
+            continue;
+          //search up for start of comments
+          int ii = 0;
+          while (i+ii-1 > 0 && internalFileText[i+ii-1].toString().startsWith("#")) {
+            ii--;
+          }
+          //appends all of the comments in correct order
+          while (ii < 0) {
+            toAppend.append(internalFileText[i+ii]).append("\n");
+            ii++;
+          }
+          toAppend.append(internalFileText[i].toString());
+        }
+      }
+
+    }
+
+    //writes the missing data (if present) to the config file.
+    if (!toAppend.isEmpty()) {
+      loadedValues.putAll(missing);
+      FileWriter fw = new FileWriter(externalFile, true);
+      fw.write(toAppend.toString());
+      fw.close();
+    }
+  } catch (Exception e) {
+    loadedValues = getKeysRecursive(getDefault(resourcePath));
+    if (resourcePath.equals("config.yml"))
+      Util.setConfig(getDefault(resourcePath));
+    new Log("exceptions.errorWritingConfigs", Level.SEVERE, e).setFilePath(externalFile.getAbsolutePath()).log();
+  }
+  return loadedValues;
 }
 }

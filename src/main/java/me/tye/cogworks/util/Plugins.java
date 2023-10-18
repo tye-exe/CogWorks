@@ -36,7 +36,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 
-import static me.tye.cogworks.CogWorks.encodeUrl;
 import static me.tye.cogworks.util.Util.*;
 
 public class Plugins {
@@ -146,18 +145,19 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
     }
 
     try {
-      FileUtils.delete(new File(pluginFolder+File.separator+pluginData.getFileName()));
+      throw new IOException();
+      //FileUtils.delete(new File(pluginFolder+File.separator+pluginData.getFileName()));
     } catch (IOException e) {
       new Log(sender, state, "deleteError").setLevel(Level.WARNING).setException(e).setPluginName(pluginName).log();
       new Log(sender, state, "scheduleDelete").setLevel(Level.WARNING).setPluginName(pluginName).log();
-      pluginData.setDeletePlugin(true);
+      pluginData.setDeletePending(true);
       StoredPlugins.modifyPluginData(pluginData);
       return false;
     }
 
-    StoredPlugins.removePluginData(pluginName);
-    new Log(sender, state, "pluginDelete").setPluginName(pluginName).log();
-    return true;
+    //StoredPlugins.removePluginData(pluginName);
+    //new Log(sender, state, "pluginDelete").setPluginName(pluginName).log();
+    //return true;
 
   } catch (NoSuchPluginException e) {
     new Log(sender, state, "noSuchPlugin").setLevel(Level.WARNING).setException(e).setPluginName(pluginName).log();
