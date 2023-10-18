@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import me.tye.cogworks.util.Plugins;
+import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.customObjects.*;
 import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -401,7 +402,7 @@ public static void checks(String name, String message) {
           DeleteQueue deleteQueue = params.getDeleteQueue();
           ArrayList<PluginData> toDeleteEval = params.getToDeleteEval();
           String pluginName = toDeleteEval.get(0).getName();
-          List<PluginData> whatDepends = Plugins.getWhatDependsOn(pluginName);
+          List<PluginData> whatDepends = StoredPlugins.getWhatDependsOn(pluginName);
 
           if (message.equals("q")) {
             response.remove(name);
@@ -464,7 +465,7 @@ public static void checks(String name, String message) {
           DeleteQueue deleteQueue = params.getDeleteQueue();
           Boolean deleteConfig = params.getDeleteConfigs();
           String pluginName = deleteEval.get(0).getName();
-          List<PluginData> whatDependsOn = Plugins.getWhatDependsOn(pluginName);
+          List<PluginData> whatDependsOn = StoredPlugins.getWhatDependsOn(pluginName);
 
           int chosen = parseNumInput(sender, state, message, name, 3, 1);
           if (chosen == -1)
@@ -522,7 +523,7 @@ public static void checks(String name, String message) {
             String newPluginName = deleteEval.get(i).getName();
             if (!Plugins.hasConfigFolder(newPluginName)) {
               deleteQueue.addPlugin(newPluginName, false);
-              deleteEval.addAll(Plugins.getWhatDependsOn(newPluginName));
+              deleteEval.addAll(StoredPlugins.getWhatDependsOn(newPluginName));
               deleteEval.remove(i);
               i--;
               new Log(sender, state, "noConfigsFound").setPluginName(newPluginName).log();

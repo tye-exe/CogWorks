@@ -10,7 +10,6 @@ import me.tye.cogworks.util.customObjects.ModrinthSearch;
 import me.tye.cogworks.util.customObjects.VersionGetThread;
 import me.tye.cogworks.util.customObjects.exceptions.ModrinthAPIException;
 import me.tye.cogworks.util.customObjects.exceptions.NoSuchPluginException;
-import me.tye.cogworks.util.customObjects.yamlClasses.DependencyInfo;
 import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.command.CommandSender;
@@ -31,7 +30,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,41 +40,6 @@ import static me.tye.cogworks.CogWorks.encodeUrl;
 import static me.tye.cogworks.util.Util.*;
 
 public class Plugins {
-
-
-/**
- Gets the plugins that depend on this one to function.
- @param pluginName The name of the plugin to check if anything depends on it.
- @return A list of the pluginData for the plugins that depend on this one to function. */
-public static List<PluginData> getWhatDependsOn(String pluginName) {
-  ArrayList<PluginData> whatDepends = new ArrayList<>();
-  try {
-
-    plugins:
-    for (PluginData pluginData : StoredPlugins.readPluginData()) {
-      for (DependencyInfo depInfo : pluginData.getDependencies()) {
-        if (depInfo.getName().equals(pluginName)) {
-          whatDepends.add(pluginData);
-          continue plugins;
-        }
-      }
-    }
-
-    return whatDepends;
-
-  } catch (IOException e) {
-    new Log("execution.dataReadError", Level.WARNING, e);
-  }
-  return new ArrayList<>();
-}
-
-/**
- Checks if the config folder ./plugins/{pluginName} exists.
- @param pluginName The name of the plugin to check the config folder of.
- @return True if the config folder for this plugin exists. */
-public static boolean hasConfigFolder(String pluginName) {
-  return new File(pluginFolder+File.separator+pluginName).exists();
-}
 
 /**
  Installs a plugin from a given url. There are NO restriction on the url used, however ".jar" will always be appended.
@@ -159,8 +122,8 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
 
   try {
 
-    PluginData data = StoredPlugins.readPluginData(pluginName);
-    File pluginDataFolder = new File(pluginFolder+File.separator+data.getName());
+    PluginData pluginData = StoredPlugins.readPluginData(pluginName);
+    File pluginDataFolder = new File(pluginFolder+File.separator+pluginData.getName());
 
     //disables the plugin so that the file can be deleted
     Plugin removePlugin = plugin.getServer().getPluginManager().getPlugin(pluginName);
@@ -183,11 +146,12 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
     }
 
     try {
-      FileUtils.delete(new File(pluginFolder+File.separator+data.getFileName()));
+      FileUtils.delete(new File(pluginFolder+File.separator+pluginData.getFileName()));
     } catch (IOException e) {
       new Log(sender, state, "deleteError").setLevel(Level.WARNING).setException(e).setPluginName(pluginName).log();
       new Log(sender, state, "scheduleDelete").setLevel(Level.WARNING).setPluginName(pluginName).log();
-      FileUtils.forceDeleteOnExit(new File(pluginFolder+File.separator+data.getFileName()));
+      pluginData.setDeletePlugin(true);
+      StoredPlugins.modifyPluginData(pluginData);
       return false;
     }
 
@@ -578,4 +542,11 @@ public static HashMap<String,JsonArray> getModrinthDependencies(@Nullable Comman
   return compatibleFiles;
 }
 
+/**
+ Checks if the config folder ./plugins/{pluginName} exists.
+ @param pluginName The name of the plugin to check the config folder of.
+ @return True if the config folder for this plugin exists. */
+public static boolean hasConfigFolder(String pluginName) {
+  return new File(pluginFolder+File.separator+pluginName).exists();
+}
 }

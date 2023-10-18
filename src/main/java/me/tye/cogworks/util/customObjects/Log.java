@@ -77,6 +77,7 @@ public Log(String langPath, @NonNull Level level, @Nullable Exception e) {
 public void log() {
   if (level.getName().equals("SEVERE"))
     SendErrorSummary.severe++;
+
   if (langPath == null) return;
 
   String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile, "pluginNames", pluginNames, "state", state, "fileNames", fileNames);
@@ -91,6 +92,7 @@ public void log() {
 
 
   } else {
+    //removes the colour formatting codes when sending to the console logger
     char[] messageChars = message.toCharArray();
     for (int i = 0; i < messageChars.length; i++) {
       if (messageChars[i] == '§') {
@@ -98,6 +100,7 @@ public void log() {
         messageChars[i+1] = 0;
       }
     }
+
     message = new String(messageChars);
 
     for (String line : message.split("\\{n}")) {

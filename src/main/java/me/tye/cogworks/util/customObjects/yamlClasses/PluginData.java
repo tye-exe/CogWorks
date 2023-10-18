@@ -8,9 +8,9 @@ public class PluginData {
 String fileName;
 String name;
 String version;
-Integer deleteState = 0;
 ArrayList<DependencyInfo> dependencies = new ArrayList<>();
 ArrayList<DependencyInfo> softDependencies = new ArrayList<>();
+boolean deletePlugin = false;
 
 /**
  Contains information about a plugin.
@@ -64,30 +64,19 @@ public ArrayList<DependencyInfo> getSoftDependencies() {
 }
 
 /**
- Sets the delete state of the plugin. This will only be relevant during failed deletions.<br>
- 0 - Not to delete<br>
- 1 - Delete the plugin.<br>
- 2 - Delete the plugin & config folders.<br>
- If an int which isn't in the list is entered then no change to the delete state will occur.
- @param deleteState The delete state.
- @return The modified PluginData. */
-public PluginData setDeleteState(int deleteState) {
-  if (!(deleteState == 0 || deleteState == 1 || deleteState == 2))
-    return this;
-  this.deleteState = deleteState;
-  return this;
+ Will only be set to true if the plugin was attempted to be deleted but was unsuccessful.
+ */
+public boolean getDeletePlugin() {
+  return deletePlugin;
 }
 
 /**
- Gets the delete state of the plugin.<br>
- 0 - Not to delete<br>
- 1 - Delete the plugin.<br>
- 2 - Delete the plugin & config folders.<br>
- @return The delete state. */
-public int getDeleteState() {
-  return this.deleteState;
+ Will only be set to true if the plugin was attempted to be deleted but was unsuccessful.
+ * @param deletePlugin Whether the plugin was attempted to be deleted.
+ */
+public void setDeletePlugin(boolean deletePlugin) {
+  this.deletePlugin = deletePlugin;
 }
-
 
 @Override
 public String toString() {

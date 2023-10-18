@@ -8,15 +8,14 @@ import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.exceptions.NoSuchPluginException;
+import me.tye.cogworks.util.customObjects.yamlClasses.DependencyInfo;
 import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.bukkit.command.CommandSender;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Objects;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
@@ -27,29 +26,50 @@ import static me.tye.cogworks.util.Util.*;
 public class StoredPlugins {
 
 /**
- Checks if a plugin is registered.
- @param pluginName Name of the plugin to check.
- @return true only if the plugin was found to be installed & the data could be read. */
-public static boolean registered(String pluginName) {
-  try {
-    ArrayList<PluginData> data = new ArrayList<>(readPluginData());
-    for (PluginData plugin : data) {
-      if (plugin.getName().equals(pluginName))
-        return true;
-    }
-  } catch (IOException e) {
-    new Log("execution.dataReadError", Level.WARNING, e).log();
+ Reads the data from the pluginData.json file
+ @return The data of all the plugins in the pluginData.json file.
+ @throws IOException Thrown if there is an error reading from the pluginData file. */
+public static ArrayList<PluginData> readPluginData() throws IOException {
+  ArrayList<PluginData> pluginData = new ArrayList<>();
+  FileReader fr = new FileReader(Util.pluginDataFile);
+  JsonReader jr = new JsonReader(fr);
+  JsonElement jsonElement = JsonParser.parseReader(jr);
+  if (jsonElement.isJsonNull())
+    return pluginData;
+  Gson gsonReader = new Gson();
+  for (JsonElement je : jsonElement.getAsJsonArray()) {
+    pluginData.add(gsonReader.fromJson(je, PluginData.class));
   }
-  return false;
+  jr.close();
+  fr.close();
+  return pluginData;
 }
 
 /**
- Checks if a plugin is registered by the name specified in the plugin.yml.
- @param pluginJar The plugin.jar file.
- @return true only if the plugin was found to be installed & the data could be read. */
-public static boolean registered(File pluginJar) {
-  String name = String.valueOf(Util.getYML(pluginJar).get("name"));
-  return registered(name);
+ Gets the data of a specified plugin.
+ @param pluginName Name of the plugin to get data for.
+ @return Data of the plugin.
+ @throws NoSuchPluginException Thrown if the plugin couldn't be found in the pluginData file.
+ @throws IOException           Thrown if there was an error reading from the pluginData file. */
+public static PluginData readPluginData(String pluginName) throws NoSuchPluginException, IOException {
+  for (PluginData data : readPluginData()) {
+    if (data.getName().equals(pluginName))
+      return data;
+  }
+  throw new NoSuchPluginException(getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
+}
+
+/**
+ WARNING: this method will overwrite any data stored in the pluginData.json file!<br>
+ If you want to append data use appendPluginData().
+ @param pluginData Plugin data to write to the file.
+ @throws IOException If the plugin data can't be written to the pluginData file. */
+public static void writePluginData(Collection<PluginData> pluginData) throws IOException {
+  GsonBuilder gson = new GsonBuilder();
+  gson.setPrettyPrinting();
+  FileWriter fileWriter = new FileWriter(pluginDataFile);
+  gson.create().toJson(pluginData, fileWriter);
+  fileWriter.close();
 }
 
 /**
@@ -116,53 +136,30 @@ public static void appendPluginData(File newPlugin) throws IOException {
 }
 
 /**
- Reads the data from the pluginData.json file
- @return The data of all the plugins in the pluginData.json file.
- @throws IOException Thrown if there is an error reading from the pluginData file. */
-public static ArrayList<PluginData> readPluginData() throws IOException {
-  ArrayList<PluginData> pluginData = new ArrayList<>();
-  FileReader fr = new FileReader(Util.pluginDataFile);
-  JsonReader jr = new JsonReader(fr);
-  JsonElement jsonElement = JsonParser.parseReader(jr);
-  if (jsonElement.isJsonNull())
-    return pluginData;
-  Gson gsonReader = new Gson();
-  for (JsonElement je : jsonElement.getAsJsonArray()) {
-    pluginData.add(gsonReader.fromJson(je, PluginData.class));
+ Replaces the existing data plugin data of a plugin with the new plugin data.<br>
+ For the replace to work the new plugin data must have the same "name" value as the old plugin data, otherwise nothing will be replaced.
+ * @param newPluginData The new plugin data to replace the old one with.
+ * @throws IOException If there was an error reading from or writing to the plugin data file.
+ */
+public static void modifyPluginData(PluginData newPluginData) throws IOException {
+  List<PluginData> pluginData = readPluginData();
+
+  for (int i = 0; pluginData.size() > i; i++) {
+    if (!pluginData.get(i).getName().equals(newPluginData.getName()))
+      continue;
+    pluginData.set(i, newPluginData);
+    break;
   }
-  jr.close();
-  fr.close();
-  return pluginData;
+
+  writePluginData(pluginData);
 }
 
 /**
- Gets the data of a specified plugin.
- @param pluginName Name of the plugin to get data for.
- @return Data of the plugin.
- @throws NoSuchPluginException Thrown if the plugin couldn't be found in the pluginData file.
- @throws IOException           Thrown if there was an error reading from the pluginData file. */
-public static PluginData readPluginData(String pluginName) throws NoSuchPluginException, IOException {
-  for (PluginData data : readPluginData()) {
-    if (data.getName().equals(pluginName))
-      return data;
-  }
-  throw new NoSuchPluginException(getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
-}
-
-/**
- WARNING: this method will overwrite any data stored in the pluginData.json file!<br>
- If you want to append data use appendPluginData().
- @param pluginData Plugin data to write to the file.
- @throws IOException If the plugin data can't be written to the pluginData file. */
-public static void writePluginData(ArrayList<PluginData> pluginData) throws IOException {
-  GsonBuilder gson = new GsonBuilder();
-  gson.setPrettyPrinting();
-  FileWriter fileWriter = new FileWriter(pluginDataFile);
-  gson.create().toJson(pluginData, fileWriter);
-  fileWriter.close();
-}
-
-public static void reloadPluginData(@Nullable CommandSender sender, String state) {
+ Rescans the ./plugins folder for any changes and updates the stored plugin data accordingly.
+ * @param sender The sender to log to or null for no logging.
+ * @param state The state the user is in or null for no logging.
+ */
+public static void reloadPluginData(@Nullable CommandSender sender, @Nullable String state) {
   ArrayList<PluginData> identifiers = new ArrayList<>();
   try {
     identifiers = readPluginData();
@@ -209,4 +206,58 @@ public static void reloadPluginData(@Nullable CommandSender sender, String state
     new Log(sender, state, "gettingFilesErr").setLevel(Level.WARNING).setException(e).setFilePath(pluginFolder.getAbsolutePath()).log();
   }
 }
+
+
+/**
+ Checks if a plugin is registered.
+ @param pluginName Name of the plugin to check.
+ @return True only if the plugin was found to be installed & the data could be read. */
+public static boolean registered(String pluginName) {
+  try {
+    ArrayList<PluginData> data = new ArrayList<>(readPluginData());
+    for (PluginData plugin : data) {
+      if (plugin.getName().equals(pluginName))
+        return true;
+    }
+  } catch (IOException e) {
+    new Log("execution.dataReadError", Level.WARNING, e).log();
+  }
+  return false;
+}
+
+/**
+ Checks if a plugin is registered by the name specified in the plugin.yml.
+ @param pluginJar The plugin.jar file.
+ @return True only if the plugin was found to be installed & the data could be read. */
+public static boolean registered(File pluginJar) {
+  String name = String.valueOf(Util.getYML(pluginJar).get("name"));
+  return registered(name);
+}
+
+/**
+ Gets the plugins that depend on this one to function.
+ @param pluginName The name of the plugin to check if anything depends on it.
+ @return A list of the pluginData for the plugins that depend on this one to function. */
+public static List<PluginData> getWhatDependsOn(String pluginName) {
+  ArrayList<PluginData> whatDepends = new ArrayList<>();
+  try {
+
+    plugins:
+    for (PluginData pluginData : readPluginData()) {
+      for (DependencyInfo depInfo : pluginData.getDependencies()) {
+        if (depInfo.getName().equals(pluginName)) {
+          whatDepends.add(pluginData);
+          continue plugins;
+        }
+      }
+    }
+
+    return whatDepends;
+
+  } catch (IOException e) {
+    new Log("execution.dataReadError", Level.WARNING, e);
+  }
+  return new ArrayList<>();
+}
+
 }

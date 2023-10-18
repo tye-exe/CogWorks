@@ -1,5 +1,6 @@
 <component name="ProjectCodeStyleConfiguration">
   <code_scheme name="Project" version="173">
+    <option name="RIGHT_MARGIN" value="0" />
     <JavaCodeStyleSettings>
       <option name="SPACE_AROUND_ANNOTATION_EQ" value="false" />
       <option name="MULTI_CATCH_TYPES_WRAP" value="0" />
@@ -26,6 +27,11 @@
       <option name="SPACE_AROUND_ADDITIVE_OPERATORS" value="false" />
       <option name="SPACE_AROUND_MULTIPLICATIVE_OPERATORS" value="false" />
       <option name="SPACE_AFTER_COMMA_IN_TYPE_ARGUMENTS" value="false" />
+      <option name="KEEP_SIMPLE_BLOCKS_IN_ONE_LINE" value="true" />
+      <option name="KEEP_SIMPLE_METHODS_IN_ONE_LINE" value="true" />
+      <option name="KEEP_SIMPLE_LAMBDAS_IN_ONE_LINE" value="true" />
+      <option name="KEEP_SIMPLE_CLASSES_IN_ONE_LINE" value="true" />
+      <option name="KEEP_MULTIPLE_EXPRESSIONS_IN_ONE_LINE" value="true" />
       <option name="SPACE_BEFORE_ANOTATION_PARAMETER_LIST" value="true" />
       <indentOptions>
         <option name="INDENT_SIZE" value="2" />

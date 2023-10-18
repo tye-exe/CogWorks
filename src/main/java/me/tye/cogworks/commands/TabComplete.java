@@ -36,9 +36,11 @@ public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Comman
 
       if (!completions.isEmpty()) StringUtil.copyPartialMatches(args[0], List.of("help"), completions);
     }
+
     if (args.length == 2 && args[0].equals("install") && args[1].isEmpty()) {
       return List.of(Util.getLang("tabComplete.plugin.install"));
     }
+
     if (args.length == 2 && args[0].equals("remove")) {
       ArrayList<String> plugins = new ArrayList<>();
 
@@ -58,6 +60,7 @@ public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Comman
       StringUtil.copyPartialMatches(args[0], Arrays.asList("help", "chat", "gui"), completions);
     }
   }
+
   completions.sort(null);
   return completions;
 }

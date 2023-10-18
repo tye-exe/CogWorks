@@ -180,7 +180,7 @@ deletePlugin:
 
   noSuchPlugin: "§e{pluginName} couldn't be found on your system."
   deleteError: "§e{pluginName} couldn't be deleted."
-  scheduleDelete: "§e{pluginName} will be scheduled for attempted deletion on server restart."
+  scheduleDelete: "§e{pluginName} will be marked for deletion & ignored by CogWorks form now on."
 
 
 pluginsDeleteEval:
@@ -198,7 +198,7 @@ pluginsDeleteEval:
 
   noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
   deleteError: "§ePlugin {pluginName} couldn't be deleted."
-  scheduleDelete: "§e{pluginName} will be scheduled for attempted deletion on server restart."
+  scheduleDelete: "§e{pluginName} will be marked for deletion & ignored by CogWorks form now on."
 
 
 ModrinthAPI:
