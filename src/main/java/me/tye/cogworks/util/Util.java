@@ -101,6 +101,8 @@ public static HashMap<String,Object> getKeysRecursive(String keyPath, Map<?,?> b
 
 /**
  Gets value from loaded lang file.
+ If no external value for this key can be found it will attempt to get the lang response from the internal file. If there is no internal file for the selected lang then it will fall back to english.<br>
+ If there is still no response found for the key
  @param key     Key to the value from the loaded lang file.
  @param replace Should be inputted in "valueToReplace0", valueToReplaceWith0", "valueToReplace1", valueToReplaceWith2"... etc
  @return The lang response with the specified values replaced. */
@@ -140,7 +142,8 @@ public static String getLang(String key, String... replace) {
 }
 
 /**
- Gets a value from the config file.
+ Gets a value from the config file.<br>
+ If no external value can be found it will fall back onto the default internal value. If there is still no value it will return true and log a severe error.
  @param key Key for the config to get the value of.
  @return The value from the file. */
 public static <T> T getConfig(String key) {
@@ -151,7 +154,7 @@ public static <T> T getConfig(String key) {
     response = defaultConfig.get(key);
 
     if (response == null) {
-      new Log("exceptions.noSuchResponse", Level.WARNING, null).setKey(key).log();
+      new Log("exceptions.noSuchResponse", Level.SEVERE, null).setKey(key).log();
       return (T) Boolean.TRUE;
     }
 
@@ -165,7 +168,7 @@ public static <T> T getConfig(String key) {
   case "lang" -> {
     return (T) String.valueOf(response);
   }
-  case "showErrorTrace", "showOpErrorSummary" -> {
+  case "showErrorTrace", "showOpErrorSummary", "ADR" -> {
     return (T) Boolean.valueOf(String.valueOf(response));
   }
   }

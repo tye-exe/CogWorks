@@ -309,8 +309,7 @@ ADR:
 
 exceptions:
   seeConsole: "§ePlease see the console for stack trace."
-  noSuchResponse: "§cNo lang response could be found for \"{key}\". Please inform the devs about this."
-
+  noSuchResponse: "§cNo config response could be found for \"{key}\". Please inform the devs about this."
   fileCreation: "§eUnable to create {fileName} file in \"{filePath}\"."
   removeLeftoverFiles: "§eUnable to clean up unused file \"{filePath}\". Please manually delete this file at your earliest convenience."
   noAccessPluginYML: "§cUnable to access plugin.yml file, many features of this plugin WILL break."
@@ -327,7 +326,6 @@ exceptions:
   newLangInstall: "§eThere was an error installing the new lang file {fileName}. You can manually download it from \"{URL}\"."
   clearTemp: "§eThere was an error clearing the temp folder - \"{filePath}\". This folder might fill up with unused files."
   stateNotFound: "§cThere was an error matching the state your in. Please report this to the devs. State: \"{state}\"."
-  noConfigMatch: "§cA value could not be matched to the value file. Please report this to the devs. Key: \"{key}\"."
   chatError: "§eThere was a general error when interacting with the chat system for CogWorks."
   langUpdateFail: "§eA valid lang file couldn't be found for your version, defaulting to english."
 

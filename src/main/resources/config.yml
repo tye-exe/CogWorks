@@ -10,5 +10,9 @@ lang: eng
 #This will be enabled by default until release.
 showErrorTrace: true
 
-#On join send op players the amount of errors and warnings have happened with this plugin since last reload/restart.
+#On join send op players the amount of errors that have happened with this plugin since last reload/restart.
 showOpErrorSummary: true
+
+#Will attempt to automatically install any missing dependencies for other plugins on start up.
+#If you have a connection that is slow or bandwidth limited it is recommended to turn off this option.
+ADR: true
