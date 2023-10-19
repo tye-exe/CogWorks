@@ -39,6 +39,7 @@ import static me.tye.cogworks.util.Plugins.modrinthSearch;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
+//TODO: add info on ADR to readme
 //TODO: mark if plugins were installed by user or as a dependency
 //TODO: mark plugins for attempted ADR / when some were deleted to not attempt ADR
 
@@ -58,6 +59,7 @@ public final class CogWorks extends JavaPlugin {
 //TODO: make lang updates required to be confirmed to go away?
 //TODO: make user invariable whilst in ./file menu
 //TODO: put char limit on file gui title so it doesn't overflow (take chars away from start of path?)
+//TODO: run ADR on plugins that are installed from a URL.
 
 @Override
 public void onEnable() {

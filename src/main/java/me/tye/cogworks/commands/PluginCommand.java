@@ -44,6 +44,8 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
   }
 
   //runs the other commands in a thread since they involve networking.
+
+
   new Thread(new Runnable() {
 
     private CommandSender sender;
