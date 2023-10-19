@@ -73,6 +73,9 @@ public void onEnable() {
   Util.setConfig(returnFileConfigs(configFile, "config.yml"));
   Util.setLang(returnFileConfigs(new File(langFolder.getAbsoluteFile()+File.separator+Util.getConfig("lang")+".yml"), "langFiles/"+Util.getConfig("lang")+".yml"));
 
+  //checks if the selected lang file is the correct one for this version of CogWorks
+  langUpdate();
+
   //deletes temp if present
   try {
     FileUtils.deleteDirectory(temp);
@@ -98,38 +101,11 @@ public void onEnable() {
   StoredPlugins.reloadPluginData(null, "exceptions");
 
   //ADR
-  automaticDependencyResolution();
+  if (Util.getConfig("ADR"))
+    automaticDependencyResolution();
 
   //checks for new lang files & installs them.
-  new Thread(() -> {
-    try {
-      HashMap<String,Object> pluginMap = getKeysRecursive(new Yaml().load(new String(Objects.requireNonNull(getResource("plugin.yml")).readAllBytes())));
-      String indexText = new String(new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/index.yml").openStream().readAllBytes());
-      HashMap<String,Object> indexMap = getKeysRecursive(new Yaml().load(indexText));
-
-      String files = String.valueOf(indexMap.get(String.valueOf(pluginMap.get("version"))));
-      if (!files.equals("null")) {
-        files = files.substring(0, files.length()-1).substring(1);
-        String[] filesNames = files.split(", ");
-
-        for (String fileName : filesNames) {
-          File langFile = new File(langFolder.getAbsolutePath()+File.separator+fileName);
-          if (langFile.exists()) continue;
-
-          try {
-            createFile(langFile, new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).openStream(), true);
-            new Log("info.newLang", Level.WARNING, null).setFileName(fileName).log();
-          } catch (IOException e) {
-            new Log("exceptions.newLangInstall", Level.WARNING, e).setFileName(langFile.getName()).setUrl("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).log();
-          }
-        }
-      }
-
-    } catch (
-        IOException e) {
-      new Log("exceptions.newLangCheck", Level.WARNING, e).log();
-    }
-  }).start();
+  newLangCheck();
 
 
   //Commands
@@ -160,8 +136,7 @@ public void onDisable() {
  Automatic dependency resolution, also known as ADR, checks for any plugins that contain dependencies that aren't met.<br>
  If any are found to be not met, it uses modrinth search with the plugin name of the missing dependency and downloads the first ten results.<br>
  It will then check all the plugin names of all the plugins installed by ADR to see if any match the missing dependency name.<br>
- If one does it will be moved into the plugins folder and a success log will be sent. Otherwise, a fail log will be sent.
- */
+ If one does it will be moved into the plugins folder and a success log will be sent. Otherwise, a fail log will be sent. */
 private void automaticDependencyResolution() {
   ArrayList<PluginData> identifiers;
   try {
@@ -353,6 +328,10 @@ private void automaticDependencyResolution() {
   }
 }
 
+/**
+ Checks if the selected lang file is the correct one for this version of CogWorks.<br>
+ If it isn't it sets the lang to the updated file inside the plugin or tries to download that lang for this version.<br>
+ If the updated lang for this version can't be found the lang will default to english. */
 private void langUpdate() {
   //checks lang version & installs the correct lang version.
   HashMap<String,Object> defaultValues = getKeysRecursive(getDefault("plugin.yml"));
@@ -360,7 +339,7 @@ private void langUpdate() {
     try {
       Files.move(Path.of(langFolder.getAbsolutePath()+File.separator+Util.getConfig("lang")+".yml"), Path.of(langFolder.getAbsolutePath()+File.separator+getLang("langVer")+" - "+Util.getConfig("lang")+".yml"));
 
-      //set the lang to the updated file inside of the plugin or english if that file can't be found.
+      //Set the lang to the updated file inside the plugin or tries to download that lang for this version. If the updated lang for this version can't be found the lang will default to english.
       if (getDefault("langFiles/"+Util.getConfig("lang")+".yml") != null) {
         Util.setLang(returnFileConfigs(new File(langFolder.getAbsoluteFile()+File.separator+Util.getConfig("lang")+".yml"), "langFiles/"+Util.getConfig("lang")+".yml"));
         new Log("info.updatedLang", Level.WARNING, null).log();
@@ -413,6 +392,41 @@ private void langUpdate() {
       new Log("exceptions.langUpdateFail", Level.WARNING, null).log();
     }
   }
+}
+
+/**
+ Checks if there are any new lang files available for this version of CogWorks. */
+private void newLangCheck() {
+  new Thread(() -> {
+    try {
+      HashMap<String,Object> pluginMap = getKeysRecursive(new Yaml().load(new String(Objects.requireNonNull(getResource("plugin.yml")).readAllBytes())));
+      String indexText = new String(new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/index.yml").openStream().readAllBytes());
+      HashMap<String,Object> indexMap = getKeysRecursive(new Yaml().load(indexText));
+
+      String files = String.valueOf(indexMap.get(String.valueOf(pluginMap.get("version"))));
+      if (!files.equals("null")) {
+        files = files.substring(0, files.length()-1).substring(1);
+        String[] filesNames = files.split(", ");
+
+        for (String fileName : filesNames) {
+          File langFile = new File(langFolder.getAbsolutePath()+File.separator+fileName);
+          if (langFile.exists())
+            continue;
+
+          try {
+            createFile(langFile, new URL("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).openStream(), true);
+            new Log("info.newLang", Level.WARNING, null).setFileName(fileName).log();
+          } catch (IOException e) {
+            new Log("exceptions.newLangInstall", Level.WARNING, e).setFileName(langFile.getName()).setUrl("https://raw.githubusercontent.com/Mapty231/CogWorks/dev/langFiles/"+pluginMap.get("version")+"/"+fileName).log();
+          }
+        }
+      }
+
+    } catch (
+        IOException e) {
+      new Log("exceptions.newLangCheck", Level.WARNING, e).log();
+    }
+  }).start();
 }
 
 }
