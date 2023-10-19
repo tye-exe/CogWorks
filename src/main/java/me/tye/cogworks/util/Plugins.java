@@ -145,8 +145,7 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
     }
 
     try {
-      throw new IOException();
-      //FileUtils.delete(new File(pluginFolder+File.separator+pluginData.getFileName()));
+      FileUtils.delete(new File(pluginFolder+File.separator+pluginData.getFileName()));
     } catch (IOException e) {
       new Log(sender, state, "deleteError").setLevel(Level.WARNING).setException(e).setPluginName(pluginName).log();
       new Log(sender, state, "scheduleDelete").setLevel(Level.WARNING).setPluginName(pluginName).log();
