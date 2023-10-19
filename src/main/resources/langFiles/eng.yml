@@ -44,7 +44,7 @@ help:
 tabComplete:
   plugin:
     install: "<URL>"
-    search: "<Plugin name>"
+    search: "<query>"
 
   dataReadError: "§eThere was an error getting the plugin names."
 
@@ -221,8 +221,9 @@ fileGui:
 
   createFile:
     title: "Name:"
-    fileExists: "§eThere is already a {isFile} with that name."
-    creationErr: "§eThere was an error creating that {isFile}."
+    fileExists: "§eThere is already a {isFile} called {fileName}."
+    creationErr: "§eThere was an error creating the {isFile} {fileName}."
+    invalidName: "§eThe name \"{fileName}\" is an invalid file name, please choose a different one."
 
   confirmDel:
     title: "Confirm Deletion"

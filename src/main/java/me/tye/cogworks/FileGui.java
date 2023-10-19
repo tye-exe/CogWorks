@@ -23,6 +23,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
@@ -283,9 +284,11 @@ public void clickEvent(InventoryClickEvent e) {
               return;
             }
           } catch (FileAlreadyExistsException ex) {
-            new Log(player, "fileGui.createFile.fileExists").setException(ex).isFile(checkIdentifier(stateSnapshot.getOutputItem(), "confirmCreateFile")).log();
+            new Log(player, "fileGui.createFile.fileExists").setException(ex).isFile(checkIdentifier(stateSnapshot.getOutputItem(), "confirmCreateFile")).setFileName(stateSnapshot.getOutputItem().getItemMeta().getDisplayName()).log();
           } catch (IOException ex) {
-            new Log(player, "fileGui.createFile.creationErr").setException(ex).isFile(checkIdentifier(stateSnapshot.getOutputItem(), "confirmCreateFile")).log();
+            new Log(player, "fileGui.createFile.creationErr").setException(ex).isFile(checkIdentifier(stateSnapshot.getOutputItem(), "confirmCreateFile")).setFileName(stateSnapshot.getOutputItem().getItemMeta().getDisplayName()).log();
+          } catch (InvalidPathException ex) {
+            new Log(player, "fileGui.createFile.invalidName").setException(ex).setFileName(stateSnapshot.getOutputItem().getItemMeta().getDisplayName()).log();
           }
           open(stateSnapshot.getPlayer());
         })

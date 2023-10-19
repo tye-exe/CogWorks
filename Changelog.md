@@ -47,3 +47,5 @@
 - Changed permissions to reflect new command:<br>
   "cogworks.plugin.ins.gen" - lets the user use the /plugin install command.<br>
   "cogworks.plugin.ins.modrinth" - lets the user use /plugin search & /plugin browse.
+- MAJOR code cleanup.
+- Added catch for invalid file name when creating a file.
