@@ -105,7 +105,8 @@ To delete a file or folder, click on the red concrete, this will put you in "del
 
 ### On automatic dependency resolution:
 Automatic dependency resolution (this will be referred to as ADR) involves CogWorks checking for any missing dependencies on start up and trying to resolve them by taking the missing plugin name (the plugin name is the name specified in the plugin.yml) and searching that up on Modrinth.  
-It then downloads the top then plugins (into "CogWorks/.temp/ADR/<UniqueDirName>") returned by Modrinth & checks if any of the plugin names of the downloaded plugins match the plugin name of the missing dependency. If one of the plugins match it wil be moved into the "./plugins" folder. The remaining plugins will be deleted.
+It then downloads the top then plugins (into "CogWorks/.temp/ADR/<UniqueDirName>") returned by Modrinth & checks if any of the plugin names of the downloaded plugins match the plugin name of the missing dependency. If one of the plugins match it wil be moved into the "./plugins" folder. The remaining plugins will be deleted.  
+If ADR completes without errors & the dependency still isn't resolved then it won't try to resolve the dependency again.
 
 ## Translators Wanted!
 If you are willing to help by translating the plugin language file into any new languages (for past versions or the current version). Please join the [discord server](https://discord.gg/3CC6kVcdQH) and ping @IWantToTranslate.

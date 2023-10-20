@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -232,7 +233,7 @@ public Log isFile(boolean isFile) {
 /**
  @param pluginNames A string array of pluginNames.
  @return The modified Log object. */
-public Log setPluginNames(String[] pluginNames) {
+public Log setPluginNames(Collection<String> pluginNames) {
   StringBuilder names = new StringBuilder();
   for (String pluginName : pluginNames) {
     names.append(pluginName).append(", ");

@@ -2,10 +2,10 @@ package me.tye.cogworks.util.customObjects.yamlClasses;
 
 public class DependencyInfo {
 
-String name;
-String version;
+private final String name;
+private final String version;
 
-boolean failedADR = false;
+private boolean failedADR = false;
 
 /**
  Stores information about the dependencies of a plugin.

@@ -425,9 +425,9 @@ public static void checks(String name, String message) {
             toDeleteEval.remove(0);
 
             if (!whatDepends.isEmpty()) {
-              String[] names = new String[whatDepends.size()];
-              for (int i = 0; i < whatDepends.size(); i++)
-                names[i] = whatDepends.get(i).getName();
+              ArrayList<String> names = new ArrayList<>(whatDepends.size());
+              for (PluginData data : whatDepends)
+                names.add(data.getName());
 
               new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
               params.reset(sender, "pluginsDeleteEval").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
@@ -522,9 +522,9 @@ public static void checks(String name, String message) {
             else
               response.put("~", params);
 
-            String[] names = new String[whatDependsOn.size()];
-            for (int i = 0; i < whatDependsOn.size(); i++)
-              names[i] = whatDependsOn.get(i).getName();
+            ArrayList<String> names = new ArrayList<>(whatDependsOn.size());
+            for (PluginData data : whatDependsOn)
+              names.add(data.getName());
 
             new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
           }

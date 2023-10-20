@@ -295,9 +295,10 @@ terminal:
 
 
 ADR:
-  attempting: "§aAttempting to automatically resolve missing dependency \"{depName}\" for \"{fileName}\"."
-  success: "§aUnmet dependency for \"{fileName}\" successfully resolved by installing \"{depName}\".{n}Reload or restart for this to take effect."
-  fail: "§eUnmet dependency for \"{fileName}\" could not be automatically resolved."
+  attempting: "§aAttempting to automatically resolve missing dependency \"{depName}\" for \"{fileNames}\"."
+  success: "§aUnmet dependency for \"{fileNames}\" successfully resolved by installing \"{depName}\".{n}Reload or restart for this to take effect."
+  fail: "§eUnmet dependency for \"{fileNames}\" could not be automatically resolved."
+  notToRetry: "§eSetting not to retry resolve missing dependency {depName} for {pluginNames}."
 
   getErr: "§eError checking if the installed dependency has any dependencies."
   modrinthSearchErr: "§eError querying Modrinth for automatic dependency resolution."
@@ -305,6 +306,7 @@ ADR:
   threadTime: "§ePlugins took too long to download."
   pluginYMLCheck: "§eError checking plugin name for {fileName}. Skipping {fileName} as possible dependency."
   cleanUpPossiblePlugins: "§eError trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder \"{filePath}\" at your earliest convince."
+  writeADRFailed: "§eThere was an error saving failed ADR result to {pluginName} for {depName}. This will cause ADR to attempt to resolve this dependency on every restart."
 
 
 exceptions:

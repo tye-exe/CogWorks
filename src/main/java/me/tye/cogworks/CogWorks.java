@@ -39,8 +39,6 @@ import static me.tye.cogworks.util.Plugins.modrinthSearch;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
-//TODO: add info on ADR to readme
-//TODO: mark if plugins were installed by user or as a dependency
 //TODO: mark plugins for attempted ADR / when some were deleted to not attempt ADR
 
 //TODO: allow to delete multiple plugins at once - separate by ","?
@@ -195,9 +193,15 @@ private void automaticDependencyResolution() {
 
       @Override
       public void run() {
-        unmetDepInfo.setFailedADR(true);
+        ArrayList<PluginData> dependingPlugins = unmetDependencies.get(unmetDepInfo);
+        ArrayList<String> dependingNames = new ArrayList<>(dependingPlugins.size());
+        for (PluginData data : dependingPlugins)
+          dependingNames.add(data.getName());
+
+
         if (!ADRStore.mkdir()) {
-          new Log("ADR.fail", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+          new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+
           return;
         }
 
@@ -208,14 +212,14 @@ private void automaticDependencyResolution() {
         ArrayList<JsonObject> validPluginKeys;
         HashMap<JsonObject,JsonArray> validPlugins;
 
-        new Log("ADR.attempting", Level.WARNING, null).setDepName(unmetDepName).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+        new Log("ADR.attempting", Level.WARNING, null).setDepName(unmetDepName).setFileNames(dependingNames).log();
 
         //searches the dependency name on modrinth
         ModrinthSearch search = modrinthSearch(null, null, unmetDepName);
         validPluginKeys = search.getValidPluginKeys();
         validPlugins = search.getValidPlugins();
         if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) {
-          new Log("ADR.fail", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+          new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
           return;
         }
 
@@ -240,7 +244,7 @@ private void automaticDependencyResolution() {
           }
 
           if (latestValidPlugin == null) {
-            new Log("ADR.fail", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+            new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
             return;
           }
 
@@ -291,7 +295,7 @@ private void automaticDependencyResolution() {
                 if (yamlData.get("name").equals(unmetDepName)) {
                   zip.close();
                   FileUtils.moveFile(dependecyFile, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+dependecyFile.getName()));
-                  new Log("ADR.success", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).setDepName((String) yamlData.get("name")).log();
+                  new Log("ADR.success", Level.WARNING, null).setFileNames(dependingNames).setDepName((String) yamlData.get("name")).log();
                   StoredPlugins.reloadPluginData(null, "exceptions");
                   return versionInfo;
                 }
@@ -309,36 +313,54 @@ private void automaticDependencyResolution() {
         try {
           if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
             new Log("ADR.threadTime", Level.WARNING, null).log();
-            new Log("ADR.fail", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+            new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
             return;
           }
         } catch (InterruptedException e) {
           new Log("ADR.threadTime", Level.WARNING, e).log();
-          new Log("ADR.fail", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
+          new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
           return;
         }
 
-        //gets dependencies for the dependency installed
+        //gets dependencies for the dependency installed & checks if ADR could resolve the missing dependency.
+        boolean failed = true;
         for (Future<JsonObject> future : match) {
           try {
             JsonObject dependency = future.get();
             if (dependency == null)
               continue;
 
+            failed = false;
             installModrinthDependencies(null, null, dependency, null);
           } catch (InterruptedException | ExecutionException e) {
             new Log("ADR.getErr", Level.WARNING, e).log();
           }
         }
 
-        try {
-          FileUtils.deleteDirectory(ADRStore);
-        } catch (IOException e) {
-          new Log("ADR.cleanUpPossiblePlugins", Level.WARNING, e).setFilePath(ADRStore.getAbsolutePath()).log();
+        //if ADR couldn't resolve the missing dependency then it marks not to try and resolve it for next time
+        if (failed) {
+          new Log("ADR.notToRetry", Level.WARNING, null).setDepName(unmetDepName).setPluginNames(dependingNames).log();
+          unmetDepInfo.setFailedADR(true);
+          for (PluginData dependingPlugin : dependingPlugins) {
+            try {
+              StoredPlugins.modifyPluginData(dependingPlugin.modifyDependency(unmetDepInfo));
+            } catch (IOException e) {
+              new Log("ADR.writeADRFailed", Level.WARNING, e).setPluginName(dependingPlugin.getName()).setDepName(unmetDepName).log();
+            }
+          }
         }
       }
     }.init(unmetDepInfo, ADR, unmetDependencies)).start();
   }
+}
+
+/**
+ Writes a failed ADR result to the persistent plugin data, so ADR won't be attempted again for that dependency as it could not be resolved.
+ @param dependingPlugins The plugins that depend on the given dependency to function.
+ @param unmetDependency  The given dependency. */
+private void writeADRFailed(ArrayList<PluginData> dependingPlugins, DependencyInfo unmetDependency) {
+
+
 }
 
 /**

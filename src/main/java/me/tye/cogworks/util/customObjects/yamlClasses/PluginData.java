@@ -5,11 +5,11 @@ import java.util.Map;
 
 public class PluginData {
 
-String fileName;
-String name;
-String version;
-ArrayList<DependencyInfo> dependencies = new ArrayList<>();
-ArrayList<DependencyInfo> softDependencies = new ArrayList<>();
+private String fileName;
+private final String name;
+private final String version;
+private final ArrayList<DependencyInfo> dependencies = new ArrayList<>();
+private final ArrayList<DependencyInfo> softDependencies = new ArrayList<>();
 boolean deletePending = false;
 
 /**
@@ -64,22 +64,35 @@ public ArrayList<DependencyInfo> getSoftDependencies() {
 }
 
 /**
- Will only be set to true if the plugin was attempted to be deleted but was unsuccessful.
- */
+ Will only be set to true if the plugin was attempted to be deleted but was unsuccessful. */
 public boolean isDeletePending() {
   return deletePending;
 }
 
 /**
+ Replaces the dependency information of the contained dependency with the same name as the given dependency.<br>
+ If there are no dependencies with this name then nothing will happen.
+ @param newDependencyInfo The given dependency.
+ @return The modified PluginData object. */
+public PluginData modifyDependency(DependencyInfo newDependencyInfo) {
+  for (int i = 0; i < dependencies.size(); i++) {
+    DependencyInfo dependency = dependencies.get(i);
+    if (!dependency.getName().equals(newDependencyInfo.getName()))
+      continue;
+    dependencies.set(i, newDependencyInfo);
+  }
+  return this;
+}
+
+/**
  Will only be set to true if the plugin was attempted to be deleted but was unsuccessful.
- * @param deletePending Whether the plugin was attempted to be deleted.
- */
+ @param deletePending Whether the plugin was attempted to be deleted. */
 public void setDeletePending(boolean deletePending) {
   this.deletePending = deletePending;
 }
 
 @Override
 public String toString() {
-  return "File name: \""+fileName+"\". Name: \""+name+"\". Version: \""+version+"\". Dependencies: \""+dependencies+"\". Soft dependencies: \""+softDependencies+"\".";
+  return "File name: \""+fileName+"\". Name: \""+name+"\". Version: \""+version+"\". Dependencies: \""+dependencies+"\". Soft dependencies: \""+softDependencies+"\". Delete pending: "+deletePending;
 }
 }

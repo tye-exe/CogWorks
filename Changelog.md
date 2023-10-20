@@ -49,3 +49,4 @@
   "cogworks.plugin.ins.modrinth" - lets the user use /plugin search & /plugin browse.
 - MAJOR code cleanup.
 - Added catch for invalid file name when creating a file.
+- Updated ADR to not retry after ADR completed & dependency couldn't be resolved.
