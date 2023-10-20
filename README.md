@@ -27,7 +27,7 @@ The latest public version of the plugin will always be available on [Modrinth](h
 - Install jar files from the web using "/plugin install \<URL>"
 - Installing plugins from Modrinth using "/plugin browse" or "/plugin search \<query>".
 - Will automatically install the dependencies of a plugin when downloading from Modrinth.
-- Will attempt to meet unmet dependencies on start up if CogWorks detects any.
+- Will attempt to meet unmet dependencies on start up if CogWorks detects any. Disable this in the config if you have a slow connection or limited bandwidth.
 - Deleting plugins using the "/plugin remove \<plugin name>".
 - When deleting plugins their will be a prompt on whether to delete the plugins config folder & a prompt on whether to delete plugins that depend on the plugin that is being deleted to function.
 - Access a GUI file explorer with "/file".
@@ -71,9 +71,14 @@ Incorrect: https://modrinth.com
 
 An easy way to tell if it is a file is to check if the URL ends in ".jar". However, be warned that not all plugin download links end in ".jar"!
 
+<!--
+@formatter:off
+-->
 ### On "/plugin search \<query>":
-For this command the query **can
-** contain spaces and will still be treated as a single valid search request. Furthermore, any chars that would make an invalid URL are automatically converted into the [percent-encoding](https://en.wikipedia.org/wiki/Percent-encoding) that URLs use.
+For this command the query **can** contain spaces and will still be treated as a single valid search request. Furthermore, any chars that would make an invalid URL are automatically converted into the [percent-encoding](https://en.wikipedia.org/wiki/Percent-encoding) that URLs use.
+<!--
+@for/matter:on
+-->
 
 ### On "/plugin browse":
 For this command it will let you (as the name suggests) browse though the most popular plugins on Modrinth that are compatible with your server type & version. Using "0" & the max value as options for "scrolling" through the list of plugins, with the "0" input scrolling you up "where applicable", & vice versa for the max number.
@@ -82,8 +87,7 @@ For this command it will let you (as the name suggests) browse though the most p
 This command makes CogWorks "rescan" the "./plugins" folder for any changes made that weren't done though CogWorks.
 
 ### On "/plugin remove \<plugin name>":
-This command will only execute the delete once it has no more plugins left in the delete queue (the delete queue is just a list of plugins that need user input for options regarding the delete) to evaluate.
-
+This command will only execute the delete once it has no more plugins left in the delete queue (the delete queue is just a list of plugins that need user input for options regarding the delete) to evaluate.  
 The command works by letting you select from any plugins in the "./plugins" folder to remove (this includes plugins that didn't load successfully).  
 If the plugin you selected has a config folder ("./plugins/<plugin name>") then it will give you a prompt for deleting that also.  
 Then if there are other plugins that have the plugin you are about to delete as a dependency then there will be a prompt asking if you want to just delete this plugin anyway, delete the plugins that depend on this one, or quit.  
@@ -99,6 +103,9 @@ To edit the content of a file you'll have to viewing it, then if you want to cha
 Clicking on the green concrete will change the inventory allowing you to create either a file or folder. After that an anvil menu will open which allows you to set the name of the file. Make sure not to enter characters that aren't allowed to be in file names!  
 To delete a file or folder, click on the red concrete, this will put you in "delete mode". To make this clear to the user, the files will change to orange wool & the folders will change to red wool. Then just click on a file or folder to open a delete confirm menu, then click on the green concrete to delete the file or folder. If you try and delete a folder that contains files or folders within it, there will be an extra confirmation step.
 
+### On automatic dependency resolution:
+Automatic dependency resolution (this will be referred to as ADR) involves CogWorks checking for any missing dependencies on start up and trying to resolve them by taking the missing plugin name (the plugin name is the name specified in the plugin.yml) and searching that up on Modrinth.  
+It then downloads the top then plugins (into "CogWorks/.temp/ADR/<UniqueDirName>") returned by Modrinth & checks if any of the plugin names of the downloaded plugins match the plugin name of the missing dependency. If one of the plugins match it wil be moved into the "./plugins" folder. The remaining plugins will be deleted.
 
 ## Translators Wanted!
 If you are willing to help by translating the plugin language file into any new languages (for past versions or the current version). Please join the [discord server](https://discord.gg/3CC6kVcdQH) and ping @IWantToTranslate.
