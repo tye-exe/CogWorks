@@ -107,6 +107,8 @@ public void onEnable() {
   //checks for new lang files & installs them.
   newLangCheck();
 
+  //plugin.getServer().getPluginManager().loadPlugin();
+
 
   //Commands
   Objects.requireNonNull(getCommand("plugin")).setExecutor(new PluginCommand());
@@ -140,14 +142,14 @@ public void onDisable() {
 private void automaticDependencyResolution() {
   ArrayList<PluginData> identifiers;
   try {
-    identifiers = StoredPlugins.readPluginData(true);
+    identifiers = StoredPlugins.readPluginData();
   } catch (IOException e) {
     new Log("exceptions.noAccessPluginYML", Level.SEVERE, e).log();
     return;
   }
 
   //checks for uninstalled dependencies
-  HashMap<DependencyInfo,PluginData> unmetDependencies = new HashMap<>();
+  HashMap<DependencyInfo,ArrayList<PluginData>> unmetDependencies = new HashMap<>();
   for (PluginData data : identifiers) {
     ArrayList<DependencyInfo> dependencies = data.getDependencies();
     ArrayList<DependencyInfo> metDependencies = new ArrayList<>();
@@ -161,8 +163,18 @@ private void automaticDependencyResolution() {
     }
 
     dependencies.removeAll(metDependencies);
-    for (DependencyInfo dep : dependencies)
-      unmetDependencies.put(dep, data);
+    for (DependencyInfo dep : dependencies) {
+      if (dep.hasFailedADR())
+        continue;
+
+      if (unmetDependencies.containsKey(dep)) {
+        ArrayList<PluginData> dependingPlugins = unmetDependencies.get(dep);
+        dependingPlugins.add(data);
+        unmetDependencies.put(dep, dependingPlugins);
+      } else {
+        unmetDependencies.put(dep, new ArrayList<>(List.of(data)));
+      }
+    }
   }
 
   //attempts to resolve unmet dependencies
@@ -170,9 +182,9 @@ private void automaticDependencyResolution() {
     new Thread(new Runnable() {
       private DependencyInfo unmetDepInfo;
       private File ADRStore;
-      private HashMap<DependencyInfo,PluginData> unmetDependencies;
+      private HashMap<DependencyInfo,ArrayList<PluginData>> unmetDependencies;
 
-      public Runnable init(DependencyInfo unmetDepInfo, File pluginStore, HashMap<DependencyInfo,PluginData> unmetDependencies) {
+      public Runnable init(DependencyInfo unmetDepInfo, File pluginStore, HashMap<DependencyInfo,ArrayList<PluginData>> unmetDependencies) {
         this.unmetDepInfo = unmetDepInfo;
         //so multiple threads get their own folder.
         this.ADRStore = new File(pluginStore.getAbsolutePath()+File.separator+LocalDateTime.now().hashCode());
@@ -183,6 +195,7 @@ private void automaticDependencyResolution() {
 
       @Override
       public void run() {
+        unmetDepInfo.setFailedADR(true);
         if (!ADRStore.mkdir()) {
           new Log("ADR.fail", Level.WARNING, null).setFileName(unmetDependencies.get(unmetDepInfo).getName()).log();
           return;

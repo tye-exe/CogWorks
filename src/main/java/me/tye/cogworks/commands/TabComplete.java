@@ -54,8 +54,11 @@ public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Comman
         ArrayList<String> plugins = new ArrayList<>();
 
         try {
-          for (PluginData data : StoredPlugins.readPluginData(true))
+          for (PluginData data : StoredPlugins.readPluginData()) {
+            if (data.isDeletePending())
+              continue;
             plugins.add(data.getName());
+          }
         } catch (IOException e) {
           new Log(sender, "tabComplete.dataReadError").log();
         }

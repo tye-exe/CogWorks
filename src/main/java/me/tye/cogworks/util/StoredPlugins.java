@@ -27,10 +27,9 @@ public class StoredPlugins {
 
 /**
  Reads the data from the pluginData.json file
- @param ignoreToDelete If true then the plugins marked to be deleted won't be returned.
  @return The data of all the plugins in the pluginData.json file.
  @throws IOException Thrown if there is an error reading from the pluginData file. */
-public static ArrayList<PluginData> readPluginData(boolean ignoreToDelete) throws IOException {
+public static ArrayList<PluginData> readPluginData() throws IOException {
   ArrayList<PluginData> pluginData = new ArrayList<>();
   FileReader fr = new FileReader(Util.pluginDataFile);
   JsonReader jr = new JsonReader(fr);
@@ -43,17 +42,6 @@ public static ArrayList<PluginData> readPluginData(boolean ignoreToDelete) throw
   }
   jr.close();
   fr.close();
-
-  if (!ignoreToDelete)
-    return pluginData;
-
-  for (int i = 0; i < pluginData.size(); i++) {
-    if (pluginData.get(i).isDeletePending()) {
-      pluginData.remove(i);
-      i--;
-    }
-  }
-
   return pluginData;
 }
 
@@ -64,7 +52,7 @@ public static ArrayList<PluginData> readPluginData(boolean ignoreToDelete) throw
  @throws NoSuchPluginException Thrown if the plugin couldn't be found in the pluginData file.
  @throws IOException           Thrown if there was an error reading from the pluginData file. */
 public static PluginData readPluginData(String pluginName) throws NoSuchPluginException, IOException {
-  for (PluginData data : readPluginData(false)) {
+  for (PluginData data : readPluginData()) {
     if (data.getName().equals(pluginName))
       return data;
   }
@@ -90,7 +78,7 @@ public static void writePluginData(Collection<PluginData> pluginData) throws IOE
  @throws NoSuchPluginException Thrown if the plugin cannot be found in the plugin data.
  @throws IOException           Thrown if the pluginData file can't be read from/written to. */
 public static void removePluginData(String pluginName) throws NoSuchPluginException, IOException {
-  ArrayList<PluginData> pluginData = readPluginData(false);
+  ArrayList<PluginData> pluginData = readPluginData();
   PluginData pluginToRemove = null;
 
   for (PluginData data : pluginData) {
@@ -111,7 +99,7 @@ public static void removePluginData(String pluginName) throws NoSuchPluginExcept
  @param newPlugin The new plugin file to be added.
  @throws IOException Thrown if there is an error accessing the pluginData file, or if there is an error accessing the plugin.yml file of the new plugin. */
 public static void appendPluginData(File newPlugin) throws IOException {
-  ArrayList<PluginData> identifiers = readPluginData(false);
+  ArrayList<PluginData> identifiers = readPluginData();
 
   //reads data from new plugin
   try {
@@ -154,7 +142,7 @@ public static void appendPluginData(File newPlugin) throws IOException {
  * @throws IOException If there was an error reading from or writing to the plugin data file.
  */
 public static void modifyPluginData(PluginData newPluginData) throws IOException {
-  List<PluginData> pluginData = readPluginData(false);
+  List<PluginData> pluginData = readPluginData();
 
   for (int i = 0; pluginData.size() > i; i++) {
     if (!pluginData.get(i).getName().equals(newPluginData.getName()))
@@ -174,7 +162,7 @@ public static void modifyPluginData(PluginData newPluginData) throws IOException
 public static void reloadPluginData(@Nullable CommandSender sender, @Nullable String state) {
   ArrayList<PluginData> identifiers = new ArrayList<>();
   try {
-    identifiers = readPluginData(false);
+    identifiers = readPluginData();
   } catch (IOException e) {
     new Log(sender, state, "noAccessPluginYML").setLevel(Level.SEVERE).setException(e).log();
   }
@@ -226,7 +214,7 @@ public static void reloadPluginData(@Nullable CommandSender sender, @Nullable St
  @return True only if the plugin was found to be installed & the data could be read. */
 public static boolean registered(String pluginName) {
   try {
-    ArrayList<PluginData> data = new ArrayList<>(readPluginData(false));
+    ArrayList<PluginData> data = new ArrayList<>(readPluginData());
     for (PluginData plugin : data) {
       if (plugin.getName().equals(pluginName))
         return true;
@@ -255,7 +243,9 @@ public static List<PluginData> getWhatDependsOn(String pluginName) {
   try {
 
     plugins:
-    for (PluginData pluginData : readPluginData(true)) {
+    for (PluginData pluginData : readPluginData()) {
+      if (pluginData.isDeletePending())
+        continue;
       for (DependencyInfo depInfo : pluginData.getDependencies()) {
         if (depInfo.getName().equals(pluginName)) {
           whatDepends.add(pluginData);

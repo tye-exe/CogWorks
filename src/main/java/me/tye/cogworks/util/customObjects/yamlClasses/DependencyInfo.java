@@ -5,6 +5,8 @@ public class DependencyInfo {
 String name;
 String version;
 
+boolean failedADR = false;
+
 /**
  Stores information about the dependencies of a plugin.
  @param name    The name of the plugin.
@@ -24,6 +26,19 @@ public String getName() {
  @return The plugin version of the dependency. */
 public String getVersion() {
   return version;
+}
+
+/**
+ Will be set to true if ADR has been attempted on this plugin & failed. */
+public boolean hasFailedADR() {
+  return failedADR;
+}
+
+/**
+ Will be set to true if ADR has been attempted on this plugin & failed.
+ @param failedADR Whether the plugin failed at ADR. */
+public void setFailedADR(boolean failedADR) {
+  this.failedADR = failedADR;
 }
 
 @Override
