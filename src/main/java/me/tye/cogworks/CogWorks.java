@@ -39,25 +39,21 @@ import static me.tye.cogworks.util.Plugins.modrinthSearch;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
-//TODO: mark plugins for attempted ADR / when some were deleted to not attempt ADR
-
-//TODO: allow to delete multiple plugins at once - separate by ","?
-//TODO: check if lang file exists for string the user entered
-//TODO: edit lang options based on available lang files.
-//TODO: add configs options for ADR
-//TODO: add command to force stop ADR?
-//TODO: instead of deleting files, have them be moved to the .temp folder & either deleted upon reload | after a set time
-//TODO: Prompt for multiple files per version - i mean the ones where it's got a "primary".
-//TODO: allow to install multiple plugins at once when using a url.
-//TODO: when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
-//TODO: make to try & install plugins for the correct server version if the server is updated
-//TODO: allow the sender to pass though an offset when using /plugin browse?
-//TODO: send lang update messages on op join
-//TODO: allow user to exit/go back from all states
-//TODO: make lang updates required to be confirmed to go away?
-//TODO: make user invariable whilst in ./file menu
-//TODO: put char limit on file gui title so it doesn't overflow (take chars away from start of path?)
-//TODO: run ADR on plugins that are installed from a URL.
+//TODO: Allow to delete multiple plugins at once - separate by ","?
+//TODO: Check if lang file exists for string the user entered.
+//TODO: Edit lang options based on available lang files.
+//TODO: Add command to force stop ADR?
+//TODO: Instead of deleting files, have them be moved to the .temp folder & either deleted upon reload | after a set time.
+//TODO: Allow to install multiple plugins at once when using a url.
+//TODO: Fix when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
+//TODO: Make to try & install plugins for the correct server version if the server is updated.
+//TODO: Allow the sender to pass though an offset when using /plugin browse?
+//TODO: Send lang update messages on op join.
+//TODO: Allow user to exit/go back from all states.
+//TODO: Make lang updates required to be confirmed to go away?
+//TODO: Make user invulnerable whilst in ./file menu.
+//TODO: Put char limit on file gui title so it doesn't overflow (take chars away from start of path?).
+//TODO: Run ADR on plugins that are installed from a URL.
 
 @Override
 public void onEnable() {

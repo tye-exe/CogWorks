@@ -6,7 +6,7 @@ Allows for easy and frictionless management of plugins & files right from Minecr
 Only files and folders located in same folder in the server jar, and in folders within said folder, can be accessed with this plugin!  
 Or to put it in more technical terms, the plugin can only access files or folder whose absolute path starts with the absolute path to the server folder.
 
-Furthermore, CogWorks is still in alpha, so there will be bugs. If you find any please report them in #bug-reports in [discord](https://discord.gg/3CC6kVcdQH).
+Furthermore, CogWorks is still in alpha, so there will be bugs. If you find any please report them in #bug-reports in [discord](https://discord.gg/3CC6kVcdQH). We will listen to any feedback given & we greatly appreciate it.
 
 
 ## General Info:
@@ -46,11 +46,24 @@ The latest public version of the plugin will always be available on [Modrinth](h
 - cogworks.file.rm - Able to delete files when using the "/file" command.
 
 ### Future Plans:
-- Bug fixes.
 - Attempts at back-porting to older mc versions.
 - Supporting downloading plugins from other websites.
 - Chat based file manager.
-- & Much more!
+- Allow to delete multiple plugins at once - separate by ","?
+- Check if lang file exists for string the user entered.
+- Edit lang options based on available lang files.
+- Add command to force stop ADR?
+- Instead of deleting files, have them be moved to the .temp folder & either deleted upon reload | after a set time.
+- Allow to install multiple plugins at once when using a url.
+- Fix when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
+- Make to try & install plugins for the correct server version if the server is updated.
+- Allow the sender to pass though an offset when using /plugin browse?
+- Send lang update messages on op join.
+- Allow user to exit/go back from all states.
+- Make lang updates required to be confirmed to go away?
+- Make user invulnerable whilst in ./file menu.
+- Put char limit on file gui title, so it doesn't overflow (take chars away from start of path?).
+- Run ADR on plugins that are installed from a URL.
 
 
 ## Further reading:
