@@ -154,9 +154,9 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
       return false;
     }
 
-    //StoredPlugins.removePluginData(pluginName);
-    //new Log(sender, state, "pluginDelete").setPluginName(pluginName).log();
-    //return true;
+    StoredPlugins.removePluginData(pluginName);
+    new Log(sender, state, "pluginDelete").setPluginName(pluginName).log();
+    return true;
 
   } catch (NoSuchPluginException e) {
     new Log(sender, state, "noSuchPlugin").setLevel(Level.WARNING).setException(e).setPluginName(pluginName).log();

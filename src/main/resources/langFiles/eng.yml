@@ -165,8 +165,8 @@ pluginInstall:
 
 
 deletePlugin:
-  dependsOn: "§e{pluginNames} depend on {pluginName} to function.{n}§a1: Force delete {pluginName}.{n}§a2: Delete {pluginName} & {pluginNames}.{n}§a3: Do nothing (exit)."
-  deleteConfig: "§eDo you wish to delete the {pluginName} config files?{n}§eSend y or n in chat to choose."
+  dependsOn: "§e{pluginNames} depend on {pluginName} to function. Do you also want to delete {pluginNames}?.{n}§aSend y or n in chat to choose or q to quit."
+  deleteConfig: "§eDo you wish to delete the {pluginName} config files?{n}§aSend y or n in chat to choose or q to quit."
   note: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
 
   quit: "§eQuitting."
@@ -180,24 +180,7 @@ deletePlugin:
   noSuchPlugin: "§e{pluginName} couldn't be found on your system."
   deleteError: "§e{pluginName} couldn't be deleted."
   scheduleDelete: "§e{pluginName} will be marked for deletion & ignored by CogWorks form now on."
-
-
-pluginsDeleteEval:
-  dependsOn: "§e{pluginNames} depend on {pluginName} to function.{n}§a1: Force delete {pluginName}.{n}§a2: Delete {pluginName} & {pluginNames}.{n}§a3: Do nothing (exit)."
-  deleteConfig: "§eDo you wish to delete the {pluginName} config files?{n}§eSend y or n in chat to choose."
-  note: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
-
-  quit: "§eQuitting."
-  NAN: "§ePlease enter a listed number."
-  configRemove: "§aConfig files for {pluginName} deleted."
-  pluginDelete: "§a{pluginName} deleted."
-  reloadWarn: "§eImmediately reload or restart to avoid errors."
-  provideName: "§ePlease provide a plugin name!"
-  noConfigsFound: "§eNo config folder could be found for {pluginName}. Won't prompt for config delete."
-
-  noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
-  deleteError: "§ePlugin {pluginName} couldn't be deleted."
-  scheduleDelete: "§e{pluginName} will be marked for deletion & ignored by CogWorks form now on."
+  writeNoADR: "§eThere was an error setting {depName} for {pluginName} to not attempt ADR. This will cause ADR to attempt to resolve this dependency on restart."
 
 
 ModrinthAPI:
@@ -306,7 +289,7 @@ ADR:
   threadTime: "§ePlugins took too long to download."
   pluginYMLCheck: "§eError checking plugin name for {fileName}. Skipping {fileName} as possible dependency."
   cleanUpPossiblePlugins: "§eError trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder \"{filePath}\" at your earliest convince."
-  writeADRFailed: "§eThere was an error saving failed ADR result to {pluginName} for {depName}. This will cause ADR to attempt to resolve this dependency on every restart."
+  writeNoADR: "§eThere was an error saving failed ADR result to {pluginName} for {depName}. This will cause ADR to attempt to resolve this dependency on every restart."
 
 
 exceptions:

@@ -4,9 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import me.tye.cogworks.util.Plugins;
-import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.customObjects.*;
-import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -387,11 +385,9 @@ public static void checks(String name, String message) {
             response.remove(name);
           }
         }
-        case "deletePlugin" -> {
+
+        case "deletePluginConfig" -> {
           DeleteQueue deleteQueue = params.getDeleteQueue();
-          ArrayList<PluginData> toDeleteEval = params.getToDeleteEval();
-          String pluginName = toDeleteEval.get(0).getName();
-          List<PluginData> whatDepends = StoredPlugins.getWhatDependsOn(pluginName);
 
           if (message.equals("q")) {
             response.remove(name);
@@ -399,136 +395,42 @@ public static void checks(String name, String message) {
             return;
           }
 
-          boolean deleteConfig;
-          if (message.equals("y"))
-            deleteConfig = true;
-          else if (message.equals("n"))
-            deleteConfig = false;
-          else {
+          if (message.equals("y")) {
+            deleteQueue.setCurrentEvalDeleteConfig(true);
+
+          } else if (message.equals("n")) {
+            deleteQueue.setCurrentEvalDeleteConfig(false);
+
+          } else {
             new Log(sender, state, "confirm").log();
             return;
           }
 
-          //adds plugins that depend on the current one being deleted to the queue to be evald
-          for (PluginData data : whatDepends) {
-            if (!toDeleteEval.contains(data) && deleteQueue.isQueued(data.getName())) {
-              toDeleteEval.add(data);
-            }
-          }
-
-          if (toDeleteEval.size() <= 1) {
-            deleteQueue.addPlugin(pluginName, deleteConfig);
-            deleteQueue.executeDelete();
-            response.remove(name);
-          } else {
-            deleteQueue.addPlugin(pluginName, deleteConfig);
-            toDeleteEval.remove(0);
-
-            if (!whatDepends.isEmpty()) {
-              ArrayList<String> names = new ArrayList<>(whatDepends.size());
-              for (PluginData data : whatDepends)
-                names.add(data.getName());
-
-              new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
-              params.reset(sender, "pluginsDeleteEval").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
-            } else {
-              new Log(sender, "deletePlugin.deleteConfig").setPluginName(toDeleteEval.get(0).getName()).log();
-              params.reset(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(toDeleteEval);
-            }
-
-            if (sender instanceof Player)
-              response.put(sender.getName(), params);
-            else
-              response.put("~", params);
-          }
+          deleteQueue.evaluatePlugins();
         }
-        case "pluginsDeleteEval" -> {
-          ArrayList<PluginData> deleteEval = params.getToDeleteEval();
+        case "deletePluginsDepend" -> {
           DeleteQueue deleteQueue = params.getDeleteQueue();
-          Boolean deleteConfig = params.getDeleteConfigs();
-          String pluginName = deleteEval.get(0).getName();
-          List<PluginData> whatDependsOn = StoredPlugins.getWhatDependsOn(pluginName);
 
-          int chosen = parseNumInput(sender, state, message, name, 3, 1);
-          if (chosen == -1)
-            return;
-
-          if (chosen == 3) {
+          if (message.equals("q")) {
             response.remove(name);
             new Log(sender, state, "quit").log();
             return;
           }
 
-          if (chosen == 1) {
-            //uses the plugin names as the objects don't match.
-            for (int i = 1; i < deleteEval.size(); i++) {
-              for (PluginData dependsData : whatDependsOn) {
-                if (deleteEval.get(i).getName().equals(dependsData.getName()))
-                  deleteEval.remove(i);
-              }
-            }
-          }
+          if (message.equals("y")) {
+            deleteQueue.setCurrentEvalDeleteDepends(true);
 
-          if (chosen == 2) {
-            ArrayList<PluginData> toAppend = new ArrayList<>();
-            dependLoop:
-            for (PluginData data : whatDependsOn) {
-              for (PluginData evalData : deleteEval) {
-                if (evalData.getName().equals(data.getName()))
-                  continue dependLoop;
-              }
-              toAppend.add(data);
-            }
-            deleteEval.addAll(toAppend);
-          }
+          } else if (message.equals("n")) {
+            deleteQueue.setCurrentEvalDeleteDepends(false);
 
-          if (deleteConfig != null)
-            deleteQueue.addPlugin(pluginName, deleteConfig);
-          else {
-            if (Plugins.hasConfigFolder(pluginName)) {
-              new Log(sender, state, "deleteConfig").setPluginName(pluginName).log();
-              params.reset(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(deleteEval);
-              if (sender instanceof Player)
-                response.put(sender.getName(), params);
-              else
-                response.put("~", params);
-              return;
-            } else {
-              deleteQueue.addPlugin(pluginName, false);
-            }
-          }
-
-          deleteEval.remove(0);
-
-          //sets the plugins that don't have config folder to deleteConfig false.
-          for (int i = 0; i < deleteEval.size(); i++) {
-            String newPluginName = deleteEval.get(i).getName();
-            if (!Plugins.hasConfigFolder(newPluginName)) {
-              deleteQueue.addPlugin(newPluginName, false);
-              deleteEval.addAll(StoredPlugins.getWhatDependsOn(newPluginName));
-              deleteEval.remove(i);
-              i--;
-              new Log(sender, state, "noConfigsFound").setPluginName(newPluginName).log();
-            }
-          }
-
-          if (deleteEval.isEmpty()) {
-            deleteQueue.executeDelete();
-            response.remove(name);
           } else {
-            params.reset(sender, "deletePlugin").setDeleteQueue(deleteQueue).setToDeleteEval(deleteEval);
-            if (sender instanceof Player)
-              response.put(sender.getName(), params);
-            else
-              response.put("~", params);
-
-            ArrayList<String> names = new ArrayList<>(whatDependsOn.size());
-            for (PluginData data : whatDependsOn)
-              names.add(data.getName());
-
-            new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
+            new Log(sender, state, "confirm").log();
+            return;
           }
+
+          deleteQueue.evaluatePlugins();
         }
+
         case "terminal" -> {
           PathHolder pathHolder = position.get(name);
           new Log(sender, state, "path").setFilePath(pathHolder.getRelativePath());

@@ -9,8 +9,6 @@ import me.tye.cogworks.util.customObjects.ChatParams;
 import me.tye.cogworks.util.customObjects.DeleteQueue;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.ModrinthSearch;
-import me.tye.cogworks.util.customObjects.exceptions.NoSuchPluginException;
-import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.ChatColor;
@@ -20,11 +18,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import static me.tye.cogworks.ChatManager.response;
 import static me.tye.cogworks.util.Util.encodeUrl;
@@ -37,15 +33,6 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
     helpMessage(sender);
     return true;
   }
-
-  if (args[0].equals("remove")) {
-    deletePlugin(sender, args);
-    return true;
-  }
-
-  //runs the other commands in a thread since they involve networking.
-
-
   new Thread(new Runnable() {
 
     private CommandSender sender;
@@ -61,6 +48,9 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
     public void run() {
 
       switch (args[0]) {
+      case "remove" ->
+          deletePlugin(sender, args);
+
       case "install" ->
           installPlugin(sender, args);
 
@@ -116,73 +106,7 @@ private void deletePlugin(CommandSender sender, String[] args) {
     return;
   }
 
-  Boolean deleteConfig = null;
-  String pluginName = args[1];
-
-  //checks if the plugin exists
-  PluginData pluginData;
-  try {
-    pluginData = StoredPlugins.readPluginData(pluginName);
-  } catch (NoSuchPluginException | IOException e) {
-    new Log(sender, "deletePlugin.noSuchPlugin").setException(e).setPluginName(pluginName).log();
-    return;
-  }
-
-  //checks if the plugin has a config folder
-  if (!Plugins.hasConfigFolder(pluginName)) {
-    deleteConfig = false;
-    new Log(sender, "deletePlugin.noConfigsFound").setPluginName(pluginName).log();
-  }
-
-  //modifier checks
-  for (String arg : args) {
-    if (!arg.startsWith("-"))
-      continue;
-    String modifiers = arg.substring(1);
-    for (char letter : modifiers.toCharArray()) {
-      if (letter == 'y')
-        deleteConfig = true;
-      if (letter == 'n')
-        deleteConfig = false;
-    }
-  }
-
-  //schedules plugins that depend on for deletion
-  List<PluginData> whatDepends = StoredPlugins.getWhatDependsOn(pluginName);
-  ArrayList<PluginData> deleteEval = new ArrayList<>(whatDepends);
-  deleteEval.add(0, pluginData);
-
-  //prompt to delete config files
-  if (deleteConfig == null) {
-    new Log(sender, "deletePlugin.deleteConfig").setPluginName(pluginName).log();
-    new Log(sender, "deletePlugin.note").log();
-    ChatParams params = new ChatParams(sender, "deletePlugin").setDeleteQueue(new DeleteQueue(sender, "deletePlugin")).setToDeleteEval(deleteEval);
-    if (sender instanceof Player)
-      response.put(sender.getName(), params);
-    else
-      response.put("~", params);
-    return;
-  }
-
-  //checks what depends on this plugin
-  if (!whatDepends.isEmpty()) {
-    String[] names = new String[whatDepends.size()];
-    for (int i = 0; i < whatDepends.size(); i++)
-      names[i] = whatDepends.get(i).getName();
-
-    new Log(sender, "deletePlugin.dependsOn").setPluginNames(names).setPluginName(pluginName).log();
-
-    ChatParams params = new ChatParams(sender, "pluginsDeleteEval").setDeleteQueue(new DeleteQueue(sender, "deletePlugin")).setToDeleteEval(deleteEval).setDeleteConfigs(deleteConfig);
-    if (sender instanceof Player)
-      response.put(sender.getName(), params);
-    else
-      response.put("~", params);
-    return;
-  }
-
-  if (Plugins.deletePlugin(sender, "deletePlugin", pluginName, deleteConfig)) {
-    new Log(sender, "deletePlugin.reloadWarn").log();
-  }
+  new DeleteQueue(sender, args[1]);
 }
 
 private void installPlugin(CommandSender sender, String[] args) {

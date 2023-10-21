@@ -50,3 +50,4 @@
 - MAJOR code cleanup.
 - Added catch for invalid file name when creating a file.
 - Updated ADR to not retry after ADR completed & dependency couldn't be resolved.
+- Rewrote plugin remove command for better readability & maintainability.

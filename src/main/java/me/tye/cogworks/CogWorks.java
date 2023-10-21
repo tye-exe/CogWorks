@@ -160,7 +160,7 @@ private void automaticDependencyResolution() {
 
     dependencies.removeAll(metDependencies);
     for (DependencyInfo dep : dependencies) {
-      if (dep.hasFailedADR())
+      if (!dep.attemptADR())
         continue;
 
       if (unmetDependencies.containsKey(dep)) {
@@ -337,27 +337,18 @@ private void automaticDependencyResolution() {
         //if ADR couldn't resolve the missing dependency then it marks not to try and resolve it for next time
         if (failed) {
           new Log("ADR.notToRetry", Level.WARNING, null).setDepName(unmetDepName).setPluginNames(dependingNames).log();
-          unmetDepInfo.setFailedADR(true);
+          unmetDepInfo.setAttemptADR(false);
           for (PluginData dependingPlugin : dependingPlugins) {
             try {
               StoredPlugins.modifyPluginData(dependingPlugin.modifyDependency(unmetDepInfo));
             } catch (IOException e) {
-              new Log("ADR.writeADRFailed", Level.WARNING, e).setPluginName(dependingPlugin.getName()).setDepName(unmetDepName).log();
+              new Log("ADR.writeNoADR", Level.WARNING, e).setPluginName(dependingPlugin.getName()).setDepName(unmetDepName).log();
             }
           }
         }
       }
     }.init(unmetDepInfo, ADR, unmetDependencies)).start();
   }
-}
-
-/**
- Writes a failed ADR result to the persistent plugin data, so ADR won't be attempted again for that dependency as it could not be resolved.
- @param dependingPlugins The plugins that depend on the given dependency to function.
- @param unmetDependency  The given dependency. */
-private void writeADRFailed(ArrayList<PluginData> dependingPlugins, DependencyInfo unmetDependency) {
-
-
 }
 
 /**

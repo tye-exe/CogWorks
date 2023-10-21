@@ -5,7 +5,7 @@ public class DependencyInfo {
 private final String name;
 private final String version;
 
-private boolean failedADR = false;
+private boolean attemptADR = true;
 
 /**
  Stores information about the dependencies of a plugin.
@@ -29,20 +29,19 @@ public String getVersion() {
 }
 
 /**
- Will be set to true if ADR has been attempted on this plugin & failed. */
-public boolean hasFailedADR() {
-  return failedADR;
+ @return True if ADR should be attempted for this dependency. Or false if it shouldn't */
+public boolean attemptADR() {
+  return attemptADR;
 }
 
 /**
- Will be set to true if ADR has been attempted on this plugin & failed.
- @param failedADR Whether the plugin failed at ADR. */
-public void setFailedADR(boolean failedADR) {
-  this.failedADR = failedADR;
+ @param attemptADR True to attempted ADR, or false to not attempt ADR. */
+public void setAttemptADR(boolean attemptADR) {
+  this.attemptADR = attemptADR;
 }
 
 @Override
 public String toString() {
-  return "Name: \""+name+"\". Version: \""+version+"\".";
+  return "Name: \""+name+"\". Version: \""+version+"\". Attempt ADR: "+attemptADR+".";
 }
 }

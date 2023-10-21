@@ -1,10 +1,13 @@
 package me.tye.cogworks.util;
 
 import me.tye.cogworks.CogWorks;
+import me.tye.cogworks.util.customObjects.ChatParams;
 import me.tye.cogworks.util.customObjects.Log;
+import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -381,5 +384,41 @@ public static HashMap<String,Object> returnFileConfigs(File externalFile, String
     new Log("exceptions.errorWritingConfigs", Level.SEVERE, e).setFilePath(externalFile.getAbsolutePath()).log();
   }
   return loadedValues;
+}
+
+/**
+ Used to check if the given collection contains the given plugin data within it by checking if it contains an object with a name that is the same as the given plugins name. This method is required as checking if a collection contains the given plugin data will return false, even if it contains pluginData with the same name.
+ @param collection The given collection
+ @param pluginData The given plugin data.
+ @return True if the collection contains plugin data with the same name as the given plugin data.<br> Otherwise, false will be returned. */
+public static boolean containsPluginName(Collection<PluginData> collection, PluginData pluginData) {
+  for (PluginData data : collection) {
+    if (data.getName().equals(pluginData.getName()))
+      return true;
+  }
+  return false;
+}
+
+/**
+ Sets the current state of the user when interacting with the CogWorks chat system.
+ @param sender    The command sender.
+ @param newParams The new params to set. */
+public static void setResponse(CommandSender sender, ChatParams newParams) {
+  if (sender instanceof Player) {
+    response.put(sender.getName(), newParams);
+  } else {
+    response.put("~", newParams);
+  }
+}
+
+/**
+ Removes the current user from the CogWorks chat system.
+ @param sender The command sender. */
+public static void clearResponse(CommandSender sender) {
+  if (sender instanceof Player) {
+    response.remove(sender.getName());
+  } else {
+    response.remove("~");
+  }
 }
 }

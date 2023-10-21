@@ -27,8 +27,7 @@ JsonArray files = new JsonArray();
 
 ArrayList<PluginData> toDeleteEval = new ArrayList<>();
 Boolean deleteConfigs = null;
-DeleteQueue deleteQueue = new DeleteQueue(null, null);
-
+DeleteQueue deleteQueue = null;
 int offset = 0;
 
 
@@ -60,7 +59,7 @@ public ChatParams reset(@NonNull CommandSender sender, @NonNull String state) {
   this.files = new JsonArray();
   this.toDeleteEval = new ArrayList<>();
   this.deleteConfigs = null;
-  this.deleteQueue = new DeleteQueue(null, null);
+  this.deleteQueue = null;
   this.offset = 0;
 
   return this;
