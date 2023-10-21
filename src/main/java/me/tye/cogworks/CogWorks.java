@@ -39,6 +39,7 @@ import static me.tye.cogworks.util.Plugins.modrinthSearch;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
+//TODO: //plugin.getServer().getPluginManager().loadPlugin();
 //TODO: Allow to delete multiple plugins at once - separate by ","?
 //TODO: Check if lang file exists for string the user entered.
 //TODO: Edit lang options based on available lang files.
@@ -101,8 +102,6 @@ public void onEnable() {
   //checks for new lang files & installs them.
   newLangCheck();
 
-  //plugin.getServer().getPluginManager().loadPlugin();
-
 
   //Commands
   Objects.requireNonNull(getCommand("plugin")).setExecutor(new PluginCommand());
@@ -145,6 +144,9 @@ private void automaticDependencyResolution() {
   //checks for uninstalled dependencies
   HashMap<DependencyInfo,ArrayList<PluginData>> unmetDependencies = new HashMap<>();
   for (PluginData data : identifiers) {
+    if (data.isDeletePending())
+      continue;
+
     ArrayList<DependencyInfo> dependencies = data.getDependencies();
     ArrayList<DependencyInfo> metDependencies = new ArrayList<>();
 
@@ -182,7 +184,6 @@ private void automaticDependencyResolution() {
         this.unmetDepInfo = unmetDepInfo;
         //so multiple threads get their own folder.
         this.ADRStore = new File(pluginStore.getAbsolutePath()+File.separator+LocalDateTime.now().hashCode());
-
         this.unmetDependencies = unmetDependencies;
         return this;
       }
@@ -194,17 +195,17 @@ private void automaticDependencyResolution() {
         for (PluginData data : dependingPlugins)
           dependingNames.add(data.getName());
 
-
         if (!ADRStore.mkdir()) {
           new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
-
           return;
         }
 
         String unmetDepName = this.unmetDepInfo.getName();
         String unmetDepVersion = this.unmetDepInfo.getVersion();
-        if (unmetDepVersion != null)
+        if (unmetDepVersion != null) {
+          new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
           return;
+        }
         ArrayList<JsonObject> validPluginKeys;
         HashMap<JsonObject,JsonArray> validPlugins;
 
