@@ -33,6 +33,7 @@ The latest public version of the plugin will always be available on [Modrinth](h
 - Access a GUI file explorer with "/file".
 - Unique way of interacting with the plugin by being able to just type responses in chat. No commands required!
 - Supports permissions.
+- Supports "/reload".
 
 ### Permissions:
 - cogworks.plugin.ins.gen - Able to use the "/plugin install \<URL>" command to install a plugin from any URL.
