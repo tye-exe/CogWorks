@@ -5,13 +5,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.StoredPlugins;
-import me.tye.cogworks.util.customObjects.ChatParams;
-import me.tye.cogworks.util.customObjects.DeleteQueue;
-import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.ModrinthSearch;
+import me.tye.cogworks.util.customObjects.*;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -145,10 +141,13 @@ private void searchPlugins(CommandSender sender, String[] args) {
     new Log(sender, "pluginInstall.noInput").log();
     return;
   }
+
   StringBuilder query = new StringBuilder();
   for (int i = 1; i < args.length; i++)
     query.append(" ").append(args[i]);
+
   ModrinthSearch search = Plugins.modrinthSearch(sender, "pluginInstall", query.substring(1));
+
   HashMap<JsonObject,JsonArray> validPlugins = search.getValidPlugins();
   ArrayList<JsonObject> validPluginKeys = search.getValidPluginKeys();
 
@@ -175,40 +174,6 @@ private void searchPlugins(CommandSender sender, String[] args) {
 }
 
 private void browsePlugins(CommandSender sender, int offset) {
-  if (!sender.hasPermission("cogworks.plugin.ins.modrinth"))
-    return;
-
-  ModrinthSearch modrinthSearch = Plugins.modrinthBrowse(sender, "pluginBrowse", offset);
-  ArrayList<JsonObject> validPluginKeys = modrinthSearch.getValidPluginKeys();
-  HashMap<JsonObject,JsonArray> validPlugins = modrinthSearch.getValidPlugins();
-
-  if (validPluginKeys.isEmpty() || validPlugins.isEmpty())
-    return;
-
-  new Log(sender, "pluginBrowse.pluginSelect").log();
-  int i = 0;
-
-  if (offset >= 1) {
-    sender.sendMessage(ChatColor.GREEN+String.valueOf(i)+": ^");
-    i++;
-  }
-
-  while (validPluginKeys.size() > i) {
-    JsonObject project = validPluginKeys.get(i);
-    TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
-    projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
-    projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
-    projectName.setUnderlined(true);
-    sender.spigot().sendMessage(projectName);
-    i++;
-  }
-
-  sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": v");
-
-  ChatParams params = new ChatParams(sender, "pluginBrowse").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys).setOffset(offset);
-  if (sender instanceof Player)
-    response.put(sender.getName(), params);
-  else
-    response.put("~", params);
-}
+  PluginBrowse pluginBrowse = new PluginBrowse(sender, offset);
+  pluginBrowse.execute();
 }

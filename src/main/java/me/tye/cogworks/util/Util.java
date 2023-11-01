@@ -233,6 +233,24 @@ public static int parseNumInput(CommandSender sender, String state, String messa
 }
 
 /**
+ Parses the int value a user sent for selecting a single choice when interacting with the chat system.
+ @return -1 if there was an error or the user quit. Else the value parsed is returned. */
+public static int parseNumInput(CommandSender sender, String state, String message) {
+  if (message.equals("q")) {
+    clearResponse(sender);
+    new Log(sender, state, "quit").log();
+    return -1;
+  }
+
+  try {
+    return Integer.parseInt(message);
+  } catch (NumberFormatException e) {
+    new Log(sender, state, "NAN").log();
+    return -1;
+  }
+}
+
+/**
  Easy method for setting some basic item properties.
  @param item        The item to apply the properties to.
  @param displayName The desired item name.

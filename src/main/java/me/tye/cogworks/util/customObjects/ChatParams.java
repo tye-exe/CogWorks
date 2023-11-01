@@ -28,6 +28,8 @@ JsonArray files = new JsonArray();
 ArrayList<PluginData> toDeleteEval = new ArrayList<>();
 Boolean deleteConfigs = null;
 DeleteQueue deleteQueue = null;
+PluginInstall pluginInstall = null;
+PluginBrowse pluginBrowse = null;
 int offset = 0;
 
 
@@ -60,6 +62,8 @@ public ChatParams reset(@NonNull CommandSender sender, @NonNull String state) {
   this.toDeleteEval = new ArrayList<>();
   this.deleteConfigs = null;
   this.deleteQueue = null;
+  this.pluginInstall = null;
+  this.pluginBrowse = null;
   this.offset = 0;
 
   return this;
@@ -227,5 +231,23 @@ public DeleteQueue getDeleteQueue() {
  @return The pluginVersion */
 public JsonObject getPluginVersion() {
   return pluginVersion;
+}
+
+public PluginInstall getPluginInstall() {
+  return pluginInstall;
+}
+
+public ChatParams setPluginInstall(PluginInstall pluginInstall) {
+  this.pluginInstall = pluginInstall;
+  return this;
+}
+
+public PluginBrowse getPluginBrowse() {
+  return pluginBrowse;
+}
+
+public ChatParams setPluginBrowse(PluginBrowse pluginBrowse) {
+  this.pluginBrowse = pluginBrowse;
+  return this;
 }
 }

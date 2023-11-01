@@ -21,13 +21,13 @@ public ModrinthSearch(@Nullable ArrayList<JsonObject> validPluginKeys, @Nullable
 }
 
 /**
- @return The valid plugin keys in order. */
+ @return The valid plugin projects in order of relevance. */
 public ArrayList<JsonObject> getValidPluginKeys() {
   return validPluginKeys;
 }
 
 /**
- @return The valid plugins. */
+ @return A HashMap with the valid plugins projects as the keys & their valid files(?) as the values. */
 public HashMap<JsonObject,JsonArray> getValidPlugins() {
   return validPlugins;
 }
