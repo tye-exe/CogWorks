@@ -16,7 +16,8 @@
 #lineNum = The number of the line inside a file.
 #searchPhrase = The current phrase being searched.
 #state = The current chat state that the user is in.
-#n = newLine.
+#n = A new line.
+#chosen = The value input by the user when interacting with the chat system.
 
 info:
   menuClose: "§e[CogWorks] Menu closed due to reload, this is to prevent errors."
@@ -44,8 +45,7 @@ help:
 tabComplete:
   plugin:
     install: "<URL>"
-    search: "<Plugin name>"
-    remove: "<Plugin name>"
+    search: "<query>"
 
   dataReadError: "§eThere was an error getting the plugin names."
 
@@ -60,104 +60,21 @@ reload:
   gettingFilesErr: "§eThere was an error getting the files in \"{filePath}\"."
 
 
-pluginSelect:
-  start: "§aInstalling {pluginName}."
-  installingDep: "§aInstalling dependencies for {pluginName}."
-  downloading: "§aDownloading {fileName}."
-  installed: "§e{fileName} is already installed."
-  installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
-  #Do translate the world (Primary)
-  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
-
-  quit: "§eQuitting."
-  NAN: "§ePlease enter a listed number."
-  noFiles: "§eFailed to find compatible file to download."
-  pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
-  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
-  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
-  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
-  alreadyExists: "§e{fileName} is already installed on your system."
-  installError: "§eThere was an error installing {fileName}."
-  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
-
-
-pluginVersionSelect:
-  start: "§aInstalling {pluginName}."
-  installingDep: "§aInstalling dependencies for {pluginName}."
-  downloading: "§aDownloading {fileName}."
-  installed: "§e{fileName} is already installed."
-  installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
-  #Do translate the world (Primary)
-  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
-
-  quit: "§eQuitting."
-  NAN: "§ePlease enter a listed number."
-  noFiles: "§eFailed to find compatible file to download."
-  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
-  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
-  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
-  alreadyExists: "§e{fileName} is already installed on your system."
-  installError: "§eThere was an error installing {fileName}."
-  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
-
-
-pluginFileSelect:
-  start: "§aInstalling {fileNames}."
-  installingDep: "§aInstalling dependencies for {pluginName}.{n}§eNote: This will install the dependencies listed for the version, not for the specified file(s)."
-  downloading: "§aDownloading {fileName}."
-  installed: "§e{fileName} is already installed."
-  installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {fileNames}.{n}§aReload or restart for the plugin(s) to activate."
-  #Do translate the world (Primary)
-  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
-  primary: "(Primary)"
-
-  quit: "§eQuitting."
-  NAN: "§ePlease enter a listed number."
-  noFiles: "§eFailed to find compatible file to download."
-  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
-  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
-  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
-  alreadyExists: "§e{fileName} is already installed on your system."
-  installError: "§eThere was an error installing {fileName}."
-  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
-  noneSelected: "§eNo valid files were selected."
-
-
-pluginBrowse:
-  pluginBrowse: "§aSend the number corresponding to the plugin to install it in chat, or the number next to an arrow to scroll, or send q to quit."
-  pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
-  start: "§aInstalling {pluginName}."
-  installingDep: "§aInstalling dependencies for {pluginName}."
-  downloading: "§aDownloading {fileName}."
-  installed: "§e{fileName} is already installed."
-  installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
-  #Do translate the world (Primary)
-  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
-
-  quit: "§eQuitting."
-  NAN: "§ePlease enter a listed number."
-  noFiles: "§eFailed to find compatible file to download."
-  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
-  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
-  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
-  browsePluginErr: "§eThere was an error getting plugins from Modrinth."
-  modrinthSearchErr: "§eThere was an error getting plugins with that name from Modrinth."
-  alreadyExists: "§e{fileName} is already installed on your system."
-  installError: "§eThere was an error installing {fileName}."
-  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
-
-
 pluginInstall:
-  downloading: "§aDownloading {fileName}."
-  finish: "§aFinished installing {fileName}.{n}§aReload or restart for {fileName} to activate."
-
-  noFiles: "§eFailed to find compatible file to download."
-  alreadyExists: "§eThat {fileName} is already installed on your system."
+  installingDep: "§aInstalling dependencies for {pluginName}."
+  downloading: "§aDownloading {fileName}..."
+  installed: "§aDownloaded {fileName}."
   pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
+
+  quit: "§aQuitting."
+  NAN: "§e{chosen} is not a listed number."
+
+  badDeps: "§eSome of the required dependencies could not be installed."
+  noEnable: "§e{fileName} could not be immediately enabled.{n}§eReload or restart for it to activate."
+  noVersions: "§eFailed to find compatible versions to download."
+  noFiles: "§eFailed to find compatible file to download."
+  oneVersionNoFiles: "§eFailed to find compatible file to download with only one version. Stopping install."
+  alreadyExists: "§eThat {fileName} is already installed on your system."
   installError: "§eThere was an error installing {fileName}."
   cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
   noInput: "§ePlease provide a plugin name to search or an url to download from."
@@ -166,8 +83,8 @@ pluginInstall:
 
 
 deletePlugin:
-  dependsOn: "§e{pluginNames} depend on {pluginName} to function.{n}§a1: Force delete {pluginName}.{n}§a2: Delete {pluginName} & {pluginNames}.{n}§a3: Do nothing (exit)."
-  deleteConfig: "§eDo you wish to delete the {pluginName} config files?{n}§eSend y or n in chat to choose."
+  dependsOn: "§e{pluginNames} depend on {pluginName} to function. Do you also want to delete {pluginNames}?.{n}§aSend y or n in chat to choose or q to quit."
+  deleteConfig: "§eDo you wish to delete the {pluginName} config files?{n}§aSend y or n in chat to choose or q to quit."
   note: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
 
   quit: "§eQuitting."
@@ -180,25 +97,8 @@ deletePlugin:
 
   noSuchPlugin: "§e{pluginName} couldn't be found on your system."
   deleteError: "§e{pluginName} couldn't be deleted."
-  scheduleDelete: "§e{pluginName} will be scheduled for attempted deletion on server restart."
-
-
-pluginsDeleteEval:
-  dependsOn: "§e{pluginNames} depend on {pluginName} to function.{n}§a1: Force delete {pluginName}.{n}§a2: Delete {pluginName} & {pluginNames}.{n}§a3: Do nothing (exit)."
-  deleteConfig: "§eDo you wish to delete the {pluginName} config files?{n}§eSend y or n in chat to choose."
-  note: "§eNote: You can add -y to the end of the command to confirm or -n to decline."
-
-  quit: "§eQuitting."
-  NAN: "§ePlease enter a listed number."
-  configRemove: "§aConfig files for {pluginName} deleted."
-  pluginDelete: "§a{pluginName} deleted."
-  reloadWarn: "§eImmediately reload or restart to avoid errors."
-  provideName: "§ePlease provide a plugin name!"
-  noConfigsFound: "§eNo config folder could be found for {pluginName}. Won't prompt for config delete."
-
-  noSuchPlugin: "§ePlugin {pluginName} couldn't be found on your system."
-  deleteError: "§ePlugin {pluginName} couldn't be deleted."
-  scheduleDelete: "§e{pluginName} will be scheduled for attempted deletion on server restart."
+  scheduleDelete: "§e{pluginName} will be marked for deletion & ignored by CogWorks form now on."
+  writeNoADR: "§eThere was an error setting {depName} for {pluginName} to not attempt ADR. This will cause ADR to attempt to resolve this dependency on restart."
 
 
 ModrinthAPI:
@@ -222,8 +122,9 @@ fileGui:
 
   createFile:
     title: "Name:"
-    fileExists: "§eThere is already a {isFile} with that name."
-    creationErr: "§eThere was an error creating that {isFile}."
+    fileExists: "§eThere is already a {isFile} called {fileName}."
+    creationErr: "§eThere was an error creating the {isFile} {fileName}."
+    invalidName: "§eThe name \"{fileName}\" is an invalid file name, please choose a different one."
 
   confirmDel:
     title: "Confirm Deletion"
@@ -295,9 +196,10 @@ terminal:
 
 
 ADR:
-  attempting: "§aAttempting to automatically resolve missing dependency \"{depName}\" for \"{fileName}\"."
-  success: "§aUnmet dependency for \"{fileName}\" successfully resolved by installing \"{depName}\".{n}Reload or restart for this to take effect."
-  fail: "§eUnmet dependency for \"{fileName}\" could not be automatically resolved."
+  attempting: "§aAttempting to automatically resolve missing dependency \"{depName}\" for \"{fileNames}\"."
+  success: "§aUnmet dependency for \"{fileNames}\" successfully resolved by installing \"{depName}\".{n}Reload or restart for this to take effect."
+  fail: "§eUnmet dependency for \"{fileNames}\" could not be automatically resolved."
+  notToRetry: "§eSetting not to retry resolve missing dependency {depName} for {pluginNames}."
 
   getErr: "§eError checking if the installed dependency has any dependencies."
   modrinthSearchErr: "§eError querying Modrinth for automatic dependency resolution."
@@ -305,12 +207,12 @@ ADR:
   threadTime: "§ePlugins took too long to download."
   pluginYMLCheck: "§eError checking plugin name for {fileName}. Skipping {fileName} as possible dependency."
   cleanUpPossiblePlugins: "§eError trying to delete plugins that were installed to check against for automatic dependency resolution. Please delete the folder \"{filePath}\" at your earliest convince."
+  writeNoADR: "§eThere was an error saving failed ADR result to {pluginName} for {depName}. This will cause ADR to attempt to resolve this dependency on every restart."
 
 
 exceptions:
   seeConsole: "§ePlease see the console for stack trace."
-  noSuchResponse: "§cNo lang response could be found for \"{key}\". Please inform the devs about this."
-
+  noSuchResponse: "§cNo config response could be found for \"{key}\". Please inform the devs about this."
   fileCreation: "§eUnable to create {fileName} file in \"{filePath}\"."
   removeLeftoverFiles: "§eUnable to clean up unused file \"{filePath}\". Please manually delete this file at your earliest convenience."
   noAccessPluginYML: "§cUnable to access plugin.yml file, many features of this plugin WILL break."
@@ -327,7 +229,6 @@ exceptions:
   newLangInstall: "§eThere was an error installing the new lang file {fileName}. You can manually download it from \"{URL}\"."
   clearTemp: "§eThere was an error clearing the temp folder - \"{filePath}\". This folder might fill up with unused files."
   stateNotFound: "§cThere was an error matching the state your in. Please report this to the devs. State: \"{state}\"."
-  noConfigMatch: "§cA value could not be matched to the value file. Please report this to the devs. Key: \"{key}\"."
   chatError: "§eThere was a general error when interacting with the chat system for CogWorks."
   langUpdateFail: "§eA valid lang file couldn't be found for your version, defaulting to english."
 

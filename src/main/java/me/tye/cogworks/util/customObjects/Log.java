@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -35,6 +36,7 @@ String Url = null;
 String severe = null;
 String isFile = null;
 String state = null;
+String chosen = null;
 
 /**
  Creates an object which can be used for logging. If state or event is null, no message will be sent.
@@ -77,9 +79,10 @@ public Log(String langPath, @NonNull Level level, @Nullable Exception e) {
 public void log() {
   if (level.getName().equals("SEVERE"))
     SendErrorSummary.severe++;
+
   if (langPath == null) return;
 
-  String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile, "pluginNames", pluginNames, "state", state, "fileNames", fileNames);
+  String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile, "pluginNames", pluginNames, "state", state, "fileNames", fileNames, "chosen", chosen);
 
   if (sender != null) {
     if (sender instanceof Player)
@@ -91,6 +94,7 @@ public void log() {
 
 
   } else {
+    //removes the colour formatting codes when sending to the console logger
     char[] messageChars = message.toCharArray();
     for (int i = 0; i < messageChars.length; i++) {
       if (messageChars[i] == '§') {
@@ -98,6 +102,7 @@ public void log() {
         messageChars[i+1] = 0;
       }
     }
+
     message = new String(messageChars);
 
     for (String line : message.split("\\{n}")) {
@@ -229,7 +234,7 @@ public Log isFile(boolean isFile) {
 /**
  @param pluginNames A string array of pluginNames.
  @return The modified Log object. */
-public Log setPluginNames(String[] pluginNames) {
+public Log setPluginNames(Collection<String> pluginNames) {
   StringBuilder names = new StringBuilder();
   for (String pluginName : pluginNames) {
     names.append(pluginName).append(", ");
@@ -252,6 +257,14 @@ public Log setPluginNames(String pluginNames) {
  @return The modified Log object. */
 public Log setState(String state) {
   this.state = state;
+  return this;
+}
+
+/**
+ @param chosen The choice the user made when interacting with the chat system.
+ @return The modified Log object. */
+public Log setChosen(String chosen) {
+  this.chosen = chosen;
   return this;
 }
 }

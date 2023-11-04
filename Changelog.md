@@ -47,3 +47,8 @@
 - Changed permissions to reflect new command:<br>
   "cogworks.plugin.ins.gen" - lets the user use the /plugin install command.<br>
   "cogworks.plugin.ins.modrinth" - lets the user use /plugin search & /plugin browse.
+- MAJOR code cleanup.
+- Added catch for invalid file name when creating a file.
+- Updated ADR to not retry after ADR completed & dependency couldn't be resolved.
+- Rewrote plugin remove commands for better readability & maintainability.
+- Plugins will be enabled immediately on installation.

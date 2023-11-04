@@ -1,9 +1,9 @@
 package me.tye.cogworks.commands;
 
-import me.tye.cogworks.util.Plugins;
+import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -19,6 +19,7 @@ public class TabComplete implements TabCompleter {
 @Override
 public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, @NonNull String[] args) {
   ArrayList<String> completions = new ArrayList<>();
+
   if (label.equals("plugin")) {
     if (args.length == 1) {
       if (sender.hasPermission("cogworks.plugin.ins.gen")) {
@@ -34,23 +35,38 @@ public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Comman
         StringUtil.copyPartialMatches(args[0], List.of("reload"), completions);
       }
 
-      if (!completions.isEmpty()) StringUtil.copyPartialMatches(args[0], List.of("help"), completions);
+      StringUtil.copyPartialMatches(args[0], List.of("help"), completions);
     }
-    if (args.length == 2 && args[0].equals("install") && args[1].isEmpty()) {
-      return List.of(Util.getLang("tabComplete.plugin.install"));
-    }
-    if (args.length == 2 && args[0].equals("remove")) {
-      ArrayList<String> plugins = new ArrayList<>();
 
-      try {
-        for (PluginData data : Plugins.readPluginData())
-          plugins.add(data.getName());
-      } catch (IOException e) {
-        new Log(sender, "tabComplete.dataReadError").log();
+    if (args.length == 2) {
+
+      if (args[1].isEmpty()) {
+        if (args[0].equals("install") && sender.hasPermission("cogworks.plugin.ins.gen"))
+          return List.of(Util.getLang("tabComplete.plugin.install"));
+
+        if (args[0].equals("search") && sender.hasPermission("cogworks.plugin.ins.modrinth"))
+          return List.of(Util.getLang("tabComplete.plugin.search"));
       }
 
-      StringUtil.copyPartialMatches(args[1], plugins, completions);
+
+      if (args[0].equals("remove") && sender.hasPermission("cogworks.plugin.rm")) {
+        //gets the names of all of the plugins
+        ArrayList<String> plugins = new ArrayList<>();
+
+        try {
+          for (PluginData data : StoredPlugins.readPluginData()) {
+            if (data.isDeletePending())
+              continue;
+            plugins.add(data.getName());
+          }
+        } catch (IOException e) {
+          new Log(sender, "tabComplete.dataReadError").log();
+        }
+
+        StringUtil.copyPartialMatches(args[1], plugins, completions);
+      }
     }
+
   }
 
   if (label.equals("file") && sender.hasPermission("cogworks.file.nav")) {
@@ -58,6 +74,7 @@ public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Comman
       StringUtil.copyPartialMatches(args[0], Arrays.asList("help", "chat", "gui"), completions);
     }
   }
+
   completions.sort(null);
   return completions;
 }
