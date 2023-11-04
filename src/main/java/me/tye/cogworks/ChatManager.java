@@ -3,6 +3,7 @@ package me.tye.cogworks;
 import me.tye.cogworks.operationHandlers.DeleteQueue;
 import me.tye.cogworks.operationHandlers.PluginBrowse;
 import me.tye.cogworks.operationHandlers.PluginInstall;
+import me.tye.cogworks.operationHandlers.PluginSearch;
 import me.tye.cogworks.util.customObjects.ChatParams;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.PathHolder;
@@ -73,6 +74,34 @@ public static void checks(String name, String message) {
         String state = params.getState();
 
         switch (state) {
+        case "pluginSelect" -> {
+          PluginSearch search = params.getPluginSearch();
+
+          if (message.equals("q")) {
+            response.remove(name);
+            new Log(sender, "pluginInstall.quit").log();
+            return;
+          }
+
+          int chosen;
+
+          try {
+            chosen = Integer.parseInt(message);
+          } catch (NumberFormatException e) {
+            new Log(sender, "pluginInstall.NAN").setChosen(message).log();
+            return;
+          }
+
+          //checks that the response is within the choice limits
+          if (chosen > search.getKeysSize()-1 || chosen < 0) {
+            new Log(sender, "pluginInstall.NAN").setChosen(String.valueOf(chosen)).log();
+            return;
+          }
+
+
+          search.selectPlugin(chosen);
+        }
+
         case "pluginVersionSelect" -> {
           PluginInstall install = params.getPluginInstall();
 

@@ -1,28 +1,19 @@
 package me.tye.cogworks.commands;
 
 import com.google.common.io.Files;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import me.tye.cogworks.operationHandlers.DeleteQueue;
 import me.tye.cogworks.operationHandlers.PluginBrowse;
+import me.tye.cogworks.operationHandlers.PluginSearch;
 import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.StoredPlugins;
-import me.tye.cogworks.util.customObjects.ChatParams;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.ModrinthSearch;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.HashMap;
 
-import static me.tye.cogworks.ChatManager.response;
 import static me.tye.cogworks.util.Util.encodeUrl;
 
 public class PluginCommand implements CommandExecutor {
@@ -150,31 +141,7 @@ private void searchPlugins(CommandSender sender, String[] args) {
   for (int i = 1; i < args.length; i++)
     query.append(" ").append(args[i]);
 
-  ModrinthSearch search = Plugins.modrinthSearch(sender, "pluginInstall", query.substring(1));
-
-  HashMap<JsonObject,JsonArray> validPlugins = search.getValidPlugins();
-  ArrayList<JsonObject> validPluginKeys = search.getValidPluginKeys();
-
-  if (validPlugins.isEmpty() || validPluginKeys.isEmpty())
-    return;
-
-  new Log(sender, "pluginInstall.pluginSelect").log();
-  for (int i = 0; 10 > i; i++) {
-    if (validPluginKeys.size() <= i)
-      break;
-    JsonObject project = validPluginKeys.get(i);
-    TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
-    projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
-    projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
-    projectName.setUnderlined(true);
-    sender.spigot().sendMessage(projectName);
-  }
-
-  ChatParams params = new ChatParams(sender, "pluginSelect").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys);
-  if (sender instanceof Player)
-    response.put(sender.getName(), params);
-  else
-    response.put("~", params);
+  new PluginSearch(sender, query.substring(1));
 }
 
 private void browsePlugins(CommandSender sender, int offset) {
