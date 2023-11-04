@@ -12,6 +12,7 @@ import me.tye.cogworks.util.customObjects.exceptions.ModrinthAPIException;
 import me.tye.cogworks.util.customObjects.exceptions.NoSuchPluginException;
 import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -42,13 +43,14 @@ public class Plugins {
 
 /**
  Installs a plugin from a given url. There are NO restriction on the url used, however ".jar" will always be appended.
+ Fail / success logging is handled within this method.
  @param sender      The sender to send the log messages to.
  @param state       The path to get the lang responses from.
  @param stringUrl   The Url as a string to download the file from.
  @param fileName    Name of the file to download. Sometimes the file is stored under a name different to the desired file name.
  @param addFileHash If downloading from a non api source the file hash can be added to the end of the file, as many downloads have generic names such as "download".
  @return True if and only if the file installed successfully. */
-public static boolean installPluginURL(@Nullable CommandSender sender, String state, String stringUrl, String fileName, Boolean addFileHash) {
+public static boolean installPluginURL(@Nullable CommandSender sender, String state, String stringUrl, String fileName, boolean addFileHash) {
   File tempPlugin = new File(temp.getAbsolutePath()+File.separator+fileName);
   File installedPlugin;
   boolean installed = false;
@@ -89,23 +91,39 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
 
     //moves the file to plugin folder
     FileUtils.moveFile(tempPlugin, installedPlugin);
-
     StoredPlugins.appendPluginData(installedPlugin);
+    new Log(sender, state, "installed").setFileName(fileName).log();
+
+    try {
+      Plugin pluginInstance = Bukkit.getPluginManager().loadPlugin(installedPlugin);
+      if (pluginInstance == null)
+        throw new Exception("Plugin is null.");
+      Bukkit.getPluginManager().enablePlugin(pluginInstance);
+
+    } catch (Exception e) {
+      new Log(sender, state, "noEnable").setFileName(fileName);
+    }
+
     installed = true;
 
   } catch (FileNotFoundException noFile) {
     new Log(sender, state, "noFiles").setLevel(Level.WARNING).setUrl(stringUrl).setException(noFile).log();
+
   } catch (MalformedURLException e) {
     new Log(sender, state, "badUrl").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).setFileName(fileName).log();
+
   } catch (FileAlreadyExistsException e) {
     new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
+
   } catch (IOException | NoSuchAlgorithmException e) {
     new Log(sender, state, "installError").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).log();
+
   } finally {
-    if (tempPlugin.exists())
-      if (!tempPlugin.delete())
-        new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(tempPlugin.getAbsolutePath()).log();
+    if (tempPlugin.exists() && !tempPlugin.delete()) {
+      new Log(sender, state, "cleanUp").setLevel(Level.WARNING).setFilePath(tempPlugin.getAbsolutePath()).log();
+    }
   }
+
   return installed;
 }
 
@@ -372,7 +390,8 @@ public static JsonElement modrinthAPI(@Nullable CommandSender sender, String sta
 }
 
 /**
- Installed plugins & their dependencies from Modrinth.
+ Installs the given plugins from Modrinth.
+ Fail / success logging is handled within this method.
  @param sender The command sender performing this action.
  @param state  The lang path to get the responses from.
  @param files  The files to install.
@@ -380,26 +399,11 @@ public static JsonElement modrinthAPI(@Nullable CommandSender sender, String sta
 public static boolean installModrinthPlugin(@Nullable CommandSender sender, String state, JsonArray files) {
   ArrayList<Boolean> installed = new ArrayList<>();
 
-  if (files.size() == 1) {
-    JsonObject file = files.get(0).getAsJsonObject();
-    String fileName = file.get("filename").getAsString();
-    installed.add(installPluginURL(sender, state, file.get("url").getAsString(), fileName, false));
-
-  } else if (!files.isEmpty()) {
-
     for (JsonElement je : files) {
       JsonObject file = je.getAsJsonObject();
-      if (file.get("primary").getAsBoolean()) {
-        installed.add(installPluginURL(sender, state, file.get("url").getAsString(), file.get("filename").getAsString(), false));
-
-      }
+      installed.add(installPluginURL(sender, state, file.get("url").getAsString(), file.get("filename").getAsString(), false));
     }
 
-    JsonObject file = files.get(0).getAsJsonObject();
-    String fileName = file.get("filename").getAsString();
-    installed.add(installPluginURL(sender, state, file.get("url").getAsString(), fileName, false));
-
-  }
   return !installed.contains(false);
 }
 
@@ -416,14 +420,15 @@ public static boolean installModrinthDependencies(@Nullable CommandSender sender
 
   if (!dependencies.isEmpty()) {
     new Log(sender, state, "installingDep").setPluginName(pluginName).log();
+
     for (JsonArray plugins : dependencies.values()) {
-      if (plugins.isEmpty())
+      if (plugins.isEmpty()) {
         continue;
-      boolean install = installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray());
-      installed.add(install);
-      if (install)
-        new Log(sender, state, "installed").setFileName(plugins.get(0).getAsJsonObject().get("files").getAsJsonArray().get(0).getAsJsonObject().get("filename").getAsString());
+      }
+
+      installed.add(installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()));
     }
+
     new Log(sender, state, "installedDep").log();
   }
 

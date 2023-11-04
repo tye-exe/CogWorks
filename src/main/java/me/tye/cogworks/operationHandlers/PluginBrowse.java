@@ -1,8 +1,12 @@
-package me.tye.cogworks.util.customObjects;
+package me.tye.cogworks.operationHandlers;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import me.tye.cogworks.util.customObjects.ChatParams;
+import me.tye.cogworks.util.customObjects.Log;
+import me.tye.cogworks.util.customObjects.ModrinthSearch;
+import me.tye.cogworks.util.customObjects.VersionGetThread;
 import me.tye.cogworks.util.customObjects.exceptions.ModrinthAPIException;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -37,6 +41,8 @@ public void execute() {
   if (!sender.hasPermission("cogworks.plugin.ins.modrinth"))
     return;
 
+  clearResponse(sender);
+
   returned = getPlugins();
   ArrayList<JsonObject> validPluginKeys = returned.getValidPluginKeys();
   HashMap<JsonObject,JsonArray> validPlugins = returned.getValidPlugins();
@@ -48,13 +54,12 @@ public void execute() {
   maxChoice = validPlugins.size()+1;
 
   new Log(sender, "pluginBrowse.pluginSelect").log();
-  int i = 0;
 
   if (offset >= 1) {
-    sender.sendMessage(ChatColor.GREEN+String.valueOf(i)+": ^");
-    i++;
+    sender.sendMessage(ChatColor.GREEN+"0: ^");
   }
 
+  int i = 0;
   while (validPluginKeys.size() > i) {
     JsonObject project = validPluginKeys.get(i);
     TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
@@ -68,84 +73,18 @@ public void execute() {
   sender.sendMessage(ChatColor.GREEN+String.valueOf(i+1)+": v");
 
   setResponse(sender, new ChatParams(sender, "pluginBrowse").setPluginBrowse(this));
-
-
-  //    //if the user decides to install a plugin
-  //    JsonObject plugin = validPluginKeys.get(chosen-1);
-  //    JsonArray compatibleFiles = validPlugins.get(validPluginKeys.get(chosen-1));
-  //    ArrayList<JsonObject> chooseableFiles = new ArrayList<>();
-  //
-  //    if (compatibleFiles.isEmpty()) {
-  //      new Log(sender, state, "noFiles").log();
-  //
-  //    } else if (compatibleFiles.size() == 1) {
-  //      JsonArray files = compatibleFiles.get(0).getAsJsonObject().get("files").getAsJsonArray();
-  //      if (files.isEmpty()) {
-  //        new Log(sender, state, "noFiles").log();
-  //        return;
-  //      }
-  //
-  //      //if there is only one file to install from that version it installs it
-  //      if (files.size() == 1) {
-  //        Plugins.installModrinthDependencies(sender, state, compatibleFiles.get(0).getAsJsonObject(), plugin.get("title").getAsString());
-  //        if (Plugins.installModrinthPlugin(sender, state, files))
-  //          new Log(sender, state, "finish").setPluginName(plugin.get("title").getAsString()).log();
-  //
-  //        // if there are more than one file for that version you get prompted to choose which one(s) to install
-  //      } else {
-  //        new Log(sender, state, "versionFiles").log();
-  //
-  //        int i = 1;
-  //        for (JsonElement je : files) {
-  //          JsonObject jo = je.getAsJsonObject();
-  //          chooseableFiles.add(jo);
-  //          TextComponent projectName = new TextComponent(i+": "+(jo.get("primary").getAsBoolean() ? net.md_5.bungee.api.ChatColor.BLUE+getLang("pluginFileSelect.primary")+net.md_5.bungee.api.ChatColor.GREEN+" " : "")+jo.get("filename").getAsString());
-  //          projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
-  //          sender.spigot().sendMessage(projectName);
-  //          i++;
-  //        }
-  //        params.reset(sender, "pluginFileSelect").setChooseable(chooseableFiles).setPlugin(plugin).setPluginVersion(compatibleFiles.get(0).getAsJsonObject());
-  //        if (sender instanceof Player)
-  //          response.put(sender.getName(), params);
-  //        else
-  //          response.put("~", params);
-  //        return;
-  //      }
-  //
-  //
-  //    } else {
-  //      new Log(sender, state, "pluginSelect").log();
-  //      int i = 1;
-  //      for (JsonElement je : compatibleFiles) {
-  //        JsonObject jo = je.getAsJsonObject();
-  //        chooseableFiles.add(jo);
-  //        TextComponent projectName = new TextComponent(i+": "+jo.get("name").getAsString()+" : "+jo.get("version_number").getAsString());
-  //        projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+validPluginKeys.get(chosen-1).get("project_type").getAsString()+"/"+validPluginKeys.get(chosen-1).get("slug").getAsString()+"/version/"+jo.get("version_number").getAsString())));
-  //        projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
-  //        projectName.setUnderlined(true);
-  //        sender.spigot().sendMessage(projectName);
-  //        i++;
-  //      }
-  //
-  //      params.reset(sender, "pluginVersionSelect").setChooseable(chooseableFiles).setPlugin(plugin);
-  //      if (sender instanceof Player)
-  //        response.put(sender.getName(), params);
-  //      else
-  //        response.put("~", params);
-  //      return;
-  //    }
-  //    response.remove(name);
-
 }
 
 
 public void install(int chosen) {
-  new PluginInstall(sender, returned.getValidPluginKeys().get(chosen-1), returned.getValidPlugins().get(returned.getValidPluginKeys().get(chosen-1)));
-
+  new PluginInstall(sender, this, returned.getValidPluginKeys().get(chosen-1), returned.getValidPlugins().get(returned.getValidPluginKeys().get(chosen-1)));
 }
 
 public void execute(int newOffset) {
-  offset = newOffset;
+  if (newOffset == 0)
+    offset = Math.max(offset-10, 0);
+  else
+    offset += 10;
   execute();
 }
 

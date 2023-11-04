@@ -36,6 +36,7 @@ String Url = null;
 String severe = null;
 String isFile = null;
 String state = null;
+String chosen = null;
 
 /**
  Creates an object which can be used for logging. If state or event is null, no message will be sent.
@@ -81,7 +82,7 @@ public void log() {
 
   if (langPath == null) return;
 
-  String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile, "pluginNames", pluginNames, "state", state, "fileNames", fileNames);
+  String message = getLang(langPath, "filePath", filePath, "fileName", fileName, "depName", depName, "pluginName", pluginName, "key", key, "URL", Url, "severe", severe, "isFile", isFile, "pluginNames", pluginNames, "state", state, "fileNames", fileNames, "chosen", chosen);
 
   if (sender != null) {
     if (sender instanceof Player)
@@ -256,6 +257,14 @@ public Log setPluginNames(String pluginNames) {
  @return The modified Log object. */
 public Log setState(String state) {
   this.state = state;
+  return this;
+}
+
+/**
+ @param chosen The choice the user made when interacting with the chat system.
+ @return The modified Log object. */
+public Log setChosen(String chosen) {
+  this.chosen = chosen;
   return this;
 }
 }

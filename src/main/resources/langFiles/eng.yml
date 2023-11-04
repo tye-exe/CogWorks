@@ -16,7 +16,8 @@
 #lineNum = The number of the line inside a file.
 #searchPhrase = The current phrase being searched.
 #state = The current chat state that the user is in.
-#n = newLine.
+#n = A new line.
+#chosen = The value input by the user when interacting with the chat system.
 
 info:
   menuClose: "§e[CogWorks] Menu closed due to reload, this is to prevent errors."
@@ -151,12 +152,21 @@ pluginBrowse:
 
 
 pluginInstall:
-  downloading: "§aDownloading {fileName}."
+  downloading: "§aDownloading {fileName}..."
+  installed: "§aDownloaded {fileName}."
   finish: "§aFinished installing {fileName}.{n}§aReload or restart for {fileName} to activate."
 
-  noFiles: "§eFailed to find compatible file to download."
-  alreadyExists: "§eThat {fileName} is already installed on your system."
   pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
+
+  quit: "§aQuitting."
+  NAN: "§e{chosen} is not a listed number."
+
+  badDeps: "§eSome of the required dependencies could not be installed."
+  noEnable: "§e{fileName} could not be immediately enabled.{n}§eReload or restart for it to activate."
+  noVersions: "§eFailed to find compatible versions to download."
+  noFiles: "§eFailed to find compatible file to download."
+  oneVersionNoFiles: "§eFailed to find compatible file to download with only one version. Stopping install."
+  alreadyExists: "§eThat {fileName} is already installed on your system."
   installError: "§eThere was an error installing {fileName}."
   cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
   noInput: "§ePlease provide a plugin name to search or an url to download from."

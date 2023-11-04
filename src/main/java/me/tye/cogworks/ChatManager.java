@@ -1,10 +1,11 @@
 package me.tye.cogworks;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import me.tye.cogworks.util.Plugins;
-import me.tye.cogworks.util.customObjects.*;
+import me.tye.cogworks.operationHandlers.DeleteQueue;
+import me.tye.cogworks.operationHandlers.PluginBrowse;
+import me.tye.cogworks.operationHandlers.PluginInstall;
+import me.tye.cogworks.util.customObjects.ChatParams;
+import me.tye.cogworks.util.customObjects.Log;
+import me.tye.cogworks.util.customObjects.PathHolder;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -24,7 +25,6 @@ import java.util.logging.Level;
 
 import static me.tye.cogworks.FileGui.position;
 import static me.tye.cogworks.util.Util.clearResponse;
-import static me.tye.cogworks.util.Util.parseNumInput;
 
 public class ChatManager implements Listener {
 
@@ -73,17 +73,12 @@ public static void checks(String name, String message) {
         String state = params.getState();
 
         switch (state) {
-        case "pluginSelect" -> {
-          PluginInstall pluginInstall = params.getPluginSearch();
-          pluginInstall.setChosen(parseNumInput(sender, state, message));
-          pluginInstall.execute();
-        }
         case "pluginVersionSelect" -> {
           PluginInstall install = params.getPluginInstall();
 
           if (message.equals("q")) {
             response.remove(name);
-            new Log(sender, state, "quit").log();
+            new Log(sender, "pluginInstall.quit").log();
             return;
           }
 
@@ -92,121 +87,51 @@ public static void checks(String name, String message) {
           try {
             chosen = Integer.parseInt(message);
           } catch (NumberFormatException e) {
-            new Log(sender, state, "NAN").log();
+            new Log(sender, "pluginInstall.NAN").setChosen(message).log();
             return;
           }
 
           //checks that the response is within the choice limits
-          if (chosen > install.getVersionSize()-1 || chosen > 0) {
-            new Log(sender, state, "NAN").log();
+          if (chosen > install.getVersionSize()-1 || chosen < 0) {
+            new Log(sender, "pluginInstall.NAN").setChosen(String.valueOf(chosen)).log();
             return;
           }
 
-          //          ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
-          //          JsonObject plugin = params.getPlugin();
-          //          int chosenVersion = parseNumInput(sender, state, message, name, chooseableFiles.size(), 1);
-          //          if (chosenVersion == -1)
-          //            return;
-          //
-          //          JsonObject chosen = chooseableFiles.get(chosenVersion).getAsJsonObject();
-          //          String title = plugin.get("title").getAsString();
-          //          new Log(sender, state, "start").setPluginName(title).log();
-          //
-          //
-          //          JsonArray files = chosen.get("files").getAsJsonArray();
-          //          if (files.isEmpty()) {
-          //            new Log(sender, state, "noFiles").log();
-          //            return;
-          //          }
-          //
-          //          if (files.size() == 1) {
-          //            Plugins.installModrinthDependencies(sender, state, chosen, title);
-          //            if (Plugins.installModrinthPlugin(sender, state, files))
-          //              new Log(sender, state, "finish").setPluginName(title).log();
-          //
-          //            // if there are more than one file for that version you get prompted to choose which one(s) to install
-          //          } else {
-          //            new Log(sender, state, "versionFiles").log();
-          //
-          //            int i = 1;
-          //            for (JsonElement je : files) {
-          //              JsonObject jo = je.getAsJsonObject();
-          //              chooseableFiles.add(jo);
-          //              TextComponent projectName = new TextComponent(i+": "+(jo.get("primary").getAsBoolean() ? net.md_5.bungee.api.ChatColor.BLUE+getLang("pluginFileSelect.primary")+net.md_5.bungee.api.ChatColor.GREEN+" " : "")+jo.get("filename").getAsString());
-          //              projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
-          //              sender.spigot().sendMessage(projectName);
-          //              i++;
-          //            }
-          //            params.reset(sender, "pluginFileSelect").setChooseable(chooseableFiles).setPlugin(plugin).setPluginVersion(chosen);
-          //            if (sender instanceof Player)
-          //              response.put(sender.getName(), params);
-          //            else
-          //              response.put("~", params);
-          //            return;
-          //          }
-          //
-          //          response.remove(name);
+          install.setChosenVersion(chosen-1);
+          install.execute();
         }
+
         case "pluginFileSelect" -> {
-          ArrayList<JsonObject> chooseableFiles = params.getChooseableFiles();
-          JsonObject plugin = params.getPlugin();
-          JsonObject pluginVersion = params.getPluginVersion();
+          PluginInstall install = params.getPluginInstall();
 
           if (message.equals("q")) {
             response.remove(name);
-            new Log(sender, state, "quit").log();
+            new Log(sender, "pluginInstall.quit").log();
             return;
           }
 
-          JsonArray toInstall = new JsonArray();
+          ArrayList<Integer> chosenFiles = new ArrayList<>();
 
-          //allow multiple inpuits for parse
-          for (String file : message.split(",")) {
-            file = file.strip();
-            if (file.isEmpty())
-              continue;
+          for (String choice : message.split(",")) {
+            int chosen;
 
             try {
-              toInstall.add(chooseableFiles.get(Integer.parseInt(file)-1));
+              chosen = Integer.parseInt(choice.strip())-1;
             } catch (NumberFormatException e) {
-              new Log(sender, state, "NAN").log();
+              new Log(sender, "pluginInstall.NAN").setChosen(choice.strip()).log();
+              return;
+            }
+
+            if (chosen < 1 && chosen > install.getFilesAmount()-1) {
+              new Log(sender, "pluginInstall.NAN").setChosen(choice.strip()).log();
+              return;
             }
           }
 
-          if (toInstall.isEmpty()) {
-            new Log(sender, state, "noneSelected").log();
-            return;
-          }
-
-          Plugins.installModrinthDependencies(sender, state, pluginVersion, plugin.get("title").getAsString());
-
-          ArrayList<String> fileNames = new ArrayList<>();
-          for (JsonElement file : toInstall) {
-            String fileName = file.getAsJsonObject().get("filename").getAsString();
-            fileNames.add(fileName);
-          }
-
-          new Log(sender, state, "start").setFileNames(fileNames).log();
-
-          ArrayList<Boolean> installed = new ArrayList<>();
-          for (JsonElement file : toInstall) {
-            JsonArray array = new JsonArray();
-            array.add(file);
-            installed.add(Plugins.installModrinthPlugin(sender, state, array));
-          }
-
-          //removes the filenames that didn't install successfully from the log
-          for (int i = 0; i < installed.size(); i++) {
-            if (!installed.get(i)) {
-              fileNames.remove(i);
-              installed.remove(i);
-              i--;
-            }
-          }
-
-          new Log(sender, state, "finish").setFileNames(fileNames).log();
-          response.remove(name);
+          install.setChosenFiles(chosenFiles);
+          install.execute();
         }
+
         case "pluginBrowse" -> {
           PluginBrowse browse = params.getPluginBrowse();
 
@@ -263,6 +188,7 @@ public static void checks(String name, String message) {
 
           deleteQueue.evaluatePlugins();
         }
+
         case "deletePluginsDepend" -> {
           DeleteQueue deleteQueue = params.getDeleteQueue();
 
@@ -326,15 +252,19 @@ public static void checks(String name, String message) {
           }
           position.put(name, pathHolder);
         }
+
         default -> {
           new Log(sender, "exceptions.stateNotFound").setState(state).log();
           response.remove(name);
         }
+
         }
+
       } catch (Exception e) {
         new Log("exceptions.chatError", Level.WARNING, e).log();
         response.remove(name);
       }
+
     }
   }.init(name, message)).start();
 }

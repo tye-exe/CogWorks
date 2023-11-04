@@ -1,7 +1,9 @@
-package me.tye.cogworks.util.customObjects;
+package me.tye.cogworks.operationHandlers;
 
 import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.StoredPlugins;
+import me.tye.cogworks.util.customObjects.ChatParams;
+import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.yamlClasses.DependencyInfo;
 import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.bukkit.Bukkit;

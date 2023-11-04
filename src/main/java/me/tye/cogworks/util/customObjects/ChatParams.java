@@ -2,6 +2,9 @@ package me.tye.cogworks.util.customObjects;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import me.tye.cogworks.operationHandlers.DeleteQueue;
+import me.tye.cogworks.operationHandlers.PluginBrowse;
+import me.tye.cogworks.operationHandlers.PluginInstall;
 import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.bukkit.command.CommandSender;
 import org.checkerframework.checker.nullness.qual.NonNull;

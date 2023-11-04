@@ -3,9 +3,13 @@ package me.tye.cogworks.commands;
 import com.google.common.io.Files;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import me.tye.cogworks.operationHandlers.DeleteQueue;
+import me.tye.cogworks.operationHandlers.PluginBrowse;
 import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.StoredPlugins;
-import me.tye.cogworks.util.customObjects.*;
+import me.tye.cogworks.util.customObjects.ChatParams;
+import me.tye.cogworks.util.customObjects.Log;
+import me.tye.cogworks.util.customObjects.ModrinthSearch;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.command.Command;
@@ -176,4 +180,5 @@ private void searchPlugins(CommandSender sender, String[] args) {
 private void browsePlugins(CommandSender sender, int offset) {
   PluginBrowse pluginBrowse = new PluginBrowse(sender, offset);
   pluginBrowse.execute();
+}
 }

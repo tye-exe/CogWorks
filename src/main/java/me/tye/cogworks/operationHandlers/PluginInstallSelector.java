@@ -1,4 +1,4 @@
-package me.tye.cogworks.util.customObjects;
+package me.tye.cogworks.operationHandlers;
 
 public interface PluginInstallSelector {
 
