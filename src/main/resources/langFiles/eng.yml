@@ -60,102 +60,10 @@ reload:
   gettingFilesErr: "§eThere was an error getting the files in \"{filePath}\"."
 
 
-pluginSelect:
-  start: "§aInstalling {pluginName}."
-  installingDep: "§aInstalling dependencies for {pluginName}."
-  downloading: "§aDownloading {fileName}."
-  installed: "§e{fileName} is already installed."
-  installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
-  #Do translate the world (Primary)
-  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
-
-  quit: "§eQuitting."
-  NAN: "§ePlease enter a listed number."
-  noFiles: "§eFailed to find compatible file to download."
-  pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
-  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
-  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
-  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
-  alreadyExists: "§e{fileName} is already installed on your system."
-  installError: "§eThere was an error installing {fileName}."
-  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
-
-
-pluginVersionSelect:
-  start: "§aInstalling {pluginName}."
-  installingDep: "§aInstalling dependencies for {pluginName}."
-  downloading: "§aDownloading {fileName}."
-  installed: "§e{fileName} is already installed."
-  installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
-  #Do translate the world (Primary)
-  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
-
-  quit: "§eQuitting."
-  NAN: "§ePlease enter a listed number."
-  noFiles: "§eFailed to find compatible file to download."
-  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
-  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
-  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
-  alreadyExists: "§e{fileName} is already installed on your system."
-  installError: "§eThere was an error installing {fileName}."
-  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
-
-
-pluginFileSelect:
-  start: "§aInstalling {fileNames}."
-  installingDep: "§aInstalling dependencies for {pluginName}.{n}§eNote: This will install the dependencies listed for the version, not for the specified file(s)."
-  downloading: "§aDownloading {fileName}."
-  installed: "§e{fileName} is already installed."
-  installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {fileNames}.{n}§aReload or restart for the plugin(s) to activate."
-  #Do translate the world (Primary)
-  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
-  primary: "(Primary)"
-
-  quit: "§eQuitting."
-  NAN: "§ePlease enter a listed number."
-  noFiles: "§eFailed to find compatible file to download."
-  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
-  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
-  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
-  alreadyExists: "§e{fileName} is already installed on your system."
-  installError: "§eThere was an error installing {fileName}."
-  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
-  noneSelected: "§eNo valid files were selected."
-
-
-pluginBrowse:
-  pluginBrowse: "§aSend the number corresponding to the plugin to install it in chat, or the number next to an arrow to scroll, or send q to quit."
-  pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
-  start: "§aInstalling {pluginName}."
-  installingDep: "§aInstalling dependencies for {pluginName}."
-  downloading: "§aDownloading {fileName}."
-  installed: "§e{fileName} is already installed."
-  installedDep: "§aDependencies installed."
-  finish: "§aFinished installing {pluginName}.{n}§aReload or restart for {pluginName} to activate."
-  #Do translate the world (Primary)
-  versionFiles: "§aSend the number corresponding to the version file to install it.{n}§aThe file labeled (Primary) is the main file.{n}§aIf you wish to install multiple files enter the numbers separated by a comma. E.G: \"2, 4, 5\""
-
-  quit: "§eQuitting."
-  NAN: "§ePlease enter a listed number."
-  noFiles: "§eFailed to find compatible file to download."
-  badUrl: "§eSkipping {fileName}. Invalid download URL.{n}§eURL: \"{URL}\""
-  getPluginErr: "§eThere was an error getting the plugin information for certain dependencies, only some will be installed."
-  allPluginErr: "§eThere was an error getting the plugin information all dependencies, none will be installed."
-  browsePluginErr: "§eThere was an error getting plugins from Modrinth."
-  modrinthSearchErr: "§eThere was an error getting plugins with that name from Modrinth."
-  alreadyExists: "§e{fileName} is already installed on your system."
-  installError: "§eThere was an error installing {fileName}."
-  cleanUp: "§eThere was an error trying to delete \"{filePath}\" after failed install. Please manually delete this at your earliest convince."
-
-
 pluginInstall:
+  installingDep: "§aInstalling dependencies for {pluginName}."
   downloading: "§aDownloading {fileName}..."
   installed: "§aDownloaded {fileName}."
-  finish: "§aFinished installing {fileName}.{n}§aReload or restart for {fileName} to activate."
-
   pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
 
   quit: "§aQuitting."
