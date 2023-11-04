@@ -39,33 +39,9 @@ public PluginInstall(@NonNull CommandSender sender, @NonNull PluginInstallSelect
   this.pluginVersions = pluginVersions;
   execute();
 }
-//
-//public void search() {
-//  clearResponse(sender);
-//
-//  HashMap<JsonObject,JsonArray> validPlugins = search.getValidPlugins();
-//  ArrayList<JsonObject> validPluginKeys = search.getValidPluginKeys();
-//
-//
-//  //the error logging is handled within the modrinthSearch method
-//  if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) {
-//    return;
-//  }
-//
-//  //lets the user select the plugin to search
-//  new Log(sender, "pluginInstall.pluginSelect").log();
-//  for (int i = 0; validPluginKeys.size() > i; i++) {
-//    JsonObject project = validPluginKeys.get(i);
-//    TextComponent projectName = new TextComponent(i+1+": "+project.get("title").getAsString());
-//    projectName.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, ("https://modrinth.com/"+project.get("project_type").getAsString()+"/"+project.get("slug").getAsString())));
-//    projectName.setColor(net.md_5.bungee.api.ChatColor.GREEN);
-//    projectName.setUnderlined(true);
-//    sender.spigot().sendMessage(projectName);
-//  }
-//
-//  setResponse(sender, new ChatParams(sender, "pluginSelect").setValidPlugins(validPlugins).setValidPluginKeys(validPluginKeys));
-//}
 
+/**
+ Enters the user into the plugin install sequence, using the CogWorks interaction system for user input when required. */
 public void execute() {
   clearResponse(sender);
 
@@ -101,6 +77,7 @@ public void execute() {
 
   JsonArray files = chosenVersion.get("files").getAsJsonArray();
 
+  //if the plugin has no files to install for this version
   if (files.isEmpty()) {
     chosenVersion = null;
 
@@ -116,6 +93,7 @@ public void execute() {
   }
 
 
+  //if there is more than one file then the user can select which ones to install
   if (chosenFiles.isEmpty()) {
     if (files.size() == 1) {
       chosenFiles.add(files.get(0));
@@ -135,6 +113,7 @@ public void execute() {
     }
   }
 
+
   if (!Plugins.installModrinthDependencies(sender, "pluginInstall", chosenVersion, chosenVersion.get("name").getAsString())) {
     new Log(sender, "pluginInstall.badDeps").log();
     //TODO: make deps uninstall
@@ -144,20 +123,34 @@ public void execute() {
   Plugins.installModrinthPlugin(sender, "pluginInstall", chosenFiles);
 }
 
+/**
+ * @return How many valid version their are for this plugin.
+ */
 public int getVersionSize() {
   return pluginVersions.size();
 }
 
+/**
+ * @return The amount of files the select version has, or 0 if the selected version is null.
+ */
 public int getFilesAmount() {
   if (chosenVersion == null)
     return 0;
   return chosenVersion.get("files").getAsJsonArray().size();
 }
 
-public void setChosenVersion(Integer chosenVersion) {
+/**
+ Sets the chosen version.
+ * @param chosenVersion The index of the chosen version.
+ */
+public void setChosenVersion(int chosenVersion) {
   this.chosenVersion = pluginVersions.get(chosenVersion).getAsJsonObject();
 }
 
+/**
+ Sets the chosen files.
+ * @param chosenFiles A collection of the indexes of the chosen files.
+ */
 public void setChosenFiles(Collection<Integer> chosenFiles) {
   for (Integer chosen : chosenFiles) {
     this.chosenFiles.add(chosenVersion.get("files").getAsJsonArray().get(chosen).getAsJsonObject());
