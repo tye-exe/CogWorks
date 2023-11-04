@@ -52,3 +52,4 @@
 - Updated ADR to not retry after ADR completed & dependency couldn't be resolved.
 - Rewrote plugin remove commands for better readability & maintainability.
 - Plugins will be enabled immediately on installation.
+- Release of version 0.3.
