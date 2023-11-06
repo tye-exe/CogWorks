@@ -170,7 +170,7 @@ public Log setFileNames(String fileNames) {
  @param filePath The filePath.
  @return The modified Log object. */
 public Log setFilePath(String filePath) {
-  this.filePath = filePath;
+  this.filePath = filePath.replaceAll("\\\\", "/");
   return this;
 }
 

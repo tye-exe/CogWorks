@@ -302,12 +302,15 @@ public static URL encodeUrl(@NonNull String text) throws MalformedURLException {
  @param file     External file destination
  @param resource Input stream for the data to write, or null if target is an empty file/dir. */
 public static void createFile(File file, @Nullable InputStream resource, boolean isFile) {
+  if (file.exists())
+    return;
+
   try {
-    if (!file.exists()) {
       if (isFile) {
         if (!file.createNewFile())
           throw new IOException();
-      } else if (!file.mkdir())
+      }
+      else if (!file.mkdir())
         throw new IOException();
 
       if (resource != null) {
@@ -316,7 +319,7 @@ public static void createFile(File file, @Nullable InputStream resource, boolean
         fw.write(text);
         fw.close();
       }
-    }
+
   } catch (IOException | NullPointerException e) {
     new Log("exceptions.fileCreation", Level.SEVERE, e).setFilePath(file.getAbsolutePath()).log();
   }

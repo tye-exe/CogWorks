@@ -39,8 +39,7 @@ import static me.tye.cogworks.util.Plugins.modrinthSearch;
 import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
-//TODO: Check if lang file exists for string the user entered.
-//TODO: Edit lang options based on available lang files.
+
 //TODO: Add command to force stop ADR?
 //TODO: Instead of deleting files, have them be moved to the .temp folder & either deleted upon reload | after a set time.
 //TODO: Allow to install multiple plugins at once when using a url.
