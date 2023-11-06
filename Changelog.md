@@ -53,3 +53,6 @@
 - Rewrote plugin remove commands for better readability & maintainability.
 - Plugins will be enabled immediately on installation.
 - Release of version 0.3.
+
+## 0.4:
+- Multiple plugins can be removed at once by separating each plugin name by a space.

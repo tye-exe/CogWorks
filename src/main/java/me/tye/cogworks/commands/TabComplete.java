@@ -47,24 +47,25 @@ public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Comman
         if (args[0].equals("search") && sender.hasPermission("cogworks.plugin.ins.modrinth"))
           return List.of(Util.getLang("tabComplete.plugin.search"));
       }
+    }
 
+    //adds all the undeleted & not selected plugins to the return list
+    if (args[0].equals("remove") && sender.hasPermission("cogworks.plugin.rm")) {
+      ArrayList<String> plugins = new ArrayList<>();
 
-      if (args[0].equals("remove") && sender.hasPermission("cogworks.plugin.rm")) {
-        //gets the names of all of the plugins
-        ArrayList<String> plugins = new ArrayList<>();
-
-        try {
-          for (PluginData data : StoredPlugins.readPluginData()) {
-            if (data.isDeletePending())
-              continue;
-            plugins.add(data.getName());
+      try {
+        for (PluginData data : StoredPlugins.readPluginData()) {
+          if (data.isDeletePending() || Arrays.stream(args).toList().contains(data.getName())) {
+            continue;
           }
-        } catch (IOException e) {
-          new Log(sender, "tabComplete.dataReadError").log();
-        }
 
-        StringUtil.copyPartialMatches(args[1], plugins, completions);
+          plugins.add(data.getName());
+        }
+      } catch (IOException e) {
+        new Log(sender, "tabComplete.dataReadError").setException(e).log();
       }
+
+      StringUtil.copyPartialMatches(args[args.length-1], plugins, completions);
     }
 
   }

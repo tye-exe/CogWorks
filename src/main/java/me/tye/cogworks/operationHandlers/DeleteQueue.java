@@ -32,10 +32,7 @@ private final ArrayList<Boolean> evalDeleteDepends = new ArrayList<>();
 public static HashMap<CommandSender,List<Boolean>> completed = new HashMap<>();
 
 /**
- <b>Warning: This object should only be created asynchronously!</b><br>
- Creates an object that takes the given plugin name & executes delete checks on it, then deletes the plugins in the delete queue.<br>
- The delete checks involve checking for if the plugin has a config folder or if other plugins depend on this one to function. If either of these are true for any plugins in the queue for plugins to be evaluated then the user will be entered into the CogWorks chat interaction system.<br>
- Plugins that depend on the given plugin to function can be added to the delete queue on the users request.
+ Creates a new instance of the DeleteQueue object, which is used for deleting plugins & getting a user response on delete options by using the CogWorks chat system.
  @param sender     The sender performing the deletion.
  @param pluginName The given plugin name. */
 public DeleteQueue(@NonNull CommandSender sender, @NonNull String pluginName) {
@@ -43,12 +40,12 @@ public DeleteQueue(@NonNull CommandSender sender, @NonNull String pluginName) {
   evalPluginNames.add(pluginName);
   evalDeleteConfigs.add(null);
   evalDeleteDepends.add(null);
-  evaluatePlugins();
 }
 
 /**
  <b>Warning: This method should only be executed asynchronously!</b><br>
  This method goes though all the plugins that are to be evaluated and adds them to the delete queue. Once all plugins have been evaluated then the plugins are deleted.<br>
+ Evaluation involves prompting the user about deleting the plugin config files if present, & prompting the user if plugins that depend on this one to function should be added to the evaluation queue or not.<br>
  When user input is required, an example of this is if plugin config files should be deleted, the method will send the sender a message & set the chat interaction system to wait for a response. */
 public void evaluatePlugins() {
   clearResponse(sender);
@@ -194,6 +191,15 @@ public void setCurrentEvalDeleteConfig(boolean deleteConfig) {
  @param deleteDepends Whether to delete the plugins that depend on the current plugin. */
 public void setCurrentEvalDeleteDepends(boolean deleteDepends) {
   evalDeleteDepends.set(0, deleteDepends);
+}
+
+/**
+ Adds the given plugin to the eval queue.
+ @param pluginName The given plugin. */
+public void addPluginToEval(String pluginName) {
+  evalPluginNames.add(pluginName);
+  evalDeleteConfigs.add(null);
+  evalDeleteDepends.add(null);
 }
 
 }

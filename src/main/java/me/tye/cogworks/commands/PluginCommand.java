@@ -97,7 +97,11 @@ private void deletePlugin(CommandSender sender, String[] args) {
     return;
   }
 
-  new DeleteQueue(sender, args[1]);
+  DeleteQueue deleteQueue = new DeleteQueue(sender, args[1]);
+  for (int i = 2; i < args.length; i++) {
+    deleteQueue.addPluginToEval(args[i]);
+  }
+  deleteQueue.evaluatePlugins();
 }
 
 private void installPlugin(CommandSender sender, String[] args) {
