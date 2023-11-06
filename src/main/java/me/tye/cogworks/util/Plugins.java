@@ -7,7 +7,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.ModrinthSearch;
-import me.tye.cogworks.util.customObjects.VersionGetThread;
 import me.tye.cogworks.util.customObjects.exceptions.ModrinthAPIException;
 import me.tye.cogworks.util.customObjects.exceptions.NoSuchPluginException;
 import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
@@ -31,10 +30,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 
 import static me.tye.cogworks.util.Util.*;
@@ -284,67 +279,6 @@ public static ModrinthSearch modrinthSearch(@Nullable CommandSender sender, Stri
 
   } catch (ModrinthAPIException | MalformedURLException e) {
     new Log(sender, state, "modrinthSearchErr").setLevel(Level.WARNING).setException(e).log();
-  }
-
-  return new ModrinthSearch(validPluginKeys, validPlugins);
-}
-
-/**
- Gets the most 10 popular plugins from modrinth with the specified offset
- @param sender The sender to send the log messages to.
- @param state  The path to get the lang responses from.
- @param offset The offset to get the plugins from.
- @return The plugins at that offset in a ModrinthSearch object. */
-public static ModrinthSearch modrinthBrowse(@Nullable CommandSender sender, String state, int offset) {
-  ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
-  HashMap<JsonObject,JsonArray> validPlugins = new HashMap<>();
-
-  try {
-
-    JsonElement relevantPlugins = modrinthAPI(sender, "ModrinthAPI", "https://api.modrinth.com/v2/search?query=&facets=[[%22versions:"+mcVersion+"%22],[%22categories:"+serverSoftware+"%22]]&offset="+offset, "GET");
-    JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
-    if (hits.isEmpty())
-      return new ModrinthSearch(validPluginKeys, validPlugins);
-
-    StringBuilder projectUrl = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
-    for (JsonElement je : hits) {
-      JsonObject hit = je.getAsJsonObject();
-      projectUrl.append("%22").append(hit.get("project_id").getAsString()).append("%22,");
-    }
-
-    JsonArray pluginProjects = modrinthAPI(sender, "ModrinthAPI", projectUrl.substring(0, projectUrl.length()-1)+"]", "GET").getAsJsonArray();
-    if (hits.isEmpty())
-      return new ModrinthSearch(validPluginKeys, validPlugins);
-    ExecutorService executorService = Executors.newCachedThreadPool();
-    ArrayList<Future<JsonElement>> futures = new ArrayList<>();
-
-    for (JsonElement je : pluginProjects) {
-      futures.add(executorService.submit(new VersionGetThread(je.getAsJsonObject().get("id").getAsString())));
-    }
-
-    for (Future<JsonElement> future : futures) {
-      JsonArray validVersions = future.get().getAsJsonArray();
-      if (validVersions.isEmpty())
-        continue;
-
-      for (JsonElement projectElement : pluginProjects) {
-        JsonObject project = projectElement.getAsJsonObject();
-        if (project.get("id").equals(validVersions.get(0).getAsJsonObject().get("project_id"))) {
-          validPluginKeys.add(project);
-
-          for (JsonElement jel : validVersions) {
-            JsonArray array = validPlugins.get(project);
-            if (array == null)
-              array = new JsonArray();
-            array.add(jel.getAsJsonObject());
-            validPlugins.put(project, array);
-          }
-        }
-      }
-    }
-
-  } catch (MalformedURLException | ModrinthAPIException | ExecutionException | InterruptedException e) {
-    new Log(sender, state, "browsePluginErr").setLevel(Level.WARNING).setException(e).log();
   }
 
   return new ModrinthSearch(validPluginKeys, validPlugins);
