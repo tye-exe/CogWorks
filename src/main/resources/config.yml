@@ -1,7 +1,7 @@
 #Config file for the CogWorks plugin.
 
 #Determins the current lang file.
-#Keys: eng - English
+#Keys: https://raw.githubusercontent.com/Mapty231/CogWorks/master/langFiles/0.3/avaiableLangFiles
 lang: eng
 
 
