@@ -429,7 +429,7 @@ public static boolean installModrinthDependencies(@Nullable CommandSender sender
       installed.add(installModrinthPlugin(sender, state, plugins.get(0).getAsJsonObject().get("files").getAsJsonArray()));
     }
 
-    new Log(sender, state, "installedDep").log();
+    new Log(sender, state, "installedDep").setPluginName(pluginName).log();
   }
 
   return !installed.contains(false);
