@@ -10,7 +10,7 @@ import me.tye.cogworks.util.customObjects.Log;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;
 
@@ -19,7 +19,7 @@ import static me.tye.cogworks.util.Util.encodeUrl;
 public class PluginCommand implements CommandExecutor {
 
 @Override
-public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String[] args) {
+public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
   if (args.length < 1) {
     helpMessage(sender);
     return true;

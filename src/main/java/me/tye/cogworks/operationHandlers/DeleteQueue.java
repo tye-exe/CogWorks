@@ -8,7 +8,7 @@ import me.tye.cogworks.util.customObjects.yamlClasses.DependencyInfo;
 import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ public static HashMap<CommandSender,List<Boolean>> completed = new HashMap<>();
  Creates a new instance of the DeleteQueue object, which is used for deleting plugins & getting a user response on delete options by using the CogWorks chat system.
  @param sender     The sender performing the deletion.
  @param pluginName The given plugin name. */
-public DeleteQueue(@NonNull CommandSender sender, @NonNull String pluginName) {
+public DeleteQueue(@NotNull CommandSender sender, @NotNull String pluginName) {
   this.sender = sender;
   evalPluginNames.add(pluginName);
   evalDeleteConfigs.add(null);

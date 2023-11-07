@@ -11,7 +11,7 @@ import me.tye.cogworks.util.customObjects.exceptions.NoSuchPluginException;
 import me.tye.cogworks.util.customObjects.yamlClasses.DependencyInfo;
 import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.bukkit.command.CommandSender;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;

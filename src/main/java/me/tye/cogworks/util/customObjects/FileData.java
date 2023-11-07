@@ -1,6 +1,6 @@
 package me.tye.cogworks.util.customObjects;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public class FileData {
 

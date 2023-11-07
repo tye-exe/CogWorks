@@ -338,9 +338,9 @@ public void clickEvent(InventoryClickEvent e) {
   //file editing
   case "text" -> {
     if (!player.hasPermission("cogworks.file.edit")) return;
-    if (Boolean.TRUE.equals(itemMeta.getPersistentDataContainer().get(new NamespacedKey(plugin, "edited"), PersistentDataType.BOOLEAN)))
+    if (Boolean.parseBoolean(itemMeta.getPersistentDataContainer().get(new NamespacedKey(plugin, "edited"), PersistentDataType.STRING)))
       return;
-    itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "edited"), PersistentDataType.BOOLEAN, true);
+    itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "edited"), PersistentDataType.STRING, "true");
     itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING, "edit");
     itemStack.setItemMeta(itemMeta);
     new AnvilGUI.Builder()
@@ -583,7 +583,7 @@ public static void open(Player player) {
             assert paperMeta != null;
             paperMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "line"), PersistentDataType.INTEGER, i+lineNumber);
             paperMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "offset"), PersistentDataType.INTEGER, ii);
-            paperMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "edited"), PersistentDataType.BOOLEAN, false);
+            paperMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "edited"), PersistentDataType.STRING, "false");
             paper.setItemMeta(paperMeta);
             content.add(paper);
           } else {

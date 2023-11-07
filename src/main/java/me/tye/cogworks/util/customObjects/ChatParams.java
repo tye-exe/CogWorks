@@ -7,7 +7,7 @@ import me.tye.cogworks.operationHandlers.PluginBrowse;
 import me.tye.cogworks.operationHandlers.PluginInstall;
 import me.tye.cogworks.operationHandlers.PluginSearch;
 import org.bukkit.command.CommandSender;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +30,7 @@ PluginSearch pluginSearch = null;
  This object is used to pass variables across one state to another within the chat interactions.
  @param sender The command sender.
  @param state  The state the sender is in. */
-public ChatParams(@NonNull CommandSender sender, @NonNull String state) {
+public ChatParams(@NotNull CommandSender sender, @NotNull String state) {
   this.state = state;
   this.sender = sender;
 }

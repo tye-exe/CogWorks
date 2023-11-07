@@ -9,7 +9,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import static me.tye.cogworks.ChatManager.response;
 import static me.tye.cogworks.FileGui.*;
@@ -18,7 +18,7 @@ import static me.tye.cogworks.FileGui.*;
 public class FileCommand implements CommandExecutor {
 
 @Override
-public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, @NonNull String[] args) {
+public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
   if (!sender.hasPermission("cogworks.file.nav")) return true;
 
   if (args.length == 1 && args[0].equals("chat")) {

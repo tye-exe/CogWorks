@@ -6,8 +6,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.List;
@@ -57,7 +57,7 @@ public Log(CommandSender sender, String state, String event) {
  The .log method will need to be used to output the log message.
  @param sender   Sender to output the log to.
  @param langPath The lang path for the response. */
-public Log(CommandSender sender, @NonNull String langPath) {
+public Log(CommandSender sender, @NotNull String langPath) {
   this.sender = sender;
   this.langPath = langPath;
 }
@@ -68,7 +68,7 @@ public Log(CommandSender sender, @NonNull String langPath) {
  @param langPath The lang path for the response.
  @param level    The level of the message.
  @param e        The error that caused the message. */
-public Log(String langPath, @NonNull Level level, @Nullable Exception e) {
+public Log(String langPath, @NotNull Level level, @Nullable Exception e) {
   this.langPath = langPath;
   this.level = level;
   this.e = e;

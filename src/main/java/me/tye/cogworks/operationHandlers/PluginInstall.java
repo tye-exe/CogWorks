@@ -9,7 +9,7 @@ import me.tye.cogworks.util.customObjects.Log;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.command.CommandSender;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
@@ -32,7 +32,7 @@ private final JsonArray chosenFiles = new JsonArray();
  @param installSelector The previous instance the user used to select the plugin. This is for allowing the user to go back out of the installation.
  @param plugin          The plugin the user wants to install.
  @param pluginVersions  The version of the plugin the user wants to install. */
-public PluginInstall(@NonNull CommandSender sender, @NonNull PluginInstallSelector installSelector, @NonNull JsonObject plugin, @NonNull JsonArray pluginVersions) {
+public PluginInstall(@NotNull CommandSender sender, @NotNull PluginInstallSelector installSelector, @NotNull JsonObject plugin, @NotNull JsonArray pluginVersions) {
   this.sender = sender;
   this.installSelector = installSelector;
   this.plugin = plugin;
