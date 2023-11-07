@@ -1,7 +1,7 @@
 name: CogWorks
 version: '${version}'
 main: me.tye.cogworks.CogWorks
-api-version: '1.20'
+api-version: '1.17'
 load: STARTUP
 
 commands:

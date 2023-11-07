@@ -56,3 +56,4 @@
 
 ## 0.4:
 - Multiple plugins can be removed at once by separating each plugin name by a space.
+- Added backwards compatibility to version 1.17
