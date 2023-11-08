@@ -40,7 +40,6 @@ import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
 
-//TODO: Add command to force stop ADR?
 //TODO: Instead of deleting files, have them be moved to the .temp folder & either deleted upon reload | after a set time.
 //TODO: Allow to install multiple plugins at once when using a url.
 //TODO: Fix when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
@@ -68,6 +67,15 @@ public void onEnable() {
   //checks if the selected lang file is the correct one for this version of CogWorks
   langUpdate();
 
+  //creates the other files
+  createFile(dataStore, null, false);
+  createFile(temp, null, false);
+  createFile(ADR, null, false);
+
+  createFile(deletePending, null, false);
+  createFile(deleteData, null, true);
+  createFile(pluginDataFile, null, true);
+
   //deletes temp if present
   try {
     FileUtils.deleteDirectory(temp);
@@ -75,20 +83,12 @@ public void onEnable() {
     new Log(null, "exceptions.tempClear");
   }
 
-  //creates the other files
-  createFile(dataStore, null, false);
-  createFile(temp, null, false);
-  createFile(ADR, null, false);
-
-  createFile(pluginDataFile, null, true);
-
   //hides non-config files
   try {
     java.nio.file.Files.setAttribute(Path.of(dataStore.getAbsolutePath()), "dos:hidden", true);
     java.nio.file.Files.setAttribute(Path.of(temp.getAbsolutePath()), "dos:hidden", true);
   } catch (Exception ignore) {
   }
-
 
   StoredPlugins.reloadPluginData(null, "exceptions");
 
@@ -98,7 +98,6 @@ public void onEnable() {
 
   //checks for new lang files & installs them.
   newLangCheck();
-
 
   //Commands
   Objects.requireNonNull(getCommand("plugin")).setExecutor(new PluginCommand());

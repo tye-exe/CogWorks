@@ -4,6 +4,7 @@ import me.tye.cogworks.CogWorks;
 import me.tye.cogworks.util.customObjects.ChatParams;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
+import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
@@ -19,6 +20,8 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
@@ -29,16 +32,32 @@ import static me.tye.cogworks.ChatManager.response;
 public class Util {
 
 //constants
+/**
+ This plugin. */
 public static final JavaPlugin plugin = JavaPlugin.getPlugin(CogWorks.class);
 
+/**The plugins folder for the server.*/
 public static final File pluginFolder = new File(plugin.getDataFolder().getParentFile().getAbsolutePath());
+/**The folder the server jar is in.*/
 public static final File serverFolder = new File(pluginFolder.getParentFile().getAbsolutePath());
+/**The config file for this plugin.*/
 public static final File configFile = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+"config.yml");
+/**The persistent data folder for this plugin.*/
 public static final File dataStore = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+".data");
+/**The persistent data for the plugins indexed by CogWorks.*/
 public static final File pluginDataFile = new File(dataStore.getAbsolutePath()+File.separator+"pluginData.json");
+/**The folder for lang files.*/
 public static final File langFolder = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+"langFiles");
+/**The folder for files that will be deleted on next reload/restart.*/
 public static final File temp = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+".temp");
+/**The folder used for ADR, this will be emptied on reload/restart.*/
 public static final File ADR = new File(temp.getAbsolutePath()+File.separator+"ADR");
+/**
+ The file for storing data on the files have been deleted. */
+public static final File deleteData = new File(dataStore.getAbsolutePath()+File.separator+"deleteData");
+/**
+ The folder for storing files that have been deleted. */
+public static final File deletePending = new File(dataStore.getAbsolutePath()+File.separator+"deletePending");
 
 public static final String mcVersion = Bukkit.getVersion().split(": ")[1].substring(0, Bukkit.getVersion().split(": ")[1].length()-1);
 public static final String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
@@ -441,5 +460,34 @@ public static void clearResponse(CommandSender sender) {
   } else {
     response.remove("~");
   }
+}
+
+public static void delete(File file) {
+  if (!file.exists())
+    return;
+
+  Path filePath = Path.of(file.getAbsolutePath()).normalize();
+  Path serverFolderPath = Path.of(serverFolder.getAbsolutePath()).normalize();
+
+  Path relativePath = filePath.relativize(serverFolderPath);
+  Path fileName = filePath.getFileName();
+
+  Random rand = new Random();
+  while (true) {
+    int i = rand.nextInt(0, 100000);
+    StringBuilder stringI = new StringBuilder(String.valueOf(i));
+
+    while (stringI.length() > 6) {
+      stringI.append("0");
+    }
+
+    if (Files.)
+
+  }
+
+  if (file.isFile()) {
+    FileUtils.moveFile(file, );
+  }
+
 }
 }
