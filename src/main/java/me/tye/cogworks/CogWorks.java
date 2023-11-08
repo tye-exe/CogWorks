@@ -8,6 +8,7 @@ import me.tye.cogworks.commands.PluginCommand;
 import me.tye.cogworks.commands.TabComplete;
 import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.Util;
+import me.tye.cogworks.util.customObjects.DeletePending;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.ModrinthSearch;
 import me.tye.cogworks.util.customObjects.yamlClasses.DependencyInfo;
@@ -110,6 +111,8 @@ public void onEnable() {
   getServer().getPluginManager().registerEvents(new ChatManager(), this);
   getServer().getPluginManager().registerEvents(new FileGui(), this);
   getServer().getPluginManager().registerEvents(new SendErrorSummary(), this);
+
+  deletePending();
 
 }
 
@@ -448,4 +451,15 @@ private void newLangCheck() {
   }).start();
 }
 
+
+private void deletePending() {
+  new Thread(() -> {
+    ArrayList<DeletePending> deletePendings = DeletePending.read(null);
+    for (DeletePending deletePending : deletePendings) {
+      LocalDateTime deleteTime = deletePending.getDeleteTime();
+      LocalDateTime now = LocalDateTime.now();
+      //TODO: make thread check every (10 mins?) for otu of date files
+    }
+  }).start();
+}
 }

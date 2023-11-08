@@ -102,6 +102,11 @@ deletePlugin:
   writeNoADR: "§eThere was an error setting {depName} for {pluginName} to not attempt ADR. This will cause ADR to attempt to resolve this dependency on restart."
 
 
+delete:
+  fail: "§eThere was an error in moving the file to delete store folder."
+  readFail: "§eThere was an error reading the data from the delete data file."
+
+
 ModrinthAPI:
   outdated: "§cThis version of CogWorks is using an outdated version of the Modrinth API. It is recommended to install a newer version of CogWorks as many features won't work."
   APILimit: "§eYou've exceeded the Modrinth API rate limit. Please stop using \"/plugin\" commands for a minuet."

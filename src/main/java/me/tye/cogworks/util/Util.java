@@ -2,9 +2,9 @@ package me.tye.cogworks.util;
 
 import me.tye.cogworks.CogWorks;
 import me.tye.cogworks.util.customObjects.ChatParams;
+import me.tye.cogworks.util.customObjects.DeletePending;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
-import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
@@ -462,16 +462,19 @@ public static void clearResponse(CommandSender sender) {
   }
 }
 
-public static void delete(File file) {
-  if (!file.exists())
+public static void delete(@Nullable CommandSender sender, @NotNull File file) {
+  if (!file.exists()) {
     return;
+  }
 
   Path filePath = Path.of(file.getAbsolutePath()).normalize();
   Path serverFolderPath = Path.of(serverFolder.getAbsolutePath()).normalize();
 
   Path relativePath = filePath.relativize(serverFolderPath);
   Path fileName = filePath.getFileName();
+  String randName = "";
 
+  //generates a random file name & makes sure that it doesn't already exist
   Random rand = new Random();
   while (true) {
     int i = rand.nextInt(0, 100000);
@@ -481,13 +484,19 @@ public static void delete(File file) {
       stringI.append("0");
     }
 
-    if (Files.)
+    if (!new File(deletePending.getPath()+File.separator+stringI).exists()) {
+      randName = stringI.toString();
+      break;
+    }
 
   }
 
-  if (file.isFile()) {
-    FileUtils.moveFile(file, );
-  }
+  try {
+    Files.move(filePath, Path.of(deletePending.getPath()+File.separator+randName));
+    new DeletePending(relativePath, fileName, randName).append();
 
+  } catch (Exception e) {
+    new Log(sender, "delete.fail");
+  }
 }
 }
