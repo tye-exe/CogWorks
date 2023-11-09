@@ -16,3 +16,16 @@ showOpErrorSummary: true
 #Will attempt to automatically install any missing dependencies for other plugins on start up.
 #If you have a connection that is slow or bandwidth limited it is recommended to turn off this option.
 ADR: true
+
+#Storage settings for deleted files:
+#If a file is older than the specified time the file will get deleted, if the time is set to "-1" the file won't be deleted based on time.
+#Time format: {number}w for week, {n}h for hour, {n}d for day, {n}m for minute.
+#
+#If the size of the deleted file would put the restore folder size over the given on then the oldest files will be deleted until enough space is cleared.
+#If the size is set to "-1" the files will never be deleted based on size.
+#Size format: {number}g for gigabytes, {n}m for megabytes, {n}k for kilobytes.
+#
+#Both settings can be active at once.
+keepDeleted:
+  time: 1W
+  size: 1G

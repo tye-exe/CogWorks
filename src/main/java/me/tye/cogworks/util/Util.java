@@ -20,7 +20,6 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.logging.Level;
@@ -471,7 +470,6 @@ public static void delete(@Nullable CommandSender sender, @NotNull File file) {
   Path serverFolderPath = Path.of(serverFolder.getAbsolutePath()).normalize();
 
   Path relativePath = filePath.relativize(serverFolderPath);
-  Path fileName = filePath.getFileName();
   String randName = "";
 
   //generates a random file name & makes sure that it doesn't already exist
@@ -492,11 +490,11 @@ public static void delete(@Nullable CommandSender sender, @NotNull File file) {
   }
 
   try {
-    Files.move(filePath, Path.of(deletePending.getPath()+File.separator+randName));
-    new DeletePending(relativePath, fileName, randName).append();
+    new DeletePending(relativePath, filePath, randName).append();
 
   } catch (Exception e) {
     new Log(sender, "delete.fail");
   }
+
 }
 }

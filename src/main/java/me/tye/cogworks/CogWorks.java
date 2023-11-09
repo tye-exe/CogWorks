@@ -452,14 +452,72 @@ private void newLangCheck() {
 }
 
 
-private void deletePending() {
+/**
+ Starts a new thread that checks for out of date files in the restore folder every 10 mins. If a file is older than the limit specified by the user in the config the file will be fully deleted. */
+private static void deletePending() {
+  //deletes any files that are older than the limit
   new Thread(() -> {
-    ArrayList<DeletePending> deletePendings = DeletePending.read(null);
-    for (DeletePending deletePending : deletePendings) {
+    for (DeletePending deletePending : DeletePending.read(null)) {
       LocalDateTime deleteTime = deletePending.getDeleteTime();
       LocalDateTime now = LocalDateTime.now();
-      //TODO: make thread check every (10 mins?) for otu of date files
+
+      long[] times = parseTime(Util.getConfig("keepDeleted.time"));
+      LocalDateTime deleteByDate = now.minusWeeks(times[0]).minusDays(times[1]).minusHours(times[2]).minusMinutes(times[3]);
+
+      if (!deleteTime.isBefore(deleteByDate)) {
+        continue;
+      }
+
+      deletePending.delete();
+
     }
+
+    try {
+      Thread.sleep(600000);
+    } catch (InterruptedException e) {
+      //TODO: replace with ignore if works.
+      e.printStackTrace();
+    }
+
   }).start();
 }
+
+/**
+ Parses the time value entered by the user in the format "{number}{unit}". There can be any length of number-unit pares.<br>
+ Units:<br>
+ w - weeks.<br>
+ d - days.<br>
+ h - hours.<br>
+ m - minutes.
+ @param time The time stored in the config file.
+ @return The parsed units as a long array:<br>index 0 - weeks<br>index 1 - days<br>index 2 - hours<br>index 3 - minutes. */
+private static long[] parseTime(String time) {
+  long[] times = new long[3];
+  char[] timeChars = time.toLowerCase().toCharArray();
+
+  for (int i = 0; i < timeChars.length; i++) {
+
+    switch (timeChars[i]) {
+    case 'w' -> {
+      times[0] = DeletePending.getProceeding(times[0], timeChars, i);
+    }
+
+    case 'd' -> {
+      times[1] = DeletePending.getProceeding(times[1], timeChars, i);
+    }
+
+    case 'h' -> {
+      times[2] = DeletePending.getProceeding(times[2], timeChars, i);
+    }
+
+    case 'm' -> {
+      times[3] = DeletePending.getProceeding(times[3], timeChars, i);
+    }
+
+    }
+  }
+
+  return times;
+}
+
 }
