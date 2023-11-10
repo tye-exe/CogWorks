@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.stream.Stream;
 
 import static me.tye.cogworks.util.Util.*;
 
@@ -179,11 +180,11 @@ public static ArrayList<DeletePending> read(@Nullable CommandSender sender) {
     return new ArrayList<>();
   }
 
-
-  try {
-    if (Files.size(Path.of(deletePending.getAbsolutePath())) == 0) {
+  try (Stream<String> lines = Files.lines(Path.of(deleteData.getAbsolutePath()))) {
+    if (lines.toList().isEmpty()) {
       return new ArrayList<>();
     }
+
   } catch (IOException e) {
     throw new RuntimeException(e);
   }
@@ -203,6 +204,10 @@ public static ArrayList<DeletePending> read(@Nullable CommandSender sender) {
  @return The data of the files that are pending deletion. */
 public static ArrayList<DeletePending> read() throws IOException {
   if (!deleteData.exists()) {
+    return new ArrayList<>();
+  }
+
+  if (Files.size(Path.of(deleteData.getAbsolutePath())) == 0) {
     return new ArrayList<>();
   }
 
