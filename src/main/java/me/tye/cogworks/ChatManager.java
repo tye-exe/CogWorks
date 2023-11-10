@@ -88,7 +88,7 @@ public static void checks(String name, String message) {
           try {
             chosen = Integer.parseInt(message);
           } catch (NumberFormatException e) {
-            new Log(sender, "pluginInstall.NAN").setChosen(message).log();
+            new Log(sender, "pluginInstall.NAN").setException(e).setChosen(message).log();
             return;
           }
 
@@ -116,7 +116,7 @@ public static void checks(String name, String message) {
           try {
             chosen = Integer.parseInt(message);
           } catch (NumberFormatException e) {
-            new Log(sender, "pluginInstall.NAN").setChosen(message).log();
+            new Log(sender, "pluginInstall.NAN").setException(e).setChosen(message).log();
             return;
           }
 
@@ -147,7 +147,7 @@ public static void checks(String name, String message) {
             try {
               chosen = Integer.parseInt(choice.strip())-1;
             } catch (NumberFormatException e) {
-              new Log(sender, "pluginInstall.NAN").setChosen(choice.strip()).log();
+              new Log(sender, "pluginInstall.NAN").setException(e).setChosen(choice.strip()).log();
               return;
             }
 
@@ -175,7 +175,7 @@ public static void checks(String name, String message) {
           try {
             chosen = Integer.parseInt(message);
           } catch (NumberFormatException e) {
-            new Log(sender, state, "NAN").log();
+            new Log(sender, state, "NAN").setException(e).log();
             return;
           }
 

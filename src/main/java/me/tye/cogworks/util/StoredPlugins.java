@@ -257,7 +257,7 @@ public static List<PluginData> getWhatDependsOn(String pluginName) {
     return whatDepends;
 
   } catch (IOException e) {
-    new Log("execution.dataReadError", Level.WARNING, e);
+    new Log("execution.dataReadError", Level.WARNING, e).log();
   }
   return new ArrayList<>();
 }

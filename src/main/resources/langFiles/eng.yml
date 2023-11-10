@@ -237,6 +237,7 @@ exceptions:
   stateNotFound: "§cThere was an error matching the state your in. Please report this to the devs. State: \"{state}\"."
   chatError: "§eThere was a general error when interacting with the chat system for CogWorks."
   langUpdateFail: "§eA valid lang file couldn't be found for your version, defaulting to english."
+  noConfigMatch: "§eNo value for {key} could be gotten from the lang file. Please import the devs about this."
 
 
 #DO NOT CHANGE!

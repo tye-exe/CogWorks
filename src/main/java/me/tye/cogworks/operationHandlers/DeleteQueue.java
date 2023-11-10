@@ -117,7 +117,7 @@ public void evaluatePlugins() {
           try {
             StoredPlugins.modifyPluginData(pluginData);
           } catch (IOException e) {
-            new Log(sender, "deletePlugin.writeNoADR").setDepName(dependency.getName()).setPluginName(pluginData.getName()).log();
+            new Log(sender, "deletePlugin.writeNoADR").setDepName(dependency.getName()).setPluginName(pluginData.getName()).setException(e).log();
           }
         }
       }

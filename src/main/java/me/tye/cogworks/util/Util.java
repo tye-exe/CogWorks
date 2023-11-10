@@ -186,7 +186,7 @@ public static <T> T getConfig(String key) {
     response = String.valueOf(config.get(key));
 
   switch (key) {
-  case "lang" -> {
+  case "lang", "keepDeleted.time", "keepDeleted.size" -> {
     return (T) String.valueOf(response);
   }
   case "showErrorTrace", "showOpErrorSummary", "ADR" -> {
@@ -461,7 +461,7 @@ public static void clearResponse(CommandSender sender) {
   }
 }
 
-public static void delete(@Nullable CommandSender sender, @NotNull File file) {
+public static void delete(@NotNull File file) throws IOException {
   if (!file.exists()) {
     return;
   }
@@ -489,12 +489,67 @@ public static void delete(@Nullable CommandSender sender, @NotNull File file) {
 
   }
 
-  try {
-    new DeletePending(relativePath, filePath, randName).append();
+  new DeletePending(relativePath, filePath, randName).append();
+}
 
-  } catch (Exception e) {
-    new Log(sender, "delete.fail");
+/**
+ Parses the string given in the format "{number}{unit}". There can be any length of number-unit pares.<br>
+ Units:<br>
+ g - gigabyte.<br>
+ m - megabyte.<br>
+ k - kilobytes.<br>
+ b - bytes.
+ @param sizeString The size string.
+ @return The parsed size represented by the given size string. */
+public static long parseSize(String sizeString) {
+  long size = 0;
+  char[] sizeChars = sizeString.toLowerCase().toCharArray();
+
+  for (int i = 0; i < sizeChars.length; i++) {
+
+    switch (sizeChars[i]) {
+    case 'g' -> {
+      size += getProceeding(0L, sizeChars, i)*1024*1024*1024;
+    }
+
+    case 'm' -> {
+      size += getProceeding(0L, sizeChars, i)*1024*1024;
+    }
+
+    case 'k' -> {
+      size += getProceeding(0L, sizeChars, i)*1024;
+    }
+
+    case 'b' -> {
+      size += getProceeding(0L, sizeChars, i);
+    }
+
+    }
   }
 
+  return size;
+}
+
+/**
+ Gets all the number chars before the unit specifier.
+ The unit specifier would be a letter denoting a value. E.g: w for week.
+ @param time      Current stored value for this unit.
+ @param timeChars The array to parse.
+ @param index     The index in the array that the unit specifier was found.
+ @return The number the user entered before the unit specifier. */
+public static long getProceeding(long time, char[] timeChars, int index) {
+
+  for (int ii = 1; Character.isDigit(timeChars[index-ii]); ii++) {
+    //if the index to get would be below 0 ends the loop
+    if ((index-ii)-1 < 0) {
+      break;
+    }
+
+    int parsedVal = Integer.parseInt(String.valueOf(timeChars[index-ii]));
+    //sets the number at the next order of magnitude to the parsed one
+    time = (long) (time+parsedVal*(Math.pow(10d, ii)));
+  }
+
+  return time;
 }
 }

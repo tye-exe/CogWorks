@@ -81,7 +81,7 @@ public void onEnable() {
   try {
     FileUtils.deleteDirectory(temp);
   } catch (IOException e) {
-    new Log(null, "exceptions.tempClear");
+    new Log(null, "exceptions.tempClear").setException(e).log();
   }
 
   //hides non-config files
@@ -457,26 +457,33 @@ private void newLangCheck() {
 private static void deletePending() {
   //deletes any files that are older than the limit
   new Thread(() -> {
-    for (DeletePending deletePending : DeletePending.read(null)) {
-      LocalDateTime deleteTime = deletePending.getDeleteTime();
-      LocalDateTime now = LocalDateTime.now();
+    String entered = Util.getConfig("keepDeleted.time");
+    if (entered.strip().equals("-1")) {
+      return;
+    }
+    long[] times = parseTime(entered);
 
-      long[] times = parseTime(Util.getConfig("keepDeleted.time"));
-      LocalDateTime deleteByDate = now.minusWeeks(times[0]).minusDays(times[1]).minusHours(times[2]).minusMinutes(times[3]);
+    while (true) {
 
-      if (!deleteTime.isBefore(deleteByDate)) {
-        continue;
+      for (DeletePending deletePending : DeletePending.read(null)) {
+        LocalDateTime deleteTime = deletePending.getDeleteTime();
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime deleteByDate = now.minusWeeks(times[0]).minusDays(times[1]).minusHours(times[2]).minusMinutes(times[3]);
+
+        if (!deleteTime.isBefore(deleteByDate)) {
+          continue;
+        }
+
+        deletePending.delete();
       }
 
-      deletePending.delete();
-
-    }
-
-    try {
-      Thread.sleep(600000);
-    } catch (InterruptedException e) {
-      //TODO: replace with ignore if works.
-      e.printStackTrace();
+      try {
+        Thread.sleep(600000);
+      } catch (InterruptedException e) {
+        //TODO: replace with ignore if works.
+        e.printStackTrace();
+      }
     }
 
   }).start();
@@ -499,19 +506,19 @@ private static long[] parseTime(String time) {
 
     switch (timeChars[i]) {
     case 'w' -> {
-      times[0] = DeletePending.getProceeding(times[0], timeChars, i);
+      times[0] = getProceeding(times[0], timeChars, i);
     }
 
     case 'd' -> {
-      times[1] = DeletePending.getProceeding(times[1], timeChars, i);
+      times[1] = getProceeding(times[1], timeChars, i);
     }
 
     case 'h' -> {
-      times[2] = DeletePending.getProceeding(times[2], timeChars, i);
+      times[2] = getProceeding(times[2], timeChars, i);
     }
 
     case 'm' -> {
-      times[3] = DeletePending.getProceeding(times[3], timeChars, i);
+      times[3] = getProceeding(times[3], timeChars, i);
     }
 
     }

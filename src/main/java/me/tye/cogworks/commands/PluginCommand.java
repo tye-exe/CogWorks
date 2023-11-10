@@ -129,7 +129,7 @@ private void installPlugin(CommandSender sender, String[] args) {
     }
 
   } catch (MalformedURLException e) {
-    new Log(sender, "pluginInstall.badUrl").setUrl(args[1]).log();
+    new Log(sender, "pluginInstall.badUrl").setUrl(args[1]).setException(e).log();
   }
 }
 

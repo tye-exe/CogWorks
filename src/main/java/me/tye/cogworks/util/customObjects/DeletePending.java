@@ -43,14 +43,14 @@ public void append() throws IOException {
     return;
   }
 
-  long maxSize = parseSize(getConfig("keepDeleted.size"));
   //if the deleted file is bigger than the max size specified by the user then it isn't reserved.
+  long maxSize = parseSize(getConfig("keepDeleted.size"));
   if (maxSize < Files.size(filePath)) {
     Files.delete(filePath);
     return;
   }
 
-  //TODO: delete old files if size is too big
+  clear(Files.size(filePath));
 
   ArrayList<DeletePending> deletePendings = read();
   deletePendings.add(this);
@@ -58,6 +58,7 @@ public void append() throws IOException {
 
   //moves the file, but deletes the copy if it failed to fully move.
   try {
+    //TODO: add dir support
     Files.move(filePath, Path.of(deletePending.getPath()+File.separator+randName));
   } catch (IOException e) {
     remove(this);
@@ -67,6 +68,66 @@ public void append() throws IOException {
 
     Files.delete(Path.of(deletePending.getPath()+File.separator+randName));
   }
+}
+
+/**
+ Deletes files until there is enough space for the new one.
+ @param fileSize The size of the new file.
+ @throws IOException If there was an error getting any file sizes, or reading from the deleteData. */
+private void clear(long fileSize) throws IOException {
+  long newSize = Files.size(Path.of(deletePending.getAbsolutePath()))+fileSize;
+  if (newSize < parseSize(getConfig("keepDeleted.size"))) {
+    return;
+  }
+
+  //deletes files until there is enough space for the new one.
+  for (DeletePending pending : getOldest()) {
+    pending.delete();
+
+    long currentSize = Files.size(Path.of(deletePending.getAbsolutePath()))+fileSize;
+    if (currentSize > parseSize(getConfig("keepDeleted.size"))) {
+      continue;
+    }
+
+    break;
+  }
+
+}
+
+/**
+ Gets the deleted data sorted by date, with the oldest first.
+ @return A list of the deleted data sorted by date.
+ @throws IOException If there was an error reading the data. */
+private ArrayList<DeletePending> getOldest() throws IOException {
+  ArrayList<DeletePending> sortedPendings = new ArrayList<>();
+  for (int i = 0; i < read().size(); i++) {
+
+    DeletePending oldest;
+
+    if (!sortedPendings.isEmpty()) {
+      oldest = null;
+    }
+    else {
+      oldest = sortedPendings.get(sortedPendings.size()-1);
+    }
+
+    for (DeletePending pending : read()) {
+      if (oldest == null) {
+        oldest = pending;
+        break;
+      }
+
+      if (!oldest.getDeleteTime().isAfter(pending.getDeleteTime())) {
+        continue;
+      }
+
+      oldest = pending;
+      break;
+    }
+
+    sortedPendings.add(oldest);
+  }
+  return sortedPendings;
 }
 
 /**
@@ -88,6 +149,7 @@ public void delete() {
     write(pendings);
 
   } catch (IOException e) {
+    //TODO: error handling
     throw new RuntimeException(e);
   }
 }
@@ -117,12 +179,21 @@ public static ArrayList<DeletePending> read(@Nullable CommandSender sender) {
     return new ArrayList<>();
   }
 
+
+  try {
+    if (Files.size(Path.of(deletePending.getAbsolutePath())) == 0) {
+      return new ArrayList<>();
+    }
+  } catch (IOException e) {
+    throw new RuntimeException(e);
+  }
+
   try (FileInputStream fileInputStream = new FileInputStream(deleteData)) {
     ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
     return (ArrayList<DeletePending>) objectInputStream.readObject();
 
   } catch (ClassNotFoundException | SecurityException | IOException e) {
-    new Log(sender, "delete.readFail").log();
+    new Log(sender, "delete.readFail").setException(e).log();
     return new ArrayList<>();
   }
 }
@@ -173,69 +244,6 @@ private static void remove(DeletePending deletePending) throws IOException {
     break;
   }
   write(deletePendings);
-}
-
-
-/**
- Parses the string given in the format "{number}{unit}". There can be any length of number-unit pares.<br>
- Units:<br>
- g - gigabyte.<br>
- m - megabyte.<br>
- k - kilobytes.<br>
- b - bytes.
- @param sizeString The size string.
- @return The parsed size represented by the given size string. */
-public static long parseSize(String sizeString) {
-  long size = 0;
-  char[] sizeChars = sizeString.toLowerCase().toCharArray();
-
-  for (int i = 0; i < sizeChars.length; i++) {
-
-    switch (sizeChars[i]) {
-    case 'g' -> {
-      size += getProceeding(0L, sizeChars, i)*1024*1024*1024;
-    }
-
-    case 'm' -> {
-      size += getProceeding(0L, sizeChars, i)*1024*1024;
-    }
-
-    case 'k' -> {
-      size += getProceeding(0L, sizeChars, i)*1024;
-    }
-
-    case 'b' -> {
-      size += getProceeding(0L, sizeChars, i);
-    }
-
-    }
-  }
-
-  return size;
-}
-
-/**
- Gets all the number chars before the unit specifier.
- The unit specifier would be a letter denoting a value. E.g: w for week.
- * @param time Current stored value for this unit.
- * @param timeChars The array to parse.
- * @param index The index in the array that the unit specifier was found.
- * @return The number the user entered before the unit specifier.
- */
-public static long getProceeding(long time, char[] timeChars, int index) {
-
-  for (int ii = -1; Character.isDigit(timeChars[index-ii]); ii--) {
-    //if the index to get would be below 0 ends the loop
-    if ((index-ii)-1 < 0) {
-      break;
-    }
-
-    int parsedVal = Integer.parseInt(String.valueOf(timeChars[index-ii]));
-    //sets the number at the next order of magnitude to the parsed one
-    time = (long) (time+parsedVal*(Math.pow(10d, ii*-1)));
-  }
-
-  return time;
 }
 
 }

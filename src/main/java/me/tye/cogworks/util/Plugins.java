@@ -96,7 +96,7 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
       Bukkit.getPluginManager().enablePlugin(pluginInstance);
 
     } catch (Exception e) {
-      new Log(sender, state, "noEnable").setFileName(fileName);
+      new Log(sender, state, "noEnable").setFileName(fileName).setException(e).log();
     }
 
     installed = true;
@@ -108,7 +108,7 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
     new Log(sender, state, "badUrl").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).setFileName(fileName).log();
 
   } catch (FileAlreadyExistsException e) {
-    new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
+    new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).setException(e).log();
 
   } catch (IOException | NoSuchAlgorithmException e) {
     new Log(sender, state, "installError").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).log();
@@ -147,7 +147,7 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
     if (deleteConfig) {
       if (pluginDataFolder.exists()) {
         try {
-          FileUtils.deleteDirectory(pluginDataFolder);
+          Util.delete(pluginDataFolder);
         } catch (IOException e) {
           //marks configs for deletion on server stop, as another process is using the files
           pluginDataFolder.deleteOnExit();
@@ -158,7 +158,7 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
     }
 
     try {
-      FileUtils.delete(new File(pluginFolder+File.separator+pluginData.getFileName()));
+      Util.delete(new File(pluginFolder+File.separator+pluginData.getFileName()));
     } catch (IOException e) {
       new Log(sender, state, "deleteError").setLevel(Level.WARNING).setException(e).setPluginName(pluginName).log();
       new Log(sender, state, "scheduleDelete").setLevel(Level.WARNING).setPluginName(pluginName).log();
