@@ -2,9 +2,10 @@ package me.tye.cogworks.util;
 
 import me.tye.cogworks.CogWorks;
 import me.tye.cogworks.util.customObjects.ChatParams;
-import me.tye.cogworks.util.customObjects.DeletePending;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
+import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
+import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
@@ -20,6 +21,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.logging.Level;
@@ -53,7 +55,7 @@ public static final File temp = new File(plugin.getDataFolder().getAbsolutePath(
 public static final File ADR = new File(temp.getAbsolutePath()+File.separator+"ADR");
 /**
  The file for storing data on the files have been deleted. */
-public static final File deleteData = new File(dataStore.getAbsolutePath()+File.separator+"deleteData");
+public static final File deleteData = new File(dataStore.getAbsolutePath()+File.separator+"deleteData.json");
 /**
  The folder for storing files that have been deleted. */
 public static final File deletePending = new File(dataStore.getAbsolutePath()+File.separator+"deletePending");
@@ -540,16 +542,36 @@ public static long parseSize(String sizeString) {
 public static long getProceeding(long time, char[] timeChars, int index) {
 
   for (int ii = 1; Character.isDigit(timeChars[index-ii]); ii++) {
+
+    int parsedVal = Integer.parseInt(String.valueOf(timeChars[index-ii]));
+    //sets the number at the next order of magnitude to the parsed one
+    time = (long) (time+parsedVal*(Math.pow(10d, ii-1)));
+
     //if the index to get would be below 0 ends the loop
     if ((index-ii)-1 < 0) {
       break;
     }
-
-    int parsedVal = Integer.parseInt(String.valueOf(timeChars[index-ii]));
-    //sets the number at the next order of magnitude to the parsed one
-    time = (long) (time+parsedVal*(Math.pow(10d, ii)));
   }
 
   return time;
 }
+
+public static void deleteFileOrFolder(File file) throws IOException {
+  if (file.isDirectory()) {
+    FileUtils.deleteDirectory(file);
+  }
+  else {
+    Files.delete(file.toPath());
+  }
+}
+
+public static void deleteFileOrFolder(Path pathToFile) throws IOException {
+  if (pathToFile.toFile().isDirectory()) {
+    FileUtils.deleteDirectory(pathToFile.toFile());
+  }
+  else {
+    Files.delete(pathToFile);
+  }
+}
+
 }

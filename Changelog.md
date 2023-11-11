@@ -56,4 +56,5 @@
 
 ## 0.4:
 - Multiple plugins can be removed at once by separating each plugin name by a space.
-- Added backwards compatibility to version 1.17
+- Added backwards compatibility to version "1.17".
+- Deleted files & folders will now be moved into a temp dir, & only deleted after certain configurable conditions have been met.

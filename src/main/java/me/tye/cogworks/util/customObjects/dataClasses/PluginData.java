@@ -1,4 +1,4 @@
-package me.tye.cogworks.util.customObjects.yamlClasses;
+package me.tye.cogworks.util.customObjects.dataClasses;
 
 import java.util.ArrayList;
 import java.util.Map;

@@ -8,11 +8,11 @@ import me.tye.cogworks.commands.PluginCommand;
 import me.tye.cogworks.commands.TabComplete;
 import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.Util;
-import me.tye.cogworks.util.customObjects.DeletePending;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.ModrinthSearch;
-import me.tye.cogworks.util.customObjects.yamlClasses.DependencyInfo;
-import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
+import me.tye.cogworks.util.customObjects.dataClasses.DependencyInfo;
+import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -41,7 +41,7 @@ import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
 
-//TODO: Instead of deleting files, have them be moved to the .temp folder & either deleted upon reload | after a set time.
+//TODO: /restore <fileName>
 //TODO: Allow to install multiple plugins at once when using a url.
 //TODO: Fix when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
 //TODO: Make to try & install plugins for the correct server version if the server is updated.
@@ -455,6 +455,14 @@ private void newLangCheck() {
 /**
  Starts a new thread that checks for out of date files in the restore folder every 10 mins. If a file is older than the limit specified by the user in the config the file will be fully deleted. */
 private static void deletePending() {
+  //If the delete pending thread is already running then don't start a new one.
+  //Added for compatibility with reloads.
+  for (Thread runningThread : Thread.getAllStackTraces().keySet()) {
+    if (runningThread.getName().equals("DeleteTime")) {
+      return;
+    }
+  }
+
   //deletes any files that are older than the limit
   new Thread(() -> {
     String entered = Util.getConfig("keepDeleted.time");
@@ -475,18 +483,19 @@ private static void deletePending() {
           continue;
         }
 
-        deletePending.delete();
+        try {
+          deletePending.delete();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
       }
 
       try {
         Thread.sleep(600000);
-      } catch (InterruptedException e) {
-        //TODO: replace with ignore if works.
-        e.printStackTrace();
-      }
+      } catch (InterruptedException ignore) {}
     }
 
-  }).start();
+  }, "DeleteTime").start();
 }
 
 /**
@@ -499,7 +508,7 @@ private static void deletePending() {
  @param time The time stored in the config file.
  @return The parsed units as a long array:<br>index 0 - weeks<br>index 1 - days<br>index 2 - hours<br>index 3 - minutes. */
 private static long[] parseTime(String time) {
-  long[] times = new long[3];
+  long[] times = new long[4];
   char[] timeChars = time.toLowerCase().toCharArray();
 
   for (int i = 0; i < timeChars.length; i++) {

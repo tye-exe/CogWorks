@@ -1,5 +1,8 @@
-package me.tye.cogworks.util.customObjects;
+package me.tye.cogworks.util.customObjects.dataClasses;
 
+import com.google.gson.*;
+import com.google.gson.stream.JsonReader;
+import me.tye.cogworks.util.customObjects.Log;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.Nullable;
 
@@ -9,7 +12,6 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.stream.Stream;
 
 import static me.tye.cogworks.util.Util.*;
 
@@ -17,23 +19,34 @@ public class DeletePending implements Serializable {
 @Serial
 private static final long serialVersionUID = 87120L;
 
-private final Path relativePath;
-private final Path filePath;
+private final String relativePath;
+private final String filePath;
 private final String randName;
-private final LocalDateTime deleteTime;
+private final String deleteTime;
+
+/**
+ An object used for storing data on deleted files, so they could be restored before full deletion.
+ @param relativePath The path to the file from the server folder.
+ @param filePath     The path to the file.
+ @param randName     The random name of the file inside the delete pending folder. */
+public DeletePending(Path relativePath, Path filePath, String randName) {
+  this.relativePath = relativePath.toString();
+  this.filePath = filePath.toString();
+  this.randName = randName;
+  this.deleteTime = LocalDateTime.now().toString();
+}
 
 /**
  An object used for storing data on deleted files, so they could be restored before full deletion.
  @param relativePath The path to the file from the server folder.
  @param filePath     The true name of the file.
  @param randName     The random name of the file inside the delete pending folder. */
-public DeletePending(Path relativePath, Path filePath, String randName) {
+public DeletePending(String relativePath, String filePath, String randName, String deleteTime) {
   this.relativePath = relativePath;
   this.filePath = filePath;
   this.randName = randName;
-  this.deleteTime = LocalDateTime.now();
+  this.deleteTime = deleteTime;
 }
-
 
 /**
  Appends this object to the deleteData file.<br>
@@ -46,12 +59,12 @@ public void append() throws IOException {
 
   //if the deleted file is bigger than the max size specified by the user then it isn't reserved.
   long maxSize = parseSize(getConfig("keepDeleted.size"));
-  if (maxSize < Files.size(filePath)) {
-    Files.delete(filePath);
+  if (maxSize <= Files.size(getOldFilePath())) {
+    Files.delete(getOldFilePath());
     return;
   }
 
-  clear(Files.size(filePath));
+  clear(Files.size(getOldFilePath()));
 
   ArrayList<DeletePending> deletePendings = read();
   deletePendings.add(this);
@@ -59,20 +72,20 @@ public void append() throws IOException {
 
   //moves the file, but deletes the copy if it failed to fully move.
   try {
-    //TODO: add dir support
-    Files.move(filePath, Path.of(deletePending.getPath()+File.separator+randName));
+    Files.move(getOldFilePath(), getDeletedFilePath());
+
   } catch (IOException e) {
     remove(this);
-    if (!new File(deletePending.getPath()+File.separator+randName).exists()) {
-      throw new IOException(e);
+    if (getDeletedFilePath().toFile().exists()) {
+      deleteFileOrFolder(getDeletedFilePath());
     }
 
-    Files.delete(Path.of(deletePending.getPath()+File.separator+randName));
+    throw new IOException(e);
   }
 }
 
 /**
- Deletes files until there is enough space for the new one.
+ Deletes files until there is enough space for the new one. This does nothing if there is enough space to store the file
  @param fileSize The size of the new file.
  @throws IOException If there was an error getting any file sizes, or reading from the deleteData. */
 private void clear(long fileSize) throws IOException {
@@ -105,7 +118,7 @@ private ArrayList<DeletePending> getOldest() throws IOException {
 
     DeletePending oldest;
 
-    if (!sortedPendings.isEmpty()) {
+    if (sortedPendings.isEmpty()) {
       oldest = null;
     }
     else {
@@ -133,34 +146,32 @@ private ArrayList<DeletePending> getOldest() throws IOException {
 
 /**
  Deletes the file restore file & the entry in the deleteData file. */
-public void delete() {
-  try {
-    Files.delete(Path.of(deletePending.getAbsolutePath()+File.separator+getRandName()));
+public void delete() throws IOException {
+  deleteFileOrFolder(getDeletedFilePath());
 
-    ArrayList<DeletePending> pendings = read();
-    for (int i = 0; i < pendings.size(); i++) {
-      if (!pendings.get(i).getRandName().equals(getRandName())) {
-        continue;
-      }
-
-      pendings.remove(i);
-      break;
+  ArrayList<DeletePending> pendings = read();
+  for (int i = 0; i < pendings.size(); i++) {
+    if (!pendings.get(i).getRandName().equals(getRandName())) {
+      continue;
     }
 
-    write(pendings);
-
-  } catch (IOException e) {
-    //TODO: error handling
-    throw new RuntimeException(e);
+    pendings.remove(i);
+    break;
   }
+
+  write(pendings);
 }
 
 public Path getRelativePath() {
-  return relativePath;
+  return Path.of(relativePath);
 }
 
-public Path getFilePath() {
-  return filePath;
+public Path getOldFilePath() {
+  return Path.of(filePath);
+}
+
+public Path getDeletedFilePath() {
+  return Path.of(deletePending.getPath()+File.separator+getOldFilePath().getFileName()+randName);
 }
 
 public String getRandName() {
@@ -168,7 +179,7 @@ public String getRandName() {
 }
 
 public LocalDateTime getDeleteTime() {
-  return deleteTime;
+  return LocalDateTime.parse(deleteTime);
 }
 
 
@@ -176,24 +187,10 @@ public LocalDateTime getDeleteTime() {
  Reads the data from the deleteData file.
  @return The data of the files that are pending deletion. */
 public static ArrayList<DeletePending> read(@Nullable CommandSender sender) {
-  if (!deleteData.exists()) {
-    return new ArrayList<>();
-  }
-
-  try (Stream<String> lines = Files.lines(Path.of(deleteData.getAbsolutePath()))) {
-    if (lines.toList().isEmpty()) {
-      return new ArrayList<>();
-    }
+  try {
+    return read();
 
   } catch (IOException e) {
-    throw new RuntimeException(e);
-  }
-
-  try (FileInputStream fileInputStream = new FileInputStream(deleteData)) {
-    ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-    return (ArrayList<DeletePending>) objectInputStream.readObject();
-
-  } catch (ClassNotFoundException | SecurityException | IOException e) {
     new Log(sender, "delete.readFail").setException(e).log();
     return new ArrayList<>();
   }
@@ -203,20 +200,20 @@ public static ArrayList<DeletePending> read(@Nullable CommandSender sender) {
  Reads the data from the deleteData file.
  @return The data of the files that are pending deletion. */
 public static ArrayList<DeletePending> read() throws IOException {
-  if (!deleteData.exists()) {
-    return new ArrayList<>();
-  }
+  try (JsonReader jsonReader = new JsonReader(new FileReader(deleteData))) {
+    JsonElement fileJson = JsonParser.parseReader(jsonReader);
+    if (fileJson.isJsonNull()) {
+      return new ArrayList<>();
+    }
 
-  if (Files.size(Path.of(deleteData.getAbsolutePath())) == 0) {
-    return new ArrayList<>();
-  }
+    JsonArray jsonArray = fileJson.getAsJsonArray();
 
-  try (FileInputStream fileInputStream = new FileInputStream(deleteData)) {
-    ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-    return (ArrayList<DeletePending>) objectInputStream.readObject();
-
-  } catch (ClassNotFoundException | SecurityException | IOException e) {
-    throw new IOException(e);
+    ArrayList<DeletePending> deletePendings = new ArrayList<>();
+    for (JsonElement element : jsonArray) {
+      JsonObject jsonObject = element.getAsJsonObject();
+      deletePendings.add(new DeletePending(jsonObject.get("relativePath").getAsString(), jsonObject.get("filePath").getAsString(), jsonObject.get("randName").getAsString(), jsonObject.get("deleteTime").getAsString()));
+    }
+    return deletePendings;
   }
 }
 
@@ -226,10 +223,10 @@ public static ArrayList<DeletePending> read() throws IOException {
  * @throws IOException If there was an error writing data to the file.
  */
 private static void write(Collection<DeletePending> deletePendings) throws IOException {
-
-  try (FileOutputStream fileOutputStream = new FileOutputStream(deleteData)) {
-    ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
-    objectOutputStream.writeObject(deletePendings);
+  try (FileWriter fileWriter = new FileWriter(deleteData)) {
+    GsonBuilder gson = new GsonBuilder();
+    gson.setPrettyPrinting();
+    gson.create().toJson(deletePendings, fileWriter);
   }
 }
 

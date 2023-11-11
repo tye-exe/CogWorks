@@ -3,7 +3,7 @@ package me.tye.cogworks.commands;
 import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
