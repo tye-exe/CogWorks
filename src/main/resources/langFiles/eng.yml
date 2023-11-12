@@ -47,7 +47,8 @@ tabComplete:
     install: "<URL>"
     search: "<query>"
 
-  dataReadError: "§eThere was an error getting the plugin names."
+  pluginReadError: "§eThere was an error getting the plugin names."
+  recoverReadError: "§eThere was an error getting recoverable file names."
 
 reload:
   reloading: "§aReloading Plugins."
@@ -106,6 +107,10 @@ delete:
   fail: "§eThere was an error in moving the file to delete store folder."
   readFail: "§eThere was an error reading the data from the delete data file."
 
+
+recover:
+  readFail: "§eThere was an error reading the data from the delete data file."
+  invalidPath: "§eThe path you entered is invalid. Please enter a valid path."
 
 ModrinthAPI:
   outdated: "§cThis version of CogWorks is using an outdated version of the Modrinth API. It is recommended to install a newer version of CogWorks as many features won't work."

@@ -3,6 +3,7 @@ package me.tye.cogworks.commands;
 import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.customObjects.Log;
+import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
 import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -10,12 +11,18 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static me.tye.cogworks.util.Util.serverFolder;
+
 public class TabComplete implements TabCompleter {
+
 @Override
 public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
   ArrayList<String> completions = new ArrayList<>();
@@ -62,7 +69,7 @@ public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Comman
           plugins.add(data.getName());
         }
       } catch (IOException e) {
-        new Log(sender, "tabComplete.dataReadError").setException(e).log();
+        new Log(sender, "tabComplete.pluginReadError").setException(e).log();
       }
 
       StringUtil.copyPartialMatches(args[args.length-1], plugins, completions);
@@ -72,8 +79,78 @@ public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Comman
 
   if (label.equals("file") && sender.hasPermission("cogworks.file.nav")) {
     if (args.length == 1) {
-      StringUtil.copyPartialMatches(args[0], Arrays.asList("help", "chat", "gui"), completions);
+      StringUtil.copyPartialMatches(args[0], Arrays.asList("help", "chat", "gui", "recover"), completions);
     }
+
+    if (args[0].equals("recover")) {
+      if (args.length == 2) {
+        try {
+          StringUtil.copyPartialMatches(args[1], DeletePending.getUniqueOldPaths(), completions);
+        } catch (IOException e) {
+          new Log(sender, "tabComplete.recoverReadError").setException(e).log();
+        }
+      }
+
+      if (args.length == 3) {
+
+        //TODO: Show path to og file at top, show path to other available dirs below, if path wends ends dir make file restore with it's og name.
+        if (args[2].isEmpty()) {
+          try {
+            DeletePending delete = DeletePending.getDelete(args[1]);
+
+            String[] fileNames = serverFolder.list();
+            if (fileNames == null) {
+              return new ArrayList<>();
+            }
+
+            ArrayList<String> dirs = new ArrayList<>(Arrays.stream(fileNames).toList());
+            dirs.sort(null);
+            dirs.replaceAll(string -> string+File.separator);
+
+            if (delete != null) {
+              dirs.add(String.valueOf(delete.getRelativePath()));
+            }
+
+            return dirs;
+
+          } catch (IOException e) {
+            new Log(sender, "tabComplete.recoverReadError").setException(e).log();
+          }
+        }
+
+        else {
+          try {
+            DeletePending delete = DeletePending.getDelete(args[1]);
+
+            String[] fileNames = serverFolder.list();
+            ArrayList<String> dirs;
+
+            try {
+              Path enteredPath = Path.of(args[2]);
+              enteredPath = serverFolder.toPath().resolve(enteredPath);
+              fileNames = enteredPath.getParent().toFile().list();
+            } catch (InvalidPathException e) {
+
+            }
+
+            dirs = new ArrayList<>(Arrays.stream(fileNames).toList());
+            dirs.sort(null);
+            dirs.replaceAll(string -> string+File.separator);
+
+            if (delete != null) {
+              dirs.add(String.valueOf(delete.getRelativePath()));
+            }
+
+            return dirs;
+
+          } catch (IOException e) {
+            new Log(sender, "tabComplete.recoverReadError").setException(e).log();
+          }
+        }
+
+      }
+    }
+
   }
 
   completions.sort(null);

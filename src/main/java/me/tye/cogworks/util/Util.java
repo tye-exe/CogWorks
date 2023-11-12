@@ -468,30 +468,7 @@ public static void delete(@NotNull File file) throws IOException {
     return;
   }
 
-  Path filePath = Path.of(file.getAbsolutePath()).normalize();
-  Path serverFolderPath = Path.of(serverFolder.getAbsolutePath()).normalize();
-
-  Path relativePath = filePath.relativize(serverFolderPath);
-  String randName = "";
-
-  //generates a random file name & makes sure that it doesn't already exist
-  Random rand = new Random();
-  while (true) {
-    int i = rand.nextInt(0, 100000);
-    StringBuilder stringI = new StringBuilder(String.valueOf(i));
-
-    while (stringI.length() > 6) {
-      stringI.append("0");
-    }
-
-    if (!new File(deletePending.getPath()+File.separator+stringI).exists()) {
-      randName = stringI.toString();
-      break;
-    }
-
-  }
-
-  new DeletePending(relativePath, filePath, randName).append();
+  new DeletePending(Path.of(file.getAbsolutePath()).normalize()).append();
 }
 
 /**

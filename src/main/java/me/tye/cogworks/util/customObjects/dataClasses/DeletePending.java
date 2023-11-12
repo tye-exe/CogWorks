@@ -6,45 +6,64 @@ import me.tye.cogworks.util.customObjects.Log;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.*;
 
 import static me.tye.cogworks.util.Util.*;
 
-public class DeletePending implements Serializable {
-@Serial
-private static final long serialVersionUID = 87120L;
+public class DeletePending {
 
-private final String relativePath;
+/**
+ The old file path relative to the server folder. */
 private final String filePath;
-private final String randName;
+private final String deleteName;
 private final String deleteTime;
 
 /**
  An object used for storing data on deleted files, so they could be restored before full deletion.
- @param relativePath The path to the file from the server folder.
- @param filePath     The path to the file.
- @param randName     The random name of the file inside the delete pending folder. */
-public DeletePending(Path relativePath, Path filePath, String randName) {
-  this.relativePath = relativePath.toString();
-  this.filePath = filePath.toString();
-  this.randName = randName;
+ @param filePath The path to the file.
+ */
+public DeletePending(Path filePath) {
+  this.filePath = serverFolder.toPath().relativize(filePath).toString();
+
+  String randName;
+  //generates a random file name & makes sure that it doesn't already exist
+  Random rand = new Random();
+  while (true) {
+    int i = rand.nextInt(0, 100000);
+    StringBuilder rands = new StringBuilder(String.valueOf(i));
+
+    while (rands.length() > 6) {
+      rands.append("0");
+    }
+
+    if (!new File(deletePending.getPath()+File.separator+filePath.getFileName()+rands).exists()) {
+      randName = rands.toString();
+      break;
+    }
+
+  }
+
+  this.deleteName = filePath.getFileName()+"-"+randName;
   this.deleteTime = LocalDateTime.now().toString();
 }
 
 /**
  An object used for storing data on deleted files, so they could be restored before full deletion.
- @param relativePath The path to the file from the server folder.
- @param filePath     The true name of the file.
- @param randName     The random name of the file inside the delete pending folder. */
-public DeletePending(String relativePath, String filePath, String randName, String deleteTime) {
-  this.relativePath = relativePath;
+ * @param filePath The original path the file had before it was deleted, relative to the server folder.
+ * @param deleteName The path to the delete folder for the file, relative to the server folder.
+ * @param deleteTime The time that the file was deleted.
+ */
+public DeletePending(String filePath, String deleteName, String deleteTime) {
   this.filePath = filePath;
-  this.randName = randName;
+  this.deleteName = deleteName;
   this.deleteTime = deleteTime;
 }
 
@@ -59,29 +78,51 @@ public void append() throws IOException {
 
   //if the deleted file is bigger than the max size specified by the user then it isn't reserved.
   long maxSize = parseSize(getConfig("keepDeleted.size"));
-  if (maxSize <= Files.size(getOldFilePath())) {
-    Files.delete(getOldFilePath());
+  if (maxSize <= Files.size(getFilePath())) {
+    Files.delete(getFilePath());
     return;
   }
 
-  clear(Files.size(getOldFilePath()));
+  clear(Files.size(getFilePath()));
 
-  ArrayList<DeletePending> deletePendings = read();
+  Collection<DeletePending> deletePendings = read();
   deletePendings.add(this);
   write(deletePendings);
 
   //moves the file, but deletes the copy if it failed to fully move.
   try {
-    Files.move(getOldFilePath(), getDeletedFilePath());
+    Files.move(getFilePath(), getDeletePath());
 
   } catch (IOException e) {
-    remove(this);
-    if (getDeletedFilePath().toFile().exists()) {
-      deleteFileOrFolder(getDeletedFilePath());
+    remove();
+    if (getDeletePath().toFile().exists()) {
+      deleteFileOrFolder(getDeletePath());
     }
 
     throw new IOException(e);
   }
+}
+
+/**
+ Deletes the file restore file & the entry in the deleteData file. */
+public void delete() throws IOException {
+  deleteFileOrFolder(getDeletePath());
+  remove();
+}
+
+/**
+ Restores the file to the given path.
+ @param restorePath The path to restore the file to.
+ @throws IOException If there was an error moving the deleted file, or removing the delete data. */
+public void restore(Path restorePath) throws IOException {
+  Path newPath = serverFolder.toPath().resolve(restorePath);
+
+  if (!newPath.getParent().toFile().exists()) {
+    throw new InvalidPathException(restorePath.toString(), "That path does not exist.");
+  }
+
+  Files.move(getDeletePath(), newPath);
+  remove();
 }
 
 /**
@@ -145,48 +186,56 @@ private ArrayList<DeletePending> getOldest() throws IOException {
 }
 
 /**
- Deletes the file restore file & the entry in the deleteData file. */
-public void delete() throws IOException {
-  deleteFileOrFolder(getDeletedFilePath());
-
-  ArrayList<DeletePending> pendings = read();
-  for (int i = 0; i < pendings.size(); i++) {
-    if (!pendings.get(i).getRandName().equals(getRandName())) {
+ Removes the given deletePending object from the delete pending file.
+ * @throws IOException If there was an error reading or writing to the file.
+ */
+private void remove() throws IOException {
+  List<DeletePending> deletePendings = read();
+  for (int i = 0; i < deletePendings.size(); i++) {
+    if (!deletePendings.get(i).getDeletePath().getFileName().equals(getDeletePath().getFileName())) {
       continue;
     }
 
-    pendings.remove(i);
+    deletePendings.remove(i);
     break;
   }
-
-  write(pendings);
+  write(deletePendings);
 }
 
+/**
+ * @return The old path relative to the server folder.
+ */
 public Path getRelativePath() {
-  return Path.of(relativePath);
-}
-
-public Path getOldFilePath() {
   return Path.of(filePath);
 }
 
-public Path getDeletedFilePath() {
-  return Path.of(deletePending.getPath()+File.separator+getOldFilePath().getFileName()+randName);
+/**
+ * @return The current file path to the old location.
+ */
+public Path getFilePath() {
+  return serverFolder.toPath().resolve(filePath);
 }
 
-public String getRandName() {
-  return randName;
+/**
+ * @return The current file path to the reserved file.
+ */
+public Path getDeletePath() {
+  return deletePending.toPath().resolve(deleteName);
 }
 
+/**
+ * @return The time that the file was deleted.
+ */
 public LocalDateTime getDeleteTime() {
   return LocalDateTime.parse(deleteTime);
 }
 
 
+
 /**
  Reads the data from the deleteData file.
  @return The data of the files that are pending deletion. */
-public static ArrayList<DeletePending> read(@Nullable CommandSender sender) {
+public static Collection<DeletePending> read(@Nullable CommandSender sender) {
   try {
     return read();
 
@@ -199,7 +248,7 @@ public static ArrayList<DeletePending> read(@Nullable CommandSender sender) {
 /**
  Reads the data from the deleteData file.
  @return The data of the files that are pending deletion. */
-public static ArrayList<DeletePending> read() throws IOException {
+public static List<DeletePending> read() throws IOException {
   try (JsonReader jsonReader = new JsonReader(new FileReader(deleteData))) {
     JsonElement fileJson = JsonParser.parseReader(jsonReader);
     if (fileJson.isJsonNull()) {
@@ -208,10 +257,10 @@ public static ArrayList<DeletePending> read() throws IOException {
 
     JsonArray jsonArray = fileJson.getAsJsonArray();
 
-    ArrayList<DeletePending> deletePendings = new ArrayList<>();
+    List<DeletePending> deletePendings = new ArrayList<>();
     for (JsonElement element : jsonArray) {
       JsonObject jsonObject = element.getAsJsonObject();
-      deletePendings.add(new DeletePending(jsonObject.get("relativePath").getAsString(), jsonObject.get("filePath").getAsString(), jsonObject.get("randName").getAsString(), jsonObject.get("deleteTime").getAsString()));
+      deletePendings.add(new DeletePending(jsonObject.get("filePath").getAsString(), jsonObject.get("deleteName").getAsString(), jsonObject.get("deleteTime").getAsString()));
     }
     return deletePendings;
   }
@@ -230,22 +279,67 @@ private static void write(Collection<DeletePending> deletePendings) throws IOExc
   }
 }
 
+
 /**
- Removes the given deletePending object from the delete pending file.
- * @param deletePending The given deletePending object to remove.
- * @throws IOException If there was an error reading or writing to the file.
+ Gets the old file paths of all the deleted files relative to the server folder.<br>
+ If two files have the same path, then the delete time is appended to the path. This won't change the restore name.
+ * @return The unique file paths off all the deleted files relative to the server folder.
+ * @throws IOException If there was an error reading the data from the delete data file.
  */
-private static void remove(DeletePending deletePending) throws IOException {
-  ArrayList<DeletePending> deletePendings = read();
-  for (int i = 0; i < deletePendings.size(); i++) {
-    if (!deletePendings.get(i).getRandName().equals(deletePending.getRandName())) {
+public static List<String> getUniqueOldPaths() throws IOException {
+  return uniquePaths().values().stream().toList();
+}
+
+/**
+ Gets the DeletePending object that corresponds to the given path.
+ @param uniqueOldPath The given path.
+ @return The DeletePending object or null if no match could be found.
+ @throws IOException If there was an error reading the data from the deletePending file. */
+public static DeletePending getDelete(String uniqueOldPath) throws IOException {
+  HashMap<DeletePending,String> deletes = uniquePaths();
+  for (DeletePending pending : deletes.keySet()) {
+    if (!deletes.get(pending).equals(uniqueOldPath)) {
       continue;
     }
 
-    deletePendings.remove(i);
-    break;
+    return pending;
   }
-  write(deletePendings);
+
+  return null;
+}
+
+private static HashMap<DeletePending,String> uniquePaths() throws IOException {
+  List<String> deletePaths = new ArrayList<>();
+
+  List<DeletePending> deletePendings = read();
+  for (DeletePending pending : deletePendings) {
+
+    //checks if the any other files have this file path.
+    if (!deletePaths.contains(pending.filePath)) {
+      deletePaths.add(pending.getRelativePath().toString());
+      continue;
+    }
+
+    for (int j = 0; j < deletePaths.size(); j++) {
+      DeletePending deleteObject = deletePendings.get(j);
+
+      //continues if the filePath is unique.
+      if (!deletePaths.get(j).equals(deleteObject.getRelativePath().toString())) {
+        continue;
+      }
+
+      //adds the time of deletion to the filePath
+      deletePaths.set(j, deleteObject.getRelativePath()+"-"+deleteObject.getDeleteTime());
+    }
+
+    deletePaths.add(pending.getRelativePath()+"-"+pending.getDeleteTime());
+  }
+
+  HashMap<DeletePending,String> deletes = new HashMap<>();
+  for (int i = 0; i < deletePaths.size(); i++) {
+    deletes.put(deletePendings.get(i), deletePaths.get(i));
+  }
+  return deletes;
 }
 
 }

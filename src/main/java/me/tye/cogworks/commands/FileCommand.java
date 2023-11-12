@@ -5,14 +5,19 @@ import me.tye.cogworks.util.customObjects.ChatParams;
 import me.tye.cogworks.util.customObjects.FileData;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.PathHolder;
+import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import static me.tye.cogworks.ChatManager.response;
+import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+
 import static me.tye.cogworks.FileGui.*;
+import static me.tye.cogworks.util.Util.setResponse;
 
 
 public class FileCommand implements CommandExecutor {
@@ -22,18 +27,12 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
   if (!sender.hasPermission("cogworks.file.nav")) return true;
 
   if (args.length == 1 && args[0].equals("chat")) {
-    if (sender instanceof Player) FileGui.position.put(sender.getName(), new PathHolder());
-    else FileGui.position.put("~", new PathHolder());
+    chatBasedExplorer(sender);
+    return true;
 
-    ChatParams params = new ChatParams(sender, "terminal");
-    if (sender instanceof Player) response.put(sender.getName(), params);
-    else response.put("~", params);
+  }
 
-    new Log(sender, "terminal.init").log();
-    new Log(sender, "terminal.WIP").log();
-    new Log(sender, "terminal.path").setFilePath(position.get("~").getRelativePath()).log();
-
-  } else if (args.length == 0 || args[0].equals("gui")) {
+  if (args.length == 0 || args[0].equals("gui")) {
     if (sender instanceof Player player) {
       FileGui.position.put(player.getName(), new PathHolder());
       fileData.put(player.getUniqueId(), new FileData(1, null, 1, false));
@@ -41,21 +40,55 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
 
     } else {
       new Log(sender, "terminal.noGui").log();
-
-      FileGui.position.put("~", new PathHolder());
-      response.put("~", new ChatParams(sender, "terminal"));
-
-      new Log(sender, "terminal.init").log();
-      new Log(sender, "terminal.WIP").log();
-      new Log(sender, "terminal.path").setFilePath(position.get("~").getRelativePath()).log();
+      chatBasedExplorer(sender);
     }
 
-  } else {
-    new Log(sender, "help.file.help").log();
-    new Log(sender, "help.file.chat").log();
-    new Log(sender, "help.file.gui").log();
+    return true;
   }
+
+  if (args.length >= 2 && args[0].equals("recover")) {
+
+    try {
+      DeletePending delete = DeletePending.getDelete(args[1]);
+      if (delete == null) {
+        throw new IOException("None matching found");
+      }
+
+      Path returnPath = delete.getFilePath();
+
+      if (args.length >= 3) {
+        returnPath = Path.of(args[2]);
+      }
+
+      delete.restore(returnPath);
+
+    } catch (IOException e) {
+      new Log(sender, "recover.readFail").setException(e).log();
+    } catch (InvalidPathException e) {
+      new Log(sender, "recover.invalidPath").setException(e).log();
+    }
+  }
+
+  new Log(sender, "help.file.help").log();
+  new Log(sender, "help.file.chat").log();
+  new Log(sender, "help.file.gui").log();
+  new Log(sender, "help.file.recover").log();
   return true;
+}
+
+private static void chatBasedExplorer(CommandSender sender) {
+  if (sender instanceof Player) {
+    FileGui.position.put(sender.getName(), new PathHolder());
+  }
+  else {
+    FileGui.position.put("~", new PathHolder());
+  }
+
+  setResponse(sender, new ChatParams(sender, "terminal"));
+
+  new Log(sender, "terminal.init").log();
+  new Log(sender, "terminal.WIP").log();
+  new Log(sender, "terminal.path").setFilePath(position.get("~").getRelativePath()).log();
 }
 
 
