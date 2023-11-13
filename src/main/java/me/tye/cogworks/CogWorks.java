@@ -46,7 +46,6 @@ import static me.tye.cogworks.util.Util.*;
 
 public final class CogWorks extends JavaPlugin {
 
-//TODO: /restore <fileName>
 //TODO: Allow to install multiple plugins at once when using a url.
 //TODO: Fix when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
 //TODO: Make to try & install plugins for the correct server version if the server is updated.
@@ -119,6 +118,10 @@ public void onEnable() {
 
   deletePending();
 
+  //Custom override asked for by canvas creator.
+  if (serverSoftware.equals("canvas")) {
+    serverSoftware = "purpur";
+  }
 }
 
 @Override

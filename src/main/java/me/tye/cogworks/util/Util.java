@@ -61,7 +61,7 @@ public static final File deleteData = new File(dataStore.getAbsolutePath()+File.
 public static final File deletePending = new File(dataStore.getAbsolutePath()+File.separator+"deletePending");
 
 public static final String mcVersion = Bukkit.getVersion().split(": ")[1].substring(0, Bukkit.getVersion().split(": ")[1].length()-1);
-public static final String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
+public static String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
 
 
 //lang & config
