@@ -293,8 +293,8 @@ public static List<String> getUniqueOldPaths() throws IOException {
 /**
  Gets the DeletePending object that corresponds to the given path.
  @param uniqueOldPath The given path.
- @return The DeletePending object or null if no match could be found.
- @throws IOException If there was an error reading the data from the deletePending file. */
+ @return The DeletePending object.
+ @throws IOException If there was an error reading the data from the deletePending file, or no match could be found. */
 public static DeletePending getDelete(String uniqueOldPath) throws IOException {
   HashMap<DeletePending,String> deletes = uniquePaths();
   for (DeletePending pending : deletes.keySet()) {
@@ -304,8 +304,7 @@ public static DeletePending getDelete(String uniqueOldPath) throws IOException {
 
     return pending;
   }
-
-  return null;
+  throw new IOException("No match");
 }
 
 private static HashMap<DeletePending,String> uniquePaths() throws IOException {

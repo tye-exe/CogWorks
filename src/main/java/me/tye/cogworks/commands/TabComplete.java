@@ -94,6 +94,8 @@ public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Comman
       if (args.length == 3) {
 
         //TODO: Show path to og file at top, show path to other available dirs below, if path wends ends dir make file restore with it's og name.
+
+
         if (args[2].isEmpty()) {
           try {
             DeletePending delete = DeletePending.getDelete(args[1]);
@@ -156,4 +158,49 @@ public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Comman
   completions.sort(null);
   return completions;
 }
+
+private static List<String> recoverFilePath(CommandSender sender, String[] args) {
+  ArrayList<String> completions = new ArrayList<>();
+  String destinationPath = args[2];
+
+  //adds the old file location to the suggestions.
+  try {
+    DeletePending delete = DeletePending.getDelete(args[1]);
+    completions.add(String.valueOf(delete.getRelativePath()));
+  } catch (IOException ex) {
+    new Log(sender, "tabComplete.recoverReadError").setException(ex).log();
+  }
+
+  //if the user entered a non-valid path return.
+  Path fullPath;
+  try {
+    fullPath = serverFolder.toPath().resolve(Path.of(destinationPath));
+  } catch (InvalidPathException e) {
+    return completions;
+  }
+
+  //if there a was error getting the files in the dir
+  if (fullPath.toFile().listFiles() == null) {
+    return completions;
+  }
+
+  ArrayList<String> dirs = new ArrayList<>();
+
+  //if the path is to a valid dir
+  if (fullPath.toFile().exists() && fullPath.toFile().isDirectory()) {
+
+    for (File file : fullPath.toFile().listFiles()) {
+      if (!file.isDirectory()) {
+        continue;
+      }
+
+      dirs.add(file.getName()+File.separator);
+    }
+  }
+  //if the path isn't to a valid dir
+  else {
+    ud
+  }
+}
+
 }
