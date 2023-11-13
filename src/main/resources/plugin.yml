@@ -39,3 +39,5 @@ permissions:
         default: op
       rm:
         default: op
+      rec:
+        default: op
