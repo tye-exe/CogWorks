@@ -1,7 +1,8 @@
 #Config file for the CogWorks plugin.
 
 #Determins the current lang file.
-#Keys: https://raw.githubusercontent.com/Mapty231/CogWorks/master/langFiles/0.3/avaiableLangFiles
+#The possible values are the file names shown at this link: https://github.com/Mapty231/CogWorks/tree/master/langFiles/0.3.1
+#When selecting a lang do not include the ".yml".
 lang: eng
 
 
