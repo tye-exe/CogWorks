@@ -24,15 +24,20 @@ public class FileCommand implements CommandExecutor {
 
 @Override
 public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-  if (!sender.hasPermission("cogworks.file.nav")) return true;
-
   if (args.length == 1 && args[0].equals("chat")) {
+    if (!sender.hasPermission("cogworks.file.nav")) {
+      return true;
+    }
+
     chatBasedExplorer(sender);
     return true;
-
   }
 
   if (args.length == 0 || args[0].equals("gui")) {
+    if (!sender.hasPermission("cogworks.file.nav")) {
+      return true;
+    }
+
     if (sender instanceof Player player) {
       FileGui.position.put(player.getName(), new PathHolder());
       fileData.put(player.getUniqueId(), new FileData(1, null, 1, false));
@@ -47,32 +52,46 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
   }
 
   if (args.length >= 2 && args[0].equals("recover")) {
+    if (!sender.hasPermission("cogworks.file.rec")) {
+      return true;
+    }
 
     try {
       DeletePending delete = DeletePending.getDelete(args[1]);
       if (delete == null) {
-        throw new IOException("None matching found");
+        new Log(sender, "recover.noneMatching").log();
+        return true;
       }
 
-      Path returnPath = delete.getFilePath();
-
+      //if no path was provided, then the file is restored to the server folder.
+      Path restorePath = delete.getFilePath().getFileName();
       if (args.length >= 3) {
-        returnPath = Path.of(args[2]);
+        restorePath = Path.of(args[2]);
       }
 
-      delete.restore(returnPath);
+      delete.restore(restorePath);
+
+      new Log(sender, "recover.fileRecovered").setFileName(restorePath.getFileName().toString()).setFilePath(restorePath.toString()).log();
 
     } catch (IOException e) {
       new Log(sender, "recover.readFail").setException(e).log();
     } catch (InvalidPathException e) {
       new Log(sender, "recover.invalidPath").setException(e).log();
     }
+    return true;
   }
 
   new Log(sender, "help.file.help").log();
-  new Log(sender, "help.file.chat").log();
-  new Log(sender, "help.file.gui").log();
-  new Log(sender, "help.file.recover").log();
+
+  if (!sender.hasPermission("cogworks.file.nav")) {
+    new Log(sender, "help.file.chat").log();
+    new Log(sender, "help.file.gui").log();
+  }
+
+  if (sender.hasPermission("cogworks.file.rec")) {
+    new Log(sender, "help.file.recover").log();
+  }
+
   return true;
 }
 

@@ -20,8 +20,6 @@ import static me.tye.cogworks.util.Util.*;
 
 public class DeletePending {
 
-/**
- The old file path relative to the server folder. */
 private final String filePath;
 private final String deleteName;
 private final String deleteTime;
@@ -113,76 +111,23 @@ public void delete() throws IOException {
 /**
  Restores the file to the given path.
  @param restorePath The path to restore the file to.
- @throws IOException If there was an error moving the deleted file, or removing the delete data. */
-public void restore(Path restorePath) throws IOException {
+ @throws IOException If there was an error moving the deleted file, or removing the delete data.
+ @throws InvalidPathException If the parent directory of the given path does not exist, or in the case where a dir was given, if that doesn't exist*/
+public void restore(Path restorePath) throws IOException, InvalidPathException {
   Path newPath = serverFolder.toPath().resolve(restorePath);
 
+  //if no name was given then use the deleted name.
+  if (newPath.toFile().isDirectory() || newPath.toFile().exists()) {
+    newPath = newPath.resolve(getFilePath().getFileName());
+  }
+
+  //if the provided path doesn't exist, throw an error.
   if (!newPath.getParent().toFile().exists()) {
     throw new InvalidPathException(restorePath.toString(), "That path does not exist.");
   }
 
   Files.move(getDeletePath(), newPath);
   remove();
-}
-
-/**
- Deletes files until there is enough space for the new one. This does nothing if there is enough space to store the file
- @param fileSize The size of the new file.
- @throws IOException If there was an error getting any file sizes, or reading from the deleteData. */
-private void clear(long fileSize) throws IOException {
-  long newSize = Files.size(Path.of(deletePending.getAbsolutePath()))+fileSize;
-  if (newSize < parseSize(getConfig("keepDeleted.size"))) {
-    return;
-  }
-
-  //deletes files until there is enough space for the new one.
-  for (DeletePending pending : getOldest()) {
-    pending.delete();
-
-    long currentSize = Files.size(Path.of(deletePending.getAbsolutePath()))+fileSize;
-    if (currentSize > parseSize(getConfig("keepDeleted.size"))) {
-      continue;
-    }
-
-    break;
-  }
-
-}
-
-/**
- Gets the deleted data sorted by date, with the oldest first.
- @return A list of the deleted data sorted by date.
- @throws IOException If there was an error reading the data. */
-private ArrayList<DeletePending> getOldest() throws IOException {
-  ArrayList<DeletePending> sortedPendings = new ArrayList<>();
-  for (int i = 0; i < read().size(); i++) {
-
-    DeletePending oldest;
-
-    if (sortedPendings.isEmpty()) {
-      oldest = null;
-    }
-    else {
-      oldest = sortedPendings.get(sortedPendings.size()-1);
-    }
-
-    for (DeletePending pending : read()) {
-      if (oldest == null) {
-        oldest = pending;
-        break;
-      }
-
-      if (!oldest.getDeleteTime().isAfter(pending.getDeleteTime())) {
-        continue;
-      }
-
-      oldest = pending;
-      break;
-    }
-
-    sortedPendings.add(oldest);
-  }
-  return sortedPendings;
 }
 
 /**
@@ -293,8 +238,8 @@ public static List<String> getUniqueOldPaths() throws IOException {
 /**
  Gets the DeletePending object that corresponds to the given path.
  @param uniqueOldPath The given path.
- @return The DeletePending object.
- @throws IOException If there was an error reading the data from the deletePending file, or no match could be found. */
+ @return The DeletePending object or null if no match could be found.
+ @throws IOException If there was an error reading the data from the deletePending file. */
 public static DeletePending getDelete(String uniqueOldPath) throws IOException {
   HashMap<DeletePending,String> deletes = uniquePaths();
   for (DeletePending pending : deletes.keySet()) {
@@ -304,7 +249,69 @@ public static DeletePending getDelete(String uniqueOldPath) throws IOException {
 
     return pending;
   }
-  throw new IOException("No match");
+
+  return null;
+}
+
+
+/**
+ Deletes files until there is enough space for the new one. This does nothing if there is enough space to store the file
+ @param fileSize The size of the new file.
+ @throws IOException If there was an error getting any file sizes, or reading from the deleteData. */
+public static void clear(long fileSize) throws IOException {
+  long newSize = Files.size(Path.of(deletePending.getAbsolutePath()))+fileSize;
+  if (newSize < parseSize(getConfig("keepDeleted.size"))) {
+    return;
+  }
+
+  //deletes files until there is enough space for the new one.
+  for (DeletePending pending : DeletePending.getOldest()) {
+    pending.delete();
+
+    long currentSize = Files.size(Path.of(deletePending.getAbsolutePath()))+fileSize;
+    if (currentSize > parseSize(getConfig("keepDeleted.size"))) {
+      continue;
+    }
+
+    break;
+  }
+
+}
+
+/**
+ Gets the deleted data sorted by date, with the oldest first.
+ @return A list of the deleted data sorted by date.
+ @throws IOException If there was an error reading the data. */
+private static ArrayList<DeletePending> getOldest() throws IOException {
+  ArrayList<DeletePending> sortedPendings = new ArrayList<>();
+  for (int i = 0; i < read().size(); i++) {
+
+    DeletePending oldest;
+
+    if (sortedPendings.isEmpty()) {
+      oldest = null;
+    }
+    else {
+      oldest = sortedPendings.get(sortedPendings.size()-1);
+    }
+
+    for (DeletePending pending : read()) {
+      if (oldest == null) {
+        oldest = pending;
+        break;
+      }
+
+      if (!oldest.getDeleteTime().isAfter(pending.getDeleteTime())) {
+        continue;
+      }
+
+      oldest = pending;
+      break;
+    }
+
+    sortedPendings.add(oldest);
+  }
+  return sortedPendings;
 }
 
 private static HashMap<DeletePending,String> uniquePaths() throws IOException {

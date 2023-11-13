@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static me.tye.cogworks.util.Util.serverFolder;
 
@@ -77,12 +78,19 @@ public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Comman
 
   }
 
-  if (label.equals("file") && sender.hasPermission("cogworks.file.nav")) {
+  if (label.equals("file")) {
     if (args.length == 1) {
-      StringUtil.copyPartialMatches(args[0], Arrays.asList("help", "chat", "gui", "recover"), completions);
+      if (sender.hasPermission("cogworks.file.nav")) {
+        StringUtil.copyPartialMatches(args[0], Arrays.asList("help", "chat", "gui"), completions);
+      }
+
+      if (sender.hasPermission("cogworks.file.rec")) {
+        StringUtil.copyPartialMatches(args[0], List.of("recover"), completions);
+      }
     }
 
-    if (args[0].equals("recover")) {
+    if (args[0].equals("recover") && sender.hasPermission("cogworks.file.rec")) {
+
       if (args.length == 2) {
         try {
           StringUtil.copyPartialMatches(args[1], DeletePending.getUniqueOldPaths(), completions);
@@ -92,64 +100,7 @@ public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Comman
       }
 
       if (args.length == 3) {
-
-        //TODO: Show path to og file at top, show path to other available dirs below, if path wends ends dir make file restore with it's og name.
-
-
-        if (args[2].isEmpty()) {
-          try {
-            DeletePending delete = DeletePending.getDelete(args[1]);
-
-            String[] fileNames = serverFolder.list();
-            if (fileNames == null) {
-              return new ArrayList<>();
-            }
-
-            ArrayList<String> dirs = new ArrayList<>(Arrays.stream(fileNames).toList());
-            dirs.sort(null);
-            dirs.replaceAll(string -> string+File.separator);
-
-            if (delete != null) {
-              dirs.add(String.valueOf(delete.getRelativePath()));
-            }
-
-            return dirs;
-
-          } catch (IOException e) {
-            new Log(sender, "tabComplete.recoverReadError").setException(e).log();
-          }
-        }
-
-        else {
-          try {
-            DeletePending delete = DeletePending.getDelete(args[1]);
-
-            String[] fileNames = serverFolder.list();
-            ArrayList<String> dirs;
-
-            try {
-              Path enteredPath = Path.of(args[2]);
-              enteredPath = serverFolder.toPath().resolve(enteredPath);
-              fileNames = enteredPath.getParent().toFile().list();
-            } catch (InvalidPathException e) {
-
-            }
-
-            dirs = new ArrayList<>(Arrays.stream(fileNames).toList());
-            dirs.sort(null);
-            dirs.replaceAll(string -> string+File.separator);
-
-            if (delete != null) {
-              dirs.add(String.valueOf(delete.getRelativePath()));
-            }
-
-            return dirs;
-
-          } catch (IOException e) {
-            new Log(sender, "tabComplete.recoverReadError").setException(e).log();
-          }
-        }
-
+        return recoverFilePath(sender, args);
       }
     }
 
@@ -159,48 +110,66 @@ public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Comman
   return completions;
 }
 
-private static List<String> recoverFilePath(CommandSender sender, String[] args) {
+/**
+ Gets the suitable auto-completes available to the user for selecting a destination or file name to restore to.
+ @param sender The command sender - used for logging.
+ @param args   The args for the command.
+ @return The sorted list of tab complete options for the user. */
+private static ArrayList<String> recoverFilePath(CommandSender sender, String[] args) {
+  if (!sender.hasPermission("cogworks.file.rec")) {
+    return new ArrayList<>();
+  }
+
   ArrayList<String> completions = new ArrayList<>();
-  String destinationPath = args[2];
 
   //adds the old file location to the suggestions.
   try {
     DeletePending delete = DeletePending.getDelete(args[1]);
-    completions.add(String.valueOf(delete.getRelativePath()));
+    if (delete != null) {
+      completions.add("./"+String.valueOf(delete.getRelativePath()).replace("\\", "/"));
+    }
+
   } catch (IOException ex) {
     new Log(sender, "tabComplete.recoverReadError").setException(ex).log();
   }
 
-  //if the user entered a non-valid path return.
+  //return if the user entered a non-valid path return.
   Path fullPath;
   try {
-    fullPath = serverFolder.toPath().resolve(Path.of(destinationPath));
+    fullPath = serverFolder.toPath().resolve(Path.of(args[2]));
   } catch (InvalidPathException e) {
     return completions;
   }
 
-  //if there a was error getting the files in the dir
-  if (fullPath.toFile().listFiles() == null) {
+  //if the path is not to a valid dir then get the last valid dir.
+  Path parentPath = fullPath;
+  if (!fullPath.toFile().isDirectory()) {
+    parentPath = fullPath.getParent();
+  }
+
+  //return if there a was error getting the files in the dir
+  if (parentPath.toFile().listFiles() == null) {
     return completions;
   }
 
-  ArrayList<String> dirs = new ArrayList<>();
-
-  //if the path is to a valid dir
-  if (fullPath.toFile().exists() && fullPath.toFile().isDirectory()) {
-
-    for (File file : fullPath.toFile().listFiles()) {
-      if (!file.isDirectory()) {
-        continue;
-      }
-
-      dirs.add(file.getName()+File.separator);
+  //adds the files in the same dir as the user to the suggestions.
+  ArrayList<String> dirNames = new ArrayList<>();
+  for (File file : Objects.requireNonNull(parentPath.toFile().listFiles())) {
+    if (!file.isDirectory()) {
+      continue;
     }
+    dirNames.add(file.getName()+'/');
   }
-  //if the path isn't to a valid dir
-  else {
-    ud
+
+  //if the user has typed a path then the last file name is gotten.
+  String typed = "";
+  if (args[2].endsWith("/") || !args[2].isEmpty()) {
+    typed = fullPath.getFileName().toString();
   }
+
+  StringUtil.copyPartialMatches(typed, dirNames, completions);
+
+  return completions;
 }
 
 }

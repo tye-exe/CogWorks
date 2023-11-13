@@ -54,7 +54,9 @@
 - Plugins will be enabled immediately on installation.
 - Release of version 0.3.
 
-## 0.4:
+## 0.3.1:
 - Multiple plugins can be removed at once by separating each plugin name by a space.
 - Added backwards compatibility to version "1.17".
 - Deleted files & folders will now be moved into a temp dir, & only deleted after certain configurable conditions have been met.
+- Deleted files & folders can be restored by using the "/file recover <Deleted file> <Restore path>" command.
+- Added permission "cogworks.file.rec", which lets a player use the "/file recover" command
