@@ -166,7 +166,7 @@ public static void checks(String name, String message) {
 
           if (message.equals("q")) {
             response.remove(name);
-            new Log(sender, state, "quit").log();
+            new Log(sender, "pluginInstall.quit").log();
             return;
           }
 
@@ -175,13 +175,13 @@ public static void checks(String name, String message) {
           try {
             chosen = Integer.parseInt(message);
           } catch (NumberFormatException e) {
-            new Log(sender, state, "NAN").setException(e).log();
+            new Log(sender, "pluginInstall.NAN").setException(e).log();
             return;
           }
 
           //checks that the response is within the choice limits
           if (chosen > browse.getMaxChoice() || (browse.getOffset() <= 0 && chosen < 1) || (browse.getOffset() > 0 && chosen < 0)) {
-            new Log(sender, state, "NAN").log();
+            new Log(sender, "pluginInstall.NAN").log();
             return;
           }
 
@@ -200,7 +200,7 @@ public static void checks(String name, String message) {
 
           if (message.equals("q")) {
             response.remove(name);
-            new Log(sender, state, "quit").log();
+            new Log(sender, "deletePlugin.quit").log();
             return;
           }
 
@@ -211,7 +211,7 @@ public static void checks(String name, String message) {
             deleteQueue.setCurrentEvalDeleteConfig(false);
 
           } else {
-            new Log(sender, state, "confirm").log();
+            new Log(sender, "deletePlugin.confirm").log();
             return;
           }
 
@@ -223,7 +223,7 @@ public static void checks(String name, String message) {
 
           if (message.equals("q")) {
             response.remove(name);
-            new Log(sender, state, "quit").log();
+            new Log(sender, "deletePlugin.quit").log();
             return;
           }
 
@@ -234,7 +234,7 @@ public static void checks(String name, String message) {
             deleteQueue.setCurrentEvalDeleteDepends(false);
 
           } else {
-            new Log(sender, state, "confirm").log();
+            new Log(sender, "deletePlugin.confirm").log();
             return;
           }
 

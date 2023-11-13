@@ -71,7 +71,7 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
 
       delete.restore(restorePath);
 
-      new Log(sender, "recover.fileRecovered").setFileName(restorePath.getFileName().toString()).setFilePath(restorePath.toString()).log();
+      new Log(sender, "recover.succeed").setFileName(restorePath.getFileName().toString()).setFilePath(restorePath.toString()).log();
 
     } catch (IOException e) {
       new Log(sender, "recover.readFail").setException(e).log();
