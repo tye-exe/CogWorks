@@ -40,6 +40,7 @@ help:
     help: "§9/file help - §aShows this message."
     chat: "§9/file chat - §a(WIP) Turns your chat into a mock command line which lets you interact with files on the server."
     gui: "§9/file gui - §aOpens an inventory that lets you interact with the files on the server visually."
+    recover: "§9/file recover <Deleted file> <Restore path> - §aRestores a deleted file to the given path, if no path is given then the file is restored to the server folder."
 
 
 tabComplete:
@@ -109,8 +110,12 @@ delete:
 
 
 recover:
+  succeed: "§a{fileName} was restored to {filePath}"
+
   readFail: "§eThere was an error reading the data from the delete data file."
   invalidPath: "§eThe path you entered is invalid. Please enter a valid path."
+  noneMatching: "§eNo deleted files match the one you entered."
+
 
 ModrinthAPI:
   outdated: "§cThis version of CogWorks is using an outdated version of the Modrinth API. It is recommended to install a newer version of CogWorks as many features won't work."
@@ -247,3 +252,5 @@ exceptions:
 
 #DO NOT CHANGE!
 langVer: 0.3
+
+#Enteries below here are values that were added when you updated CogWorks.
