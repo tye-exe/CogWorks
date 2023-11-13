@@ -12,7 +12,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import static me.tye.cogworks.util.Plugins.deletePlugin;
@@ -28,8 +27,6 @@ private final ArrayList<Boolean> queuedDeleteConfigs = new ArrayList<>();
 private final ArrayList<String> evalPluginNames = new ArrayList<>();
 private final ArrayList<Boolean> evalDeleteConfigs = new ArrayList<>();
 private final ArrayList<Boolean> evalDeleteDepends = new ArrayList<>();
-
-public static HashMap<CommandSender,List<Boolean>> completed = new HashMap<>();
 
 /**
  Creates a new instance of the DeleteQueue object, which is used for deleting plugins & getting a user response on delete options by using the CogWorks chat system.
@@ -136,46 +133,18 @@ public void evaluatePlugins() {
   //when all the plugins have been evaluated then the delete is executed.
 
   //this HashMap stores the deletion progress of the plugins.
-
   ArrayList<Boolean> progress = new ArrayList<>();
-  for (int i = 0; i < queuedPluginNames.size(); i++)
+  for (int i = 0; i < queuedPluginNames.size(); i++) {
     progress.add(null);
-  completed.put(sender, progress);
+  }
 
   //goes through all plugins & deletes them synchronously.
   for (int i = 0; i < queuedPluginNames.size(); i++) {
     int finalI = i;
 
-    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-      List<Boolean> currentProgress = completed.get(sender);
-      currentProgress.set(finalI, deletePlugin(sender, "deletePlugin", queuedPluginNames.get(finalI), queuedDeleteConfigs.get(finalI)));
-      completed.put(sender, currentProgress);
-    });
-  }
-
-  //blocks until all plugins have attempted to be deleted.
-  boolean allDeleted = false;
-  while (!allDeleted) {
-
-    try {
-      Thread.sleep(100);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-
-    allDeleted = true;
-    List<Boolean> currentProgress = completed.get(sender);
-    for (Boolean finished : currentProgress) {
-      if (finished == null) {
-        allDeleted = false;
-        break;
-      }
-    }
-
-  }
-
-  if (completed.get(sender).contains(true)) {
-    new Log(sender, "deletePlugin.reloadWarn").log();
+    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () ->
+        deletePlugin(sender, "deletePlugin", queuedPluginNames.get(finalI), queuedDeleteConfigs.get(finalI))
+    );
   }
 }
 

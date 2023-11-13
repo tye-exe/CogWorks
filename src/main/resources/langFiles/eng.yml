@@ -94,7 +94,6 @@ deletePlugin:
   confirm: "§ePlease enter either \"y\" or \"n\"."
   configRemove: "§aConfig files for {pluginName} deleted."
   pluginDelete: "§a{pluginName} deleted."
-  reloadWarn: "§eImmediately reload or restart to avoid errors."
   provideName: "§ePlease provide a plugin name!"
   noConfigsFound: "§eNo config folder could be found for {pluginName}. Won't prompt for config delete."
 
