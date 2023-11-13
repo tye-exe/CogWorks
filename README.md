@@ -28,10 +28,10 @@ The latest public version of the plugin will always be available on [Modrinth](h
 - "/plugin remove <Plugin name>" - Disables and uninstalls the given plugin.
 
 
-- help: "§9/file help - §aShows this message."
-- chat: "§9/file chat - §a(WIP) Turns your chat into a mock command line which lets you interact with files on the server."
-- gui: "§9/file gui - §aOpens an inventory that lets you interact with the files on the server visually."
-- recover: "§9/file recover <Deleted file> <Restore path> - §aRestores a deleted file to the given path, if no path is given then the file is restored to the server folder.
+- "/file help - Shows this message.
+- "/file chat - (WIP) Turns your chat into a mock command line which lets you interact with files on the server.
+- "/file gui - Opens an inventory that lets you interact with the files on the server visually.
+- "/file recover <Deleted file> <Restore path> - Restores a deleted file to the given path, if no path is given then the file is restored to the server folder.
 
 ### Features:
 - Install jar files from the web using "/plugin install \<URL>"
