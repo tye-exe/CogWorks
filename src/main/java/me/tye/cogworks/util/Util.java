@@ -209,8 +209,9 @@ public static Map<String,Object> getYML(File pluginJar) {
   try (ZipFile zip = new ZipFile(pluginJar)) {
     for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
       ZipEntry entry = e.nextElement();
-      if (!entry.getName().equals("plugin.yml"))
+      if (!(entry.getName().equals("plugin.yml") || entry.getName().equals("paper-plugin.yml"))) {
         continue;
+      }
 
       StringBuilder out = new StringBuilder();
       BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));

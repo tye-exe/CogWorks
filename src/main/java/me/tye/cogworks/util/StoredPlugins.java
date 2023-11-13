@@ -106,8 +106,9 @@ public static void appendPluginData(File newPlugin) throws IOException {
     ZipFile zip = new ZipFile(newPlugin);
     for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
       ZipEntry entry = e.nextElement();
-      if (!entry.getName().equals("plugin.yml"))
+      if (!(entry.getName().equals("plugin.yml") || entry.getName().equals("paper-plugin.yml"))) {
         continue;
+      }
 
       StringBuilder out = new StringBuilder();
       BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));

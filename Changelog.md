@@ -66,3 +66,4 @@
 - Fixed logging issues.
 - Removed unnecessary reload warn.
 - Added log message to clarify that the plugin is enabled after install.
+- CogWorks now accounts for "paper-plugin.yml" files as well as "plugin.yml" files.
