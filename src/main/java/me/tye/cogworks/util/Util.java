@@ -1,9 +1,14 @@
 package me.tye.cogworks.util;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import me.tye.cogworks.CogWorks;
 import me.tye.cogworks.util.customObjects.ChatParams;
 import me.tye.cogworks.util.customObjects.Log;
+import me.tye.cogworks.util.customObjects.ModrinthSearch;
 import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
+import me.tye.cogworks.util.customObjects.dataClasses.DependencyInfo;
 import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
@@ -13,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,15 +26,23 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.net.*;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static me.tye.cogworks.ChatManager.response;
+import static me.tye.cogworks.util.Plugins.installModrinthDependencies;
+import static me.tye.cogworks.util.Plugins.modrinthSearch;
 
 public class Util {
 
@@ -549,6 +563,225 @@ public static void deleteFileOrFolder(Path pathToFile) throws IOException {
   }
   else {
     Files.delete(pathToFile);
+  }
+}
+
+/**
+ Sync adr method, see CogWorks.automaticDependencyResolve for full description.
+ @param sender The command sender to send the logs to. */
+public static void ADR(CommandSender sender) {
+  ArrayList<PluginData> identifiers;
+  try {
+    identifiers = StoredPlugins.readPluginData();
+  } catch (IOException e) {
+    new Log(sender, "exceptions.noAccessPluginYML", Level.SEVERE, e).log();
+    return;
+  }
+
+  //checks for uninstalled dependencies
+  HashMap<DependencyInfo,ArrayList<PluginData>> unmetDependencies = new HashMap<>();
+  for (PluginData data : identifiers) {
+    if (data.isDeletePending())
+      continue;
+
+    ArrayList<DependencyInfo> dependencies = data.getDependencies();
+    ArrayList<DependencyInfo> metDependencies = new ArrayList<>();
+
+    for (DependencyInfo depInfo : data.getDependencies()) {
+      for (PluginData data1 : identifiers) {
+        if (!data1.getName().equals(depInfo.getName()))
+          continue;
+        metDependencies.add(depInfo);
+      }
+    }
+
+    dependencies.removeAll(metDependencies);
+    for (DependencyInfo dep : dependencies) {
+      if (!dep.attemptADR())
+        continue;
+
+      if (unmetDependencies.containsKey(dep)) {
+        ArrayList<PluginData> dependingPlugins = unmetDependencies.get(dep);
+        dependingPlugins.add(data);
+        unmetDependencies.put(dep, dependingPlugins);
+      }
+      else {
+        unmetDependencies.put(dep, new ArrayList<>(List.of(data)));
+      }
+    }
+  }
+
+  File ADRStore = new File(ADR.getAbsolutePath()+File.separator+LocalDateTime.now().hashCode());
+
+  //attempts to resolve unmet dependencies
+  for (DependencyInfo unmetDepInfo : unmetDependencies.keySet()) {
+
+    ArrayList<PluginData> dependingPlugins = unmetDependencies.get(unmetDepInfo);
+    ArrayList<String> dependingNames = new ArrayList<>(dependingPlugins.size());
+    for (PluginData data : dependingPlugins)
+      dependingNames.add(data.getName());
+
+    if (!ADRStore.mkdir()) {
+      new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+      return;
+    }
+
+    String unmetDepName = unmetDepInfo.getName();
+    String unmetDepVersion = unmetDepInfo.getVersion();
+    if (unmetDepVersion != null) {
+      new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+      return;
+    }
+    ArrayList<JsonObject> validPluginKeys;
+    HashMap<JsonObject,JsonArray> validPlugins;
+
+    new Log(sender, "ADR.attempting", Level.WARNING, null).setDepName(unmetDepName).setFileNames(dependingNames).log();
+
+    //searches the dependency name on modrinth
+    ModrinthSearch search = modrinthSearch(null, null, unmetDepName);
+    validPluginKeys = search.getValidPluginKeys();
+    validPlugins = search.getValidPlugins();
+    if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) {
+      new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+      return;
+    }
+
+    //gets the urls to download from
+    ExecutorService executorService = Executors.newCachedThreadPool();
+    ArrayList<Future<JsonObject>> match = new ArrayList<>();
+
+    for (JsonObject jo : validPluginKeys) {
+      JsonObject latestValidPlugin = null;
+
+      //gets the latest version of a compatible plugin
+      for (JsonElement je : validPlugins.get(jo)) {
+        if (latestValidPlugin == null) {
+          latestValidPlugin = je.getAsJsonObject();
+        }
+        else {
+          Date newDT = Date.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(je.getAsJsonObject().get("date_published").getAsString())));
+          Date dt = Date.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(latestValidPlugin.get("date_published").getAsString())));
+          if (dt.after(newDT)) {
+            latestValidPlugin = je.getAsJsonObject();
+          }
+        }
+      }
+
+      if (latestValidPlugin == null) {
+        new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+        return;
+      }
+
+      JsonArray files = latestValidPlugin.get("files").getAsJsonArray();
+      int primaryIndex = 0;
+      int i = 0;
+      for (JsonElement je : files) {
+        if (je.getAsJsonObject().get("primary").getAsBoolean())
+          primaryIndex = i;
+        i++;
+      }
+
+      final int givenIndex = primaryIndex;
+      final JsonObject versionInfo = latestValidPlugin;
+
+      //installs possible dependencies & checks if they resolve the missing dependency.
+      match.add(executorService.submit(() -> {
+        JsonObject downloadInfo = files.get(givenIndex).getAsJsonObject();
+        File dependecyFile = new File(ADRStore.getAbsolutePath()+File.separator+downloadInfo.get("filename").getAsString());
+        try {
+          InputStream inputStream = new URL(downloadInfo.get("url").getAsString()).openStream();
+          ReadableByteChannel rbc = Channels.newChannel(inputStream);
+          FileOutputStream fos = new FileOutputStream(dependecyFile);
+          fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+          fos.close();
+          rbc.close();
+          inputStream.close();
+        } catch (IOException e) {
+          new Log(sender, "ADR.downloadingErr", Level.WARNING, e).setFileName(dependecyFile.getName()).log();
+        }
+
+        try {
+          ZipFile zip = new ZipFile(dependecyFile);
+          for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
+            ZipEntry entry = e.nextElement();
+            if (!(entry.getName().equals("plugin.yml") || entry.getName().equals("paper-plugin.yml"))) {
+              continue;
+            }
+
+            StringBuilder out = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
+            String line;
+            while ((line = reader.readLine()) != null)
+              out.append(line).append("\n");
+            reader.close();
+
+            Yaml yaml = new Yaml();
+            Map<String,Object> yamlData = yaml.load(out.toString());
+            if (yamlData.get("name").equals(unmetDepName)) {
+              zip.close();
+              FileUtils.moveFile(dependecyFile, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+dependecyFile.getName()));
+
+              new Log(sender, "ADR.success", Level.WARNING, null).setFileNames(dependingNames).setDepName((String) yamlData.get("name")).log();
+              StoredPlugins.reloadPluginData(null, "exceptions");
+
+              Plugin loadedPlugin = Bukkit.getPluginManager().loadPlugin(new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+dependecyFile.getName()));
+              if (loadedPlugin == null) {
+                return versionInfo;
+              }
+              Bukkit.getPluginManager().enablePlugin(loadedPlugin);
+
+              return versionInfo;
+            }
+          }
+          zip.close();
+        } catch (Exception e) {
+          new Log(sender, "ADR.pluginYMLCheck", Level.WARNING, e).setFileName(dependecyFile.getName()).log();
+        }
+        return null;
+      }));
+
+    }
+
+    executorService.shutdown();
+    try {
+      if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
+        new Log(sender, "ADR.threadTime", Level.WARNING, null).log();
+        new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+        return;
+      }
+    } catch (InterruptedException e) {
+      new Log(sender, "ADR.threadTime", Level.WARNING, e).log();
+      new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+      return;
+    }
+
+    //gets dependencies for the dependency installed & checks if ADR could resolve the missing dependency.
+    boolean failed = true;
+    for (Future<JsonObject> future : match) {
+      try {
+        JsonObject dependency = future.get();
+        if (dependency == null)
+          continue;
+
+        failed = false;
+        installModrinthDependencies(null, null, dependency, null);
+      } catch (InterruptedException | ExecutionException e) {
+        new Log(sender, "ADR.getErr", Level.WARNING, e).log();
+      }
+    }
+
+    //if ADR couldn't resolve the missing dependency then it marks not to try and resolve it for next time
+    if (failed) {
+      new Log(sender, "ADR.notToRetry", Level.WARNING, null).setDepName(unmetDepName).setPluginNames(dependingNames).log();
+      unmetDepInfo.setAttemptADR(false);
+      for (PluginData dependingPlugin : dependingPlugins) {
+        try {
+          StoredPlugins.modifyPluginData(dependingPlugin.modifyDependency(unmetDepInfo));
+        } catch (IOException e) {
+          new Log(sender, "ADR.writeNoADR", Level.WARNING, e).setPluginName(dependingPlugin.getName()).setDepName(unmetDepName).log();
+        }
+      }
+    }
   }
 }
 

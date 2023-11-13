@@ -75,6 +75,19 @@ public Log(String langPath, @NotNull Level level, @Nullable Exception e) {
 }
 
 /**
+ Creates an object which can be used for logging. This method is intended to easily output error messages from a CommandSender.<br>
+ The .log method will need to be used to output the log message.
+ @param langPath The lang path for the response.
+ @param level    The level of the message.
+ @param e        The error that caused the message. */
+public Log(@Nullable CommandSender sender, @NotNull String langPath, @NotNull Level level, @Nullable Exception e) {
+  this.sender = sender;
+  this.langPath = langPath;
+  this.level = level;
+  this.e = e;
+}
+
+/**
  Outputs the log message. */
 public void log() {
   if (level.getName().equals("SEVERE"))

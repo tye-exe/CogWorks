@@ -43,9 +43,9 @@ public class Plugins {
  @param state       The path to get the lang responses from.
  @param stringUrl   The Url as a string to download the file from.
  @param fileName    Name of the file to download. Sometimes the file is stored under a name different to the desired file name.
- @param addFileHash If downloading from a non api source the file hash can be added to the end of the file, as many downloads have generic names such as "download".
+ @param rawUrl If downloading from a non api source. This will case the file hash can be added to the end of the file, as many downloads have generic names such as "download". & ADR to be run on the plugin when installed
  @return True if and only if the file installed successfully. */
-public static boolean installPluginURL(@Nullable CommandSender sender, String state, String stringUrl, String fileName, boolean addFileHash) {
+public static boolean installPluginURL(@Nullable CommandSender sender, String state, String stringUrl, String fileName, boolean rawUrl) {
   File tempPlugin = new File(temp.getAbsolutePath()+File.separator+fileName);
   File installedPlugin;
   boolean installed = false;
@@ -69,7 +69,7 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
 
     //adds the file hash to the name since alot of urls just have a generic filename like "download"
     String hash = "";
-    if (addFileHash) {
+    if (rawUrl) {
       InputStream is = new FileInputStream(tempPlugin);
       DigestInputStream dis = new DigestInputStream(is, MessageDigest.getInstance("MD5"));
       dis.readAllBytes();
@@ -81,13 +81,19 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
 
     installedPlugin = new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
 
-    if (installedPlugin.exists())
+    if (installedPlugin.exists()) {
       throw new FileAlreadyExistsException(tempPlugin.getAbsolutePath());
+    }
 
     //moves the file to plugin folder
     FileUtils.moveFile(tempPlugin, installedPlugin);
     StoredPlugins.appendPluginData(installedPlugin);
     new Log(sender, state, "installed").setFileName(fileName).log();
+
+    //runs ADR if downloading from a raw URL as the dependencies might not have been installed.
+    if (rawUrl) {
+      Util.ADR(sender);
+    }
 
     try {
       Plugin pluginInstance = Bukkit.getPluginManager().loadPlugin(installedPlugin);

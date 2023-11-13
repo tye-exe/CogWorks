@@ -67,3 +67,4 @@
 - Removed unnecessary reload warn.
 - Added log message to clarify that the plugin is enabled after install.
 - CogWorks now accounts for "paper-plugin.yml" files as well as "plugin.yml" files.
+- Dependencies will be installed & enabled before plugin is enabled when using "/plugin install <URL>". 

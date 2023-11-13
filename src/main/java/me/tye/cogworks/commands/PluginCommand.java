@@ -105,8 +105,10 @@ private void deletePlugin(CommandSender sender, String[] args) {
 }
 
 private void installPlugin(CommandSender sender, String[] args) {
-  if (!sender.hasPermission("cogworks.plugin.ins.gen"))
+  if (!sender.hasPermission("cogworks.plugin.ins.gen")) {
     return;
+  }
+
   if (args.length < 2) {
     new Log(sender, "pluginInstall.noInput").log();
     return;
@@ -124,9 +126,7 @@ private void installPlugin(CommandSender sender, String[] args) {
       fileName += ".jar";
     }
 
-    if (Plugins.installPluginURL(sender, "pluginInstall", args[1], fileName, true)) {
-      new Log(sender, "pluginInstall.finish").setFileName(fileName).log();
-    }
+    Plugins.installPluginURL(sender, "pluginInstall", args[1], fileName, true);
 
   } catch (MalformedURLException e) {
     new Log(sender, "pluginInstall.badUrl").setUrl(args[1]).setException(e).log();
