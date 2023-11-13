@@ -81,13 +81,6 @@ public void onEnable() {
   createFile(deleteData, null, true);
   createFile(pluginDataFile, null, true);
 
-  //deletes temp if present
-  try {
-    FileUtils.deleteDirectory(temp);
-  } catch (IOException e) {
-    new Log(null, "exceptions.tempClear").setException(e).log();
-  }
-
   //hides non-config files
   try {
     java.nio.file.Files.setAttribute(Path.of(dataStore.getAbsolutePath()), "dos:hidden", true);
@@ -126,6 +119,13 @@ public void onEnable() {
 
 @Override
 public void onDisable() {
+  //clears temp folder
+  try {
+    FileUtils.deleteDirectory(temp);
+  } catch (IOException e) {
+    new Log(null, "exceptions.tempClear").setException(e).log();
+  }
+
   //If the player has a CogWorks gui open it is closed.
   for (Player player : Bukkit.getOnlinePlayers()) {
     Inventory firstSlot = player.getOpenInventory().getInventory(0);
