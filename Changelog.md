@@ -61,3 +61,7 @@
 - Deleted files & folders can be restored by using the "/file recover <Deleted file> <Restore path>" command.
 - Added permission "cogworks.file.rec", which lets a player use the "/file recover" command.
 - Fixed bug with Menu close messages always occurring if the player had opened a CogWorks gui.
+- The server type "canvas" will be set to "purpur" - requested by canvas author.
+- Fixed issue with .temp folder being deleted at the wrong time.
+- Fixed logging issues.
+- Removed unnecessary reload warn.
