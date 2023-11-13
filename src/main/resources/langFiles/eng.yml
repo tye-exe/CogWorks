@@ -67,6 +67,7 @@ pluginInstall:
   installedDep: "§aInstalled dependencies for {pluginName}."
   downloading: "§aDownloading {fileName}..."
   installed: "§aDownloaded {fileName}."
+  enableAttempt: "§aEnabling {pluginName}."
   pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
 
   quit: "§aQuitting."

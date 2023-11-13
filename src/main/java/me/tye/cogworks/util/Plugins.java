@@ -91,10 +91,13 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
 
     try {
       Plugin pluginInstance = Bukkit.getPluginManager().loadPlugin(installedPlugin);
-      if (pluginInstance == null)
+      if (pluginInstance == null) {
         throw new Exception("Plugin is null.");
+      }
+
       Bukkit.getPluginManager().enablePlugin(pluginInstance);
 
+      new Log(sender, state, "enableAttempt").setPluginName(pluginInstance.getName()).log();
     } catch (Exception e) {
       new Log(sender, state, "noEnable").setFileName(fileName).setException(e).log();
     }
