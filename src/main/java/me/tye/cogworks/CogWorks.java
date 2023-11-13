@@ -15,7 +15,13 @@ import me.tye.cogworks.util.customObjects.dataClasses.DependencyInfo;
 import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
@@ -34,7 +40,6 @@ import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import static me.tye.cogworks.FileGui.position;
 import static me.tye.cogworks.util.Plugins.installModrinthDependencies;
 import static me.tye.cogworks.util.Plugins.modrinthSearch;
 import static me.tye.cogworks.util.Util.*;
@@ -118,11 +123,30 @@ public void onEnable() {
 
 @Override
 public void onDisable() {
+  //If the player has a CogWorks gui open it is closed.
   for (Player player : Bukkit.getOnlinePlayers()) {
-    if (position.containsKey(player.getName())) {
-      player.closeInventory();
-      new Log(player, "info.menuClose").log();
+    Inventory firstSlot = player.getOpenInventory().getInventory(0);
+    if (firstSlot == null) {
+      return;
     }
+
+    ItemStack[] contents = firstSlot.getContents();
+    if (contents[0].getType().equals(Material.AIR)) {
+      return;
+    }
+
+    ItemMeta firstMeta = contents[0].getItemMeta();
+    if (firstMeta == null) {
+      return;
+    }
+
+    String firstIdentifier = firstMeta.getPersistentDataContainer().get(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING);
+    if (firstIdentifier == null) {
+      return;
+    }
+
+    player.closeInventory();
+    new Log(player, "info.menuClose").log();
   }
 }
 

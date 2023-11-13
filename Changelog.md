@@ -59,4 +59,5 @@
 - Added backwards compatibility to version "1.17".
 - Deleted files & folders will now be moved into a temp dir, & only deleted after certain configurable conditions have been met.
 - Deleted files & folders can be restored by using the "/file recover <Deleted file> <Restore path>" command.
-- Added permission "cogworks.file.rec", which lets a player use the "/file recover" command
+- Added permission "cogworks.file.rec", which lets a player use the "/file recover" command.
+- Fixed bug with Menu close messages always occurring if the player had opened a CogWorks gui.
