@@ -114,6 +114,7 @@ public void clickEvent(InventoryClickEvent e) {
       data.setCurrentLine(data.getCurrentLine()+5);
     if (identifier.equals("scrollUp"))
       data.setCurrentLine(Math.max(1, data.getCurrentLine()-5));
+
     data.setSearchInstance(0);
     fileData.put(player.getUniqueId(), data);
     open(player);
@@ -162,11 +163,14 @@ public void clickEvent(InventoryClickEvent e) {
             }
             return Collections.emptyList();
           })
+
           .onClose(stateSnapshot -> {
             fileData.put(stateSnapshot.getPlayer().getUniqueId(), fileData.get(stateSnapshot.getPlayer().getUniqueId()).setSearchPhrase(Objects.requireNonNull(stateSnapshot.getOutputItem().getItemMeta()).getDisplayName()));
             open(stateSnapshot.getPlayer());
           })
+
           .open(player);
+
     } else {
       try {
         String searchPhrase = data.getSearchPhrase();
@@ -185,6 +189,7 @@ public void clickEvent(InventoryClickEvent e) {
 
         while ((text = fileReader.readLine()) != null) {
           i++;
+
           if (instance == 0) {
             if (text.contains(searchPhrase)) {
               if (firstInstanceLine == 0)
@@ -197,6 +202,7 @@ public void clickEvent(InventoryClickEvent e) {
               reader.close();
               return;
             }
+
           } else {
             if (text.contains(searchPhrase)) {
               if (firstInstanceLine == 0)
@@ -211,6 +217,7 @@ public void clickEvent(InventoryClickEvent e) {
               instances++;
             }
           }
+
         }
 
         fileReader.close();
@@ -225,7 +232,7 @@ public void clickEvent(InventoryClickEvent e) {
         open(player);
 
       } catch (IOException ex) {
-        new Log(player, "fileGui.search.readingErr").setFilePath(position.get(player.getName()).getCurrentPath()).log();
+        new Log(player, "fileGui.search.readingErr").setFilePath(position.get(player.getName()).getCurrentPath()).setException(ex).log();
       }
     }
   }
@@ -267,15 +274,18 @@ public void clickEvent(InventoryClickEvent e) {
         .preventClose()
         .title(Util.getLang("fileGui.createFile.title"))
         .itemLeft(itemStack)
+
         .onClick((slot, stateSnapshot) -> {
           if (slot == AnvilGUI.Slot.OUTPUT) {
             return List.of(AnvilGUI.ResponseAction.close());
           }
           return Collections.emptyList();
         })
+
         .onClose(stateSnapshot -> {
           if (stateSnapshot.getOutputItem().getItemMeta() == null) return;
           try {
+
             if (checkIdentifier(stateSnapshot.getOutputItem(), "confirmCreateFolder")) {
               Files.createDirectory(Path.of(position.get(stateSnapshot.getPlayer().getName()).getCurrentPath()+File.separator+stateSnapshot.getOutputItem().getItemMeta().getDisplayName()));
             } else if (checkIdentifier(stateSnapshot.getOutputItem(), "confirmCreateFile")) {
@@ -283,6 +293,7 @@ public void clickEvent(InventoryClickEvent e) {
             } else {
               return;
             }
+
           } catch (FileAlreadyExistsException ex) {
             new Log(player, "fileGui.createFile.fileExists").setException(ex).isFile(checkIdentifier(stateSnapshot.getOutputItem(), "confirmCreateFile")).setFileName(stateSnapshot.getOutputItem().getItemMeta().getDisplayName()).log();
           } catch (IOException ex) {
@@ -290,6 +301,7 @@ public void clickEvent(InventoryClickEvent e) {
           } catch (InvalidPathException ex) {
             new Log(player, "fileGui.createFile.invalidName").setException(ex).setFileName(stateSnapshot.getOutputItem().getItemMeta().getDisplayName()).log();
           }
+
           open(stateSnapshot.getPlayer());
         })
         .open(player);
@@ -305,10 +317,14 @@ public void clickEvent(InventoryClickEvent e) {
   case "confirmedDelete" -> {
     if (!player.hasPermission("cogworks.file.rm")) return;
     try {
-      if (lastFileClicked.isFile()) FileUtils.delete(lastFileClicked);
-      if (lastFileClicked.isDirectory()) FileUtils.deleteDirectory(lastFileClicked);
+      if (lastFileClicked.isFile())
+        Util.delete(lastFileClicked);
+
+      if (lastFileClicked.isDirectory())
+        Util.delete(lastFileClicked);
+
     } catch (IOException ex) {
-      new Log(player, "fileGui.confirmedDelete.error").setFileName(lastFileClicked.getName()).log();
+      new Log(player, "fileGui.confirmedDelete.error").setFileName(lastFileClicked.getName()).setException(ex).log();
     }
     pathHolder.setCurrentPath(Path.of(pathHolder.getCurrentPath()).getParent().toString());
     open(player);
@@ -318,6 +334,7 @@ public void clickEvent(InventoryClickEvent e) {
     if (!player.hasPermission("cogworks.file.rm")) return;
     player.closeInventory();
     Inventory gui = Bukkit.createInventory(player, InventoryType.DROPPER, Util.getLang("fileGui.confirmDirDelete.title"));
+
     ArrayList<ItemStack> content = new ArrayList<>();
     for (int i = 0; i <= 8; i++) {
       if (i == 1) {
@@ -338,9 +355,9 @@ public void clickEvent(InventoryClickEvent e) {
   //file editing
   case "text" -> {
     if (!player.hasPermission("cogworks.file.edit")) return;
-    if (Boolean.TRUE.equals(itemMeta.getPersistentDataContainer().get(new NamespacedKey(plugin, "edited"), PersistentDataType.BOOLEAN)))
+    if (Boolean.parseBoolean(itemMeta.getPersistentDataContainer().get(new NamespacedKey(plugin, "edited"), PersistentDataType.STRING)))
       return;
-    itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "edited"), PersistentDataType.BOOLEAN, true);
+    itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "edited"), PersistentDataType.STRING, "true");
     itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING, "edit");
     itemStack.setItemMeta(itemMeta);
     new AnvilGUI.Builder()
@@ -382,7 +399,7 @@ public void clickEvent(InventoryClickEvent e) {
             br.close();
             Files.writeString(Path.of(localPathHolder.getCurrentPath()), content.toString());
           } catch (IOException ex) {
-            new Log(player, "fileGui.fileEditor.editingErr").setFilePath(position.get(player.getName()).getRelativePath()).log();
+            new Log(player, "fileGui.fileEditor.editingErr").setException(ex).setFilePath(position.get(player.getName()).getRelativePath()).log();
           }
           open(stateSnapshot.getPlayer());
         })
@@ -447,7 +464,7 @@ public void clickEvent(InventoryClickEvent e) {
             br.close();
             Files.writeString(Path.of(localPathHolder.getCurrentPath()), content.toString());
           } catch (IOException ex) {
-            new Log(player, "fileGui.fileEditor.editingErr").setFilePath(position.get(player.getName()).getRelativePath()).log();
+            new Log(player, "fileGui.fileEditor.editingErr").setException(ex).setFilePath(position.get(player.getName()).getRelativePath()).log();
           }
           open(stateSnapshot.getPlayer());
         })
@@ -493,7 +510,7 @@ public static void open(Player player) {
     }
     folders.addAll(files);
     } catch (Exception e) {
-      new Log(player, "fileGui.open.getFilesErr").setFilePath(file.getAbsolutePath()).log();
+      new Log(player, "fileGui.open.getFilesErr").setException(e).setFilePath(file.getAbsolutePath()).log();
       return;
     }
 
@@ -528,12 +545,12 @@ public static void open(Player player) {
         lines.add(text);
 
     } catch (IOException e) {
-      new Log(player, "fileGui.open.readErr").setFilePath(position.get(player.getName()).getRelativePath()).setException(e).log();
+      new Log(player, "fileGui.open.readErr").setException(e).setFilePath(position.get(player.getName()).getRelativePath()).setException(e).log();
       try {
         assert fileReader != null;
         fileReader.close();
       } catch (Exception ex) {
-        new Log(player, "fileGui.open.fileCloseErr").setFilePath(position.get(player.getName()).getRelativePath()).setException(e).log();
+        new Log(player, "fileGui.open.fileCloseErr").setFilePath(position.get(player.getName()).getRelativePath()).setException(ex).log();
         return;
       }
       return;
@@ -583,7 +600,7 @@ public static void open(Player player) {
             assert paperMeta != null;
             paperMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "line"), PersistentDataType.INTEGER, i+lineNumber);
             paperMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "offset"), PersistentDataType.INTEGER, ii);
-            paperMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "edited"), PersistentDataType.BOOLEAN, false);
+            paperMeta.getPersistentDataContainer().set(new NamespacedKey(getPlugin(CogWorks.class), "edited"), PersistentDataType.STRING, "false");
             paper.setItemMeta(paperMeta);
             content.add(paper);
           } else {

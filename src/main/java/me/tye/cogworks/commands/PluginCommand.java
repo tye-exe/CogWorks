@@ -5,12 +5,12 @@ import me.tye.cogworks.operationHandlers.DeleteQueue;
 import me.tye.cogworks.operationHandlers.PluginBrowse;
 import me.tye.cogworks.operationHandlers.PluginSearch;
 import me.tye.cogworks.util.Plugins;
-import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.customObjects.Log;
+import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;
 
@@ -19,7 +19,7 @@ import static me.tye.cogworks.util.Util.encodeUrl;
 public class PluginCommand implements CommandExecutor {
 
 @Override
-public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String[] args) {
+public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
   if (args.length < 1) {
     helpMessage(sender);
     return true;
@@ -56,7 +56,7 @@ public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command
           return;
 
         new Log(sender, "reload.reloading").log();
-        StoredPlugins.reloadPluginData(sender, "reload");
+        PluginData.reload(sender, "reload");
         new Log(sender, "reload.reloaded").log();
       }
 
@@ -97,12 +97,18 @@ private void deletePlugin(CommandSender sender, String[] args) {
     return;
   }
 
-  new DeleteQueue(sender, args[1]);
+  DeleteQueue deleteQueue = new DeleteQueue(sender, args[1]);
+  for (int i = 2; i < args.length; i++) {
+    deleteQueue.addPluginToEval(args[i]);
+  }
+  deleteQueue.evaluatePlugins();
 }
 
 private void installPlugin(CommandSender sender, String[] args) {
-  if (!sender.hasPermission("cogworks.plugin.ins.gen"))
+  if (!sender.hasPermission("cogworks.plugin.ins.gen")) {
     return;
+  }
+
   if (args.length < 2) {
     new Log(sender, "pluginInstall.noInput").log();
     return;
@@ -120,12 +126,10 @@ private void installPlugin(CommandSender sender, String[] args) {
       fileName += ".jar";
     }
 
-    if (Plugins.installPluginURL(sender, "pluginInstall", args[1], fileName, true)) {
-      new Log(sender, "pluginInstall.finish").setFileName(fileName).log();
-    }
+    Plugins.installPluginURL(sender, "pluginInstall", args[1], fileName, true);
 
   } catch (MalformedURLException e) {
-    new Log(sender, "pluginInstall.badUrl").setUrl(args[1]).log();
+    new Log(sender, "pluginInstall.badUrl").setUrl(args[1]).setException(e).log();
   }
 }
 

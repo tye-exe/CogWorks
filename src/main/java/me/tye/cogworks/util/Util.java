@@ -1,9 +1,16 @@
 package me.tye.cogworks.util;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import me.tye.cogworks.CogWorks;
 import me.tye.cogworks.util.customObjects.ChatParams;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.ModrinthSearch;
+import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
+import me.tye.cogworks.util.customObjects.dataClasses.DependencyInfo;
+import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
+import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
@@ -11,37 +18,64 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.net.*;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static me.tye.cogworks.ChatManager.response;
+import static me.tye.cogworks.util.Plugins.installModrinthDependencies;
+import static me.tye.cogworks.util.Plugins.modrinthSearch;
 
 public class Util {
 
 //constants
+/**
+ This plugin. */
 public static final JavaPlugin plugin = JavaPlugin.getPlugin(CogWorks.class);
 
+/**The plugins folder for the server.*/
 public static final File pluginFolder = new File(plugin.getDataFolder().getParentFile().getAbsolutePath());
+/**The folder the server jar is in.*/
 public static final File serverFolder = new File(pluginFolder.getParentFile().getAbsolutePath());
+/**The config file for this plugin.*/
 public static final File configFile = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+"config.yml");
+/**The persistent data folder for this plugin.*/
 public static final File dataStore = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+".data");
+/**The persistent data for the plugins indexed by CogWorks.*/
 public static final File pluginDataFile = new File(dataStore.getAbsolutePath()+File.separator+"pluginData.json");
+/**The folder for lang files.*/
 public static final File langFolder = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+"langFiles");
+/**The folder for files that will be deleted on next reload/restart.*/
 public static final File temp = new File(plugin.getDataFolder().getAbsolutePath()+File.separator+".temp");
+/**The folder used for ADR, this will be emptied on reload/restart.*/
 public static final File ADR = new File(temp.getAbsolutePath()+File.separator+"ADR");
+/**
+ The file for storing data on the files have been deleted. */
+public static final File deleteData = new File(dataStore.getAbsolutePath()+File.separator+"deleteData.json");
+/**
+ The folder for storing files that have been deleted. */
+public static final File deletePending = new File(dataStore.getAbsolutePath()+File.separator+"deletePending");
 
 public static final String mcVersion = Bukkit.getVersion().split(": ")[1].substring(0, Bukkit.getVersion().split(": ")[1].length()-1);
-public static final String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
+public static String serverSoftware = Bukkit.getServer().getVersion().split("-")[1].toLowerCase();
 
 
 //lang & config
@@ -168,7 +202,7 @@ public static <T> T getConfig(String key) {
     response = String.valueOf(config.get(key));
 
   switch (key) {
-  case "lang" -> {
+  case "lang", "keepDeleted.time", "keepDeleted.size" -> {
     return (T) String.valueOf(response);
   }
   case "showErrorTrace", "showOpErrorSummary", "ADR" -> {
@@ -189,8 +223,9 @@ public static Map<String,Object> getYML(File pluginJar) {
   try (ZipFile zip = new ZipFile(pluginJar)) {
     for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
       ZipEntry entry = e.nextElement();
-      if (!entry.getName().equals("plugin.yml"))
+      if (!(entry.getName().equals("plugin.yml") || entry.getName().equals("paper-plugin.yml"))) {
         continue;
+      }
 
       StringBuilder out = new StringBuilder();
       BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
@@ -286,7 +321,7 @@ public static HashMap<String,Object> getDefault(String filepath) {
  Encodes the given string URL into a valid URL.
  @return The valid URL.
  @throws MalformedURLException When the given URL can't be encoded to a valid URL. */
-public static URL encodeUrl(@NonNull String text) throws MalformedURLException {
+public static URL encodeUrl(@NotNull String text) throws MalformedURLException {
   try {
     URL url = new URL(URLDecoder.decode(text, StandardCharsets.UTF_8));
     URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
@@ -302,21 +337,24 @@ public static URL encodeUrl(@NonNull String text) throws MalformedURLException {
  @param file     External file destination
  @param resource Input stream for the data to write, or null if target is an empty file/dir. */
 public static void createFile(File file, @Nullable InputStream resource, boolean isFile) {
-  try {
-    if (!file.exists()) {
-      if (isFile) {
-        if (!file.createNewFile())
-          throw new IOException();
-      } else if (!file.mkdir())
-        throw new IOException();
+  if (file.exists())
+    return;
 
-      if (resource != null) {
-        String text = new String(Objects.requireNonNull(resource).readAllBytes());
-        FileWriter fw = new FileWriter(file);
-        fw.write(text);
-        fw.close();
-      }
+  try {
+    if (isFile) {
+      if (!file.createNewFile())
+        throw new IOException();
     }
+    else if (!file.mkdir())
+      throw new IOException();
+
+    if (resource != null) {
+      String text = new String(Objects.requireNonNull(resource).readAllBytes());
+      FileWriter fw = new FileWriter(file);
+      fw.write(text);
+      fw.close();
+    }
+
   } catch (IOException | NullPointerException e) {
     new Log("exceptions.fileCreation", Level.SEVERE, e).setFilePath(file.getAbsolutePath()).log();
   }
@@ -439,4 +477,326 @@ public static void clearResponse(CommandSender sender) {
     response.remove("~");
   }
 }
+
+public static void delete(@NotNull File file) throws IOException {
+  if (!file.exists()) {
+    return;
+  }
+
+  new DeletePending(Path.of(file.getAbsolutePath()).normalize()).append();
+}
+
+/**
+ Parses the string given in the format "{number}{unit}". There can be any length of number-unit pares.<br>
+ Units:<br>
+ g - gigabyte.<br>
+ m - megabyte.<br>
+ k - kilobytes.<br>
+ b - bytes.
+ @param sizeString The size string.
+ @return The parsed size represented by the given size string. */
+public static long parseSize(String sizeString) {
+  long size = 0;
+  char[] sizeChars = sizeString.toLowerCase().toCharArray();
+
+  for (int i = 0; i < sizeChars.length; i++) {
+
+    switch (sizeChars[i]) {
+    case 'g' -> {
+      size += getProceeding(0L, sizeChars, i)*1024*1024*1024;
+    }
+
+    case 'm' -> {
+      size += getProceeding(0L, sizeChars, i)*1024*1024;
+    }
+
+    case 'k' -> {
+      size += getProceeding(0L, sizeChars, i)*1024;
+    }
+
+    case 'b' -> {
+      size += getProceeding(0L, sizeChars, i);
+    }
+
+    }
+  }
+
+  return size;
+}
+
+/**
+ Gets all the number chars before the unit specifier.
+ The unit specifier would be a letter denoting a value. E.g: w for week.
+ @param time      Current stored value for this unit.
+ @param timeChars The array to parse.
+ @param index     The index in the array that the unit specifier was found.
+ @return The number the user entered before the unit specifier. */
+public static long getProceeding(long time, char[] timeChars, int index) {
+
+  for (int ii = 1; Character.isDigit(timeChars[index-ii]); ii++) {
+
+    int parsedVal = Integer.parseInt(String.valueOf(timeChars[index-ii]));
+    //sets the number at the next order of magnitude to the parsed one
+    time = (long) (time+parsedVal*(Math.pow(10d, ii-1)));
+
+    //if the index to get would be below 0 ends the loop
+    if ((index-ii)-1 < 0) {
+      break;
+    }
+  }
+
+  return time;
+}
+
+public static void deleteFileOrFolder(File file) throws IOException {
+  if (file.isDirectory()) {
+    FileUtils.deleteDirectory(file);
+  }
+  else {
+    Files.delete(file.toPath());
+  }
+}
+
+public static void deleteFileOrFolder(Path pathToFile) throws IOException {
+  if (pathToFile.toFile().isDirectory()) {
+    FileUtils.deleteDirectory(pathToFile.toFile());
+  }
+  else {
+    Files.delete(pathToFile);
+  }
+}
+
+/**
+ Automatic dependency resolution, also known as ADR, checks for any missing dependencies that the given plugin has.<br>
+ If there are missing deps then, Modrinth will be searched with the plugin name of the missing dependency and downloads the first ten results.
+ It will then check all the plugin names of all the plugins installed by ADR to see if any match the missing dependency name.<br>
+ If one does it will be moved into the plugins folder and a success log will be sent. Otherwise, a fail log will be sent.
+ * @param sender The command sender to send the logs to.
+ * @param data The plugin data to check for missing dependencies of.
+ */
+public static void automaticDependencyResolution(CommandSender sender, PluginData data) {
+
+  List<DependencyInfo> unmetDependencies;
+  try {
+    unmetDependencies = data.getUnmetDependencies();
+  } catch (IOException e) {
+    new Log(sender, "ADR.genFail", Level.WARNING, null).setPluginName(data.getName()).log();
+    return;
+  }
+
+  File ADRStore = new File(ADR.getAbsolutePath()+File.separator+LocalDateTime.now().hashCode());
+
+  //attempts to resolve unmet dependencies
+  for (DependencyInfo unmetDep : unmetDependencies) {
+
+    ArrayList<String> dependingNames = new ArrayList<>();
+    try {
+      unmetDep.getUsers().forEach((plugin) -> dependingNames.add(plugin.getName()));
+    } catch (IOException e) {
+      new Log(sender, "ADR.genFail", Level.WARNING, null).setPluginName(data.getName()).log();
+      return;
+    }
+
+    if (!ADRStore.mkdir()) {
+      new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+      return;
+    }
+
+    String unmetDepName = unmetDep.getName();
+    String unmetDepVersion = unmetDep.getVersion();
+    //TODO: remember this when i add versions
+    if (unmetDepVersion != null) {
+      new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+      return;
+    }
+
+    new Log(sender, "ADR.attempting", Level.WARNING, null).setDepName(unmetDepName).setFileNames(dependingNames).log();
+
+    //searches the dependency name on modrinth
+    ModrinthSearch search = modrinthSearch(null, null, unmetDepName);
+    ArrayList<JsonObject> validPluginKeys = search.getValidPluginKeys();
+    HashMap<JsonObject,JsonArray> validPlugins = search.getValidPlugins();
+
+    if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) {
+      new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+      return;
+    }
+
+    //gets the urls to download from
+    ExecutorService executorService = Executors.newCachedThreadPool();
+    ArrayList<Future<JsonObject>> match = new ArrayList<>();
+
+    for (JsonObject validKey : validPluginKeys) {
+      JsonObject latestValidPlugin = null;
+
+      if (validPlugins.get(validKey).isEmpty()) {
+        new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+        return;
+      }
+
+      //gets the latest version of a compatible plugin
+      for (JsonElement je : validPlugins.get(validKey)) {
+        if (latestValidPlugin == null) {
+          latestValidPlugin = je.getAsJsonObject();
+        }
+        else {
+          Date newDT = Date.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(je.getAsJsonObject().get("date_published").getAsString())));
+          Date dt = Date.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(latestValidPlugin.get("date_published").getAsString())));
+          if (dt.after(newDT)) {
+            latestValidPlugin = je.getAsJsonObject();
+          }
+        }
+      }
+
+      if (latestValidPlugin == null) {
+        new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+        return;
+      }
+
+      JsonArray files = latestValidPlugin.get("files").getAsJsonArray();
+      int primaryIndex = 0;
+      int i = 0;
+      for (JsonElement je : files) {
+        if (je.getAsJsonObject().get("primary").getAsBoolean())
+          primaryIndex = i;
+        i++;
+      }
+
+      final int givenIndex = primaryIndex;
+      final JsonObject versionInfo = latestValidPlugin;
+
+      //installs possible dependencies & checks if they resolve the missing dependency.
+      match.add(executorService.submit(() -> {
+        JsonObject downloadInfo = files.get(givenIndex).getAsJsonObject();
+        File dependecyFile = new File(ADRStore.getAbsolutePath()+File.separator+downloadInfo.get("filename").getAsString());
+        try {
+          InputStream inputStream = new URL(downloadInfo.get("url").getAsString()).openStream();
+          ReadableByteChannel rbc = Channels.newChannel(inputStream);
+          FileOutputStream fos = new FileOutputStream(dependecyFile);
+          fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+          fos.close();
+          rbc.close();
+          inputStream.close();
+        } catch (IOException e) {
+          new Log(sender, "ADR.downloadingErr", Level.WARNING, e).setFileName(dependecyFile.getName()).log();
+        }
+
+        try {
+          ZipFile zip = new ZipFile(dependecyFile);
+          for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
+            ZipEntry entry = e.nextElement();
+
+            //if the file isn't the plugin data file then continue
+            if (!(entry.getName().equals("plugin.yml") || entry.getName().equals("paper-plugin.yml"))) {
+              continue;
+            }
+
+            //parses the entire content of the file into content
+            StringBuilder content = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
+            String line;
+            while ((line = reader.readLine()) != null) {
+              content.append(line).append("\n");
+            }
+            reader.close();
+
+
+            Yaml yaml = new Yaml();
+            Map<String,Object> yamlData = yaml.load(content.toString());
+
+            if (!yamlData.get("name").equals(unmetDepName)) {
+              break;
+            }
+
+            zip.close();
+
+            //moves the plugin to plugins folder & indexes the plugin
+            File newPlugin = new File(pluginFolder.toPath()+File.separator+dependecyFile.getName());
+            FileUtils.moveFile(dependecyFile, newPlugin);
+            PluginData.reload(null, "exceptions");
+            new Log(sender, "ADR.success", Level.WARNING, null).setFileNames(dependingNames).setDepName((String) yamlData.get("name")).log();
+
+            return versionInfo;
+          }
+
+          zip.close();
+        } catch (Exception e) {
+          new Log(sender, "ADR.pluginYMLCheck", Level.WARNING, e).setFileName(dependecyFile.getName()).log();
+        }
+        return null;
+      }));
+
+    }
+
+    executorService.shutdown();
+    //gives the downloads one minuet to completed & be indexed.
+    try {
+      if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
+        new Log(sender, "ADR.threadTime", Level.WARNING, null).log();
+        new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+        return;
+      }
+    } catch (InterruptedException e) {
+      new Log(sender, "ADR.threadTime", Level.WARNING, e).log();
+      new Log(sender, "ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
+      return;
+    }
+
+    //gets dependencies for the dependency installed & checks if ADR could resolve the missing dependency.
+    boolean failed = true;
+    for (Future<JsonObject> future : match) {
+      try {
+        JsonObject dependency = future.get();
+        if (dependency == null) {
+          continue;
+        }
+
+        failed = !installModrinthDependencies(null, null, dependency, null);
+      } catch (InterruptedException | ExecutionException e) {
+        new Log(sender, "ADR.getErr", Level.WARNING, e).log();
+      }
+    }
+
+    //if ADR couldn't resolve the missing dependency then it marks not to try and resolve it for next time
+    if (failed) {
+      new Log(sender, "ADR.notToRetry", Level.WARNING, null).setDepName(unmetDepName).setPluginNames(dependingNames).log();
+      unmetDep.setAttemptADR(false);
+
+      List<PluginData> users;
+      try {
+        users = unmetDep.getUsers();
+      } catch (IOException e) {
+        new Log(sender, "ADR.writeNoADR", Level.WARNING, e).setPluginName("depending plugins").setDepName(unmetDepName).log();
+        return;
+      }
+
+      for (PluginData dependingPlugin : users) {
+        try {
+          PluginData.modify(dependingPlugin.modifyDependency(unmetDep));
+        } catch (IOException e) {
+          new Log(sender, "ADR.writeNoADR", Level.WARNING, e).setPluginName(dependingPlugin.getName()).setDepName(unmetDepName).log();
+        }
+      }
+
+      continue;
+    }
+
+    //tries to load the plugin immediately.
+    try {
+      PluginData metDependency = PluginData.getFromName(unmetDepName);
+      if (metDependency == null) {
+        continue;
+      }
+
+      File newPlugin = new File(pluginFolder.toPath()+metDependency.getFileName());
+      Plugin loadedPlugin = Bukkit.getPluginManager().loadPlugin(newPlugin);
+      if (loadedPlugin == null) {
+        continue;
+      }
+
+      Bukkit.getPluginManager().enablePlugin(loadedPlugin);
+    } catch (Exception ignore) {}
+  }
+}
+
 }

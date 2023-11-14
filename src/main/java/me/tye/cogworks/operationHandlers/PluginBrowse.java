@@ -53,7 +53,7 @@ public void execute() {
 
   maxChoice = validPlugins.size()+1;
 
-  new Log(sender, "pluginBrowse.pluginSelect").log();
+  new Log(sender, "pluginInstall.pluginSelect").log();
 
   if (offset >= 1) {
     sender.sendMessage(ChatColor.GREEN+"0: ^");

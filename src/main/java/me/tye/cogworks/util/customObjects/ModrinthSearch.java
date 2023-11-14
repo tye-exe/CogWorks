@@ -2,7 +2,7 @@ package me.tye.cogworks.util.customObjects;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;

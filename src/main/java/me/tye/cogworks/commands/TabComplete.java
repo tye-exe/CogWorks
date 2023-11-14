@@ -1,23 +1,30 @@
 package me.tye.cogworks.commands;
 
-import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
+import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.util.StringUtil;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+
+import static me.tye.cogworks.util.Util.serverFolder;
 
 public class TabComplete implements TabCompleter {
+
 @Override
-public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, @NonNull String[] args) {
+public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
   ArrayList<String> completions = new ArrayList<>();
 
   if (label.equals("plugin")) {
@@ -47,35 +54,121 @@ public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Comman
         if (args[0].equals("search") && sender.hasPermission("cogworks.plugin.ins.modrinth"))
           return List.of(Util.getLang("tabComplete.plugin.search"));
       }
+    }
 
+    //adds all the undeleted & not selected plugins to the return list
+    if (args[0].equals("remove") && sender.hasPermission("cogworks.plugin.rm")) {
+      ArrayList<String> plugins = new ArrayList<>();
 
-      if (args[0].equals("remove") && sender.hasPermission("cogworks.plugin.rm")) {
-        //gets the names of all of the plugins
-        ArrayList<String> plugins = new ArrayList<>();
-
-        try {
-          for (PluginData data : StoredPlugins.readPluginData()) {
-            if (data.isDeletePending())
-              continue;
-            plugins.add(data.getName());
+      try {
+        for (PluginData data : PluginData.read()) {
+          if (data.isDeletePending() || Arrays.stream(args).toList().contains(data.getName())) {
+            continue;
           }
-        } catch (IOException e) {
-          new Log(sender, "tabComplete.dataReadError").log();
-        }
 
-        StringUtil.copyPartialMatches(args[1], plugins, completions);
+          plugins.add(data.getName());
+        }
+      } catch (IOException e) {
+        new Log(sender, "tabComplete.pluginReadError").setException(e).log();
+      }
+
+      StringUtil.copyPartialMatches(args[args.length-1], plugins, completions);
+    }
+
+  }
+
+  if (label.equals("file")) {
+    if (args.length == 1) {
+      if (sender.hasPermission("cogworks.file.nav")) {
+        StringUtil.copyPartialMatches(args[0], Arrays.asList("help", "chat", "gui"), completions);
+      }
+
+      if (sender.hasPermission("cogworks.file.rec")) {
+        StringUtil.copyPartialMatches(args[0], List.of("recover"), completions);
+      }
+    }
+
+    if (args[0].equals("recover") && sender.hasPermission("cogworks.file.rec")) {
+
+      if (args.length == 2) {
+        try {
+          StringUtil.copyPartialMatches(args[1], DeletePending.getUniqueOldPaths(), completions);
+        } catch (IOException e) {
+          new Log(sender, "tabComplete.recoverReadError").setException(e).log();
+        }
+      }
+
+      if (args.length == 3) {
+        return recoverFilePath(sender, args);
       }
     }
 
   }
 
-  if (label.equals("file") && sender.hasPermission("cogworks.file.nav")) {
-    if (args.length == 1) {
-      StringUtil.copyPartialMatches(args[0], Arrays.asList("help", "chat", "gui"), completions);
-    }
-  }
-
   completions.sort(null);
   return completions;
 }
+
+/**
+ Gets the suitable auto-completes available to the user for selecting a destination or file name to restore to.
+ @param sender The command sender - used for logging.
+ @param args   The args for the command.
+ @return The sorted list of tab complete options for the user. */
+private static ArrayList<String> recoverFilePath(CommandSender sender, String[] args) {
+  if (!sender.hasPermission("cogworks.file.rec")) {
+    return new ArrayList<>();
+  }
+
+  ArrayList<String> completions = new ArrayList<>();
+
+  //adds the old file location to the suggestions.
+  try {
+    DeletePending delete = DeletePending.getDelete(args[1]);
+    if (delete != null) {
+      completions.add("./"+String.valueOf(delete.getRelativePath()).replace("\\", "/"));
+    }
+
+  } catch (IOException ex) {
+    new Log(sender, "tabComplete.recoverReadError").setException(ex).log();
+  }
+
+  //return if the user entered a non-valid path return.
+  Path fullPath;
+  try {
+    fullPath = serverFolder.toPath().resolve(Path.of(args[2]));
+  } catch (InvalidPathException e) {
+    return completions;
+  }
+
+  //if the path is not to a valid dir then get the last valid dir.
+  Path parentPath = fullPath;
+  if (!fullPath.toFile().isDirectory()) {
+    parentPath = fullPath.getParent();
+  }
+
+  //return if there a was error getting the files in the dir
+  if (parentPath.toFile().listFiles() == null) {
+    return completions;
+  }
+
+  //adds the files in the same dir as the user to the suggestions.
+  ArrayList<String> dirNames = new ArrayList<>();
+  for (File file : Objects.requireNonNull(parentPath.toFile().listFiles())) {
+    if (!file.isDirectory()) {
+      continue;
+    }
+    dirNames.add(file.getName()+'/');
+  }
+
+  //if the user has typed a path then the last file name is gotten.
+  String typed = "";
+  if (args[2].endsWith("/") || !args[2].isEmpty()) {
+    typed = fullPath.getFileName().toString();
+  }
+
+  StringUtil.copyPartialMatches(typed, dirNames, completions);
+
+  return completions;
+}
+
 }

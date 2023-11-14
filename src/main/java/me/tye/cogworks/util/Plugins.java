@@ -7,15 +7,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.ModrinthSearch;
-import me.tye.cogworks.util.customObjects.VersionGetThread;
+import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
 import me.tye.cogworks.util.customObjects.exceptions.ModrinthAPIException;
 import me.tye.cogworks.util.customObjects.exceptions.NoSuchPluginException;
-import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -31,10 +30,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 
 import static me.tye.cogworks.util.Util.*;
@@ -48,9 +43,9 @@ public class Plugins {
  @param state       The path to get the lang responses from.
  @param stringUrl   The Url as a string to download the file from.
  @param fileName    Name of the file to download. Sometimes the file is stored under a name different to the desired file name.
- @param addFileHash If downloading from a non api source the file hash can be added to the end of the file, as many downloads have generic names such as "download".
+ @param rawUrl If downloading from a non api source. This will case the file hash can be added to the end of the file, as many downloads have generic names such as "download". & ADR to be run on the plugin when installed
  @return True if and only if the file installed successfully. */
-public static boolean installPluginURL(@Nullable CommandSender sender, String state, String stringUrl, String fileName, boolean addFileHash) {
+public static boolean installPluginURL(@Nullable CommandSender sender, String state, String stringUrl, String fileName, boolean rawUrl) {
   File tempPlugin = new File(temp.getAbsolutePath()+File.separator+fileName);
   File installedPlugin;
   boolean installed = false;
@@ -69,12 +64,12 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
     fos.close();
     rbc.close();
 
-    if (StoredPlugins.registered(tempPlugin))
+    if (PluginData.registered(tempPlugin))
       throw new FileAlreadyExistsException(tempPlugin.getAbsolutePath());
 
     //adds the file hash to the name since alot of urls just have a generic filename like "download"
     String hash = "";
-    if (addFileHash) {
+    if (rawUrl) {
       InputStream is = new FileInputStream(tempPlugin);
       DigestInputStream dis = new DigestInputStream(is, MessageDigest.getInstance("MD5"));
       dis.readAllBytes();
@@ -86,22 +81,31 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
 
     installedPlugin = new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+Files.getNameWithoutExtension(fileName)+hash+".jar");
 
-    if (installedPlugin.exists())
+    if (installedPlugin.exists()) {
       throw new FileAlreadyExistsException(tempPlugin.getAbsolutePath());
+    }
 
     //moves the file to plugin folder
     FileUtils.moveFile(tempPlugin, installedPlugin);
-    StoredPlugins.appendPluginData(installedPlugin);
-    new Log(sender, state, "installed").setFileName(fileName).log();
+    PluginData pluginData = PluginData.append(installedPlugin);
+    new Log(sender, state, "installed").setPluginName(pluginData.getName()).log();
+
+    //runs ADR if downloading from a raw URL as the dependencies might not have been installed.
+    if (rawUrl) {
+      Util.automaticDependencyResolution(sender, pluginData);
+    }
 
     try {
       Plugin pluginInstance = Bukkit.getPluginManager().loadPlugin(installedPlugin);
-      if (pluginInstance == null)
+      if (pluginInstance == null) {
         throw new Exception("Plugin is null.");
+      }
+
       Bukkit.getPluginManager().enablePlugin(pluginInstance);
 
+      new Log(sender, state, "enableAttempt").setPluginName(pluginInstance.getName()).log();
     } catch (Exception e) {
-      new Log(sender, state, "noEnable").setFileName(fileName);
+      new Log(sender, state, "noEnable").setPluginName(pluginData.getName()).setException(e).log();
     }
 
     installed = true;
@@ -113,7 +117,7 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
     new Log(sender, state, "badUrl").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).setFileName(fileName).log();
 
   } catch (FileAlreadyExistsException e) {
-    new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).log();
+    new Log(sender, state, "alreadyExists").setLevel(Level.WARNING).setFileName(fileName).setException(e).log();
 
   } catch (IOException | NoSuchAlgorithmException e) {
     new Log(sender, state, "installError").setLevel(Level.WARNING).setUrl(stringUrl).setException(e).log();
@@ -139,7 +143,7 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
 
   try {
 
-    PluginData pluginData = StoredPlugins.readPluginData(pluginName);
+    PluginData pluginData = PluginData.read(pluginName);
     File pluginDataFolder = new File(pluginFolder+File.separator+pluginData.getName());
 
     //disables the plugin so that the file can be deleted
@@ -152,7 +156,7 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
     if (deleteConfig) {
       if (pluginDataFolder.exists()) {
         try {
-          FileUtils.deleteDirectory(pluginDataFolder);
+          Util.delete(pluginDataFolder);
         } catch (IOException e) {
           //marks configs for deletion on server stop, as another process is using the files
           pluginDataFolder.deleteOnExit();
@@ -163,16 +167,16 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
     }
 
     try {
-      FileUtils.delete(new File(pluginFolder+File.separator+pluginData.getFileName()));
+      Util.delete(new File(pluginFolder+File.separator+pluginData.getFileName()));
     } catch (IOException e) {
       new Log(sender, state, "deleteError").setLevel(Level.WARNING).setException(e).setPluginName(pluginName).log();
       new Log(sender, state, "scheduleDelete").setLevel(Level.WARNING).setPluginName(pluginName).log();
       pluginData.setDeletePending(true);
-      StoredPlugins.modifyPluginData(pluginData);
+      PluginData.modify(pluginData);
       return false;
     }
 
-    StoredPlugins.removePluginData(pluginName);
+    PluginData.remove(pluginName);
     new Log(sender, state, "pluginDelete").setPluginName(pluginName).log();
     return true;
 
@@ -284,67 +288,6 @@ public static ModrinthSearch modrinthSearch(@Nullable CommandSender sender, Stri
 
   } catch (ModrinthAPIException | MalformedURLException e) {
     new Log(sender, state, "modrinthSearchErr").setLevel(Level.WARNING).setException(e).log();
-  }
-
-  return new ModrinthSearch(validPluginKeys, validPlugins);
-}
-
-/**
- Gets the most 10 popular plugins from modrinth with the specified offset
- @param sender The sender to send the log messages to.
- @param state  The path to get the lang responses from.
- @param offset The offset to get the plugins from.
- @return The plugins at that offset in a ModrinthSearch object. */
-public static ModrinthSearch modrinthBrowse(@Nullable CommandSender sender, String state, int offset) {
-  ArrayList<JsonObject> validPluginKeys = new ArrayList<>();
-  HashMap<JsonObject,JsonArray> validPlugins = new HashMap<>();
-
-  try {
-
-    JsonElement relevantPlugins = modrinthAPI(sender, "ModrinthAPI", "https://api.modrinth.com/v2/search?query=&facets=[[%22versions:"+mcVersion+"%22],[%22categories:"+serverSoftware+"%22]]&offset="+offset, "GET");
-    JsonArray hits = relevantPlugins.getAsJsonObject().get("hits").getAsJsonArray();
-    if (hits.isEmpty())
-      return new ModrinthSearch(validPluginKeys, validPlugins);
-
-    StringBuilder projectUrl = new StringBuilder("https://api.modrinth.com/v2/projects?ids=[");
-    for (JsonElement je : hits) {
-      JsonObject hit = je.getAsJsonObject();
-      projectUrl.append("%22").append(hit.get("project_id").getAsString()).append("%22,");
-    }
-
-    JsonArray pluginProjects = modrinthAPI(sender, "ModrinthAPI", projectUrl.substring(0, projectUrl.length()-1)+"]", "GET").getAsJsonArray();
-    if (hits.isEmpty())
-      return new ModrinthSearch(validPluginKeys, validPlugins);
-    ExecutorService executorService = Executors.newCachedThreadPool();
-    ArrayList<Future<JsonElement>> futures = new ArrayList<>();
-
-    for (JsonElement je : pluginProjects) {
-      futures.add(executorService.submit(new VersionGetThread(je.getAsJsonObject().get("id").getAsString())));
-    }
-
-    for (Future<JsonElement> future : futures) {
-      JsonArray validVersions = future.get().getAsJsonArray();
-      if (validVersions.isEmpty())
-        continue;
-
-      for (JsonElement projectElement : pluginProjects) {
-        JsonObject project = projectElement.getAsJsonObject();
-        if (project.get("id").equals(validVersions.get(0).getAsJsonObject().get("project_id"))) {
-          validPluginKeys.add(project);
-
-          for (JsonElement jel : validVersions) {
-            JsonArray array = validPlugins.get(project);
-            if (array == null)
-              array = new JsonArray();
-            array.add(jel.getAsJsonObject());
-            validPlugins.put(project, array);
-          }
-        }
-      }
-    }
-
-  } catch (MalformedURLException | ModrinthAPIException | ExecutionException | InterruptedException e) {
-    new Log(sender, state, "browsePluginErr").setLevel(Level.WARNING).setException(e).log();
   }
 
   return new ModrinthSearch(validPluginKeys, validPlugins);

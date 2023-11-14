@@ -1,18 +1,16 @@
 package me.tye.cogworks.operationHandlers;
 
 import me.tye.cogworks.util.Plugins;
-import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.customObjects.ChatParams;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.yamlClasses.DependencyInfo;
-import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.dataClasses.DependencyInfo;
+import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import static me.tye.cogworks.util.Plugins.deletePlugin;
@@ -29,26 +27,21 @@ private final ArrayList<String> evalPluginNames = new ArrayList<>();
 private final ArrayList<Boolean> evalDeleteConfigs = new ArrayList<>();
 private final ArrayList<Boolean> evalDeleteDepends = new ArrayList<>();
 
-public static HashMap<CommandSender,List<Boolean>> completed = new HashMap<>();
-
 /**
- <b>Warning: This object should only be created asynchronously!</b><br>
- Creates an object that takes the given plugin name & executes delete checks on it, then deletes the plugins in the delete queue.<br>
- The delete checks involve checking for if the plugin has a config folder or if other plugins depend on this one to function. If either of these are true for any plugins in the queue for plugins to be evaluated then the user will be entered into the CogWorks chat interaction system.<br>
- Plugins that depend on the given plugin to function can be added to the delete queue on the users request.
+ Creates a new instance of the DeleteQueue object, which is used for deleting plugins & getting a user response on delete options by using the CogWorks chat system.
  @param sender     The sender performing the deletion.
  @param pluginName The given plugin name. */
-public DeleteQueue(@NonNull CommandSender sender, @NonNull String pluginName) {
+public DeleteQueue(@NotNull CommandSender sender, @NotNull String pluginName) {
   this.sender = sender;
   evalPluginNames.add(pluginName);
   evalDeleteConfigs.add(null);
   evalDeleteDepends.add(null);
-  evaluatePlugins();
 }
 
 /**
  <b>Warning: This method should only be executed asynchronously!</b><br>
  This method goes though all the plugins that are to be evaluated and adds them to the delete queue. Once all plugins have been evaluated then the plugins are deleted.<br>
+ Evaluation involves prompting the user about deleting the plugin config files if present, & prompting the user if plugins that depend on this one to function should be added to the evaluation queue or not.<br>
  When user input is required, an example of this is if plugin config files should be deleted, the method will send the sender a message & set the chat interaction system to wait for a response. */
 public void evaluatePlugins() {
   clearResponse(sender);
@@ -57,10 +50,21 @@ public void evaluatePlugins() {
     String pluginName = evalPluginNames.get(0);
     Boolean deleteConfig = evalDeleteConfigs.get(0);
     Boolean deleteDepends = evalDeleteDepends.get(0);
-    List<PluginData> whatDependsOn = StoredPlugins.getWhatDependsOn(pluginName);
+
+    //if the pluginData couldn't be gotten then it is skipped
+    PluginData pluginData = PluginData.getFromName(pluginName);
+    if (pluginData == null) {
+      new Log(sender, "deletePlugin.noSuchPlugin").setPluginName(pluginName).log();
+      evalPluginNames.remove(0);
+      evalDeleteConfigs.remove(0);
+      evalDeleteDepends.remove(0);
+      continue;
+    }
+
+    List<PluginData> whatDependsOn = pluginData.getWhatDependsOn();
 
     //if the plugin doesn't exist or is already queued then it is skipped.
-    if (!StoredPlugins.registered(pluginName) || queuedPluginNames.contains(pluginName)) {
+    if (!PluginData.registered(pluginName) || queuedPluginNames.contains(pluginName)) {
       evalPluginNames.remove(0);
       evalDeleteConfigs.remove(0);
       evalDeleteDepends.remove(0);
@@ -103,24 +107,24 @@ public void evaluatePlugins() {
 
     //if the user chose to delete the dependencies then they are added to the delete eval queue.
     if (deleteDepends) {
-      for (PluginData pluginData : whatDependsOn) {
-        evalPluginNames.add(pluginData.getName());
+      for (PluginData dependsData : whatDependsOn) {
+        evalPluginNames.add(dependsData.getName());
         evalDeleteConfigs.add(null);
         evalDeleteDepends.add(null);
       }
     }
     //set the dependencies to not be resolved by ADR.
     else {
-      for (PluginData pluginData : whatDependsOn) {
-        for (DependencyInfo dependency : pluginData.getDependencies()) {
+      for (PluginData dependsData : whatDependsOn) {
+        for (DependencyInfo dependency : dependsData.getDependencies()) {
 
           dependency.setAttemptADR(false);
-          pluginData.modifyDependency(dependency);
+          dependsData.modifyDependency(dependency);
 
           try {
-            StoredPlugins.modifyPluginData(pluginData);
+            PluginData.modify(dependsData);
           } catch (IOException e) {
-            new Log(sender, "deletePlugin.writeNoADR").setDepName(dependency.getName()).setPluginName(pluginData.getName()).log();
+            new Log(sender, "deletePlugin.writeNoADR").setDepName(dependency.getName()).setPluginName(dependsData.getName()).setException(e).log();
           }
         }
       }
@@ -138,47 +142,13 @@ public void evaluatePlugins() {
 
   //when all the plugins have been evaluated then the delete is executed.
 
-  //this HashMap stores the deletion progress of the plugins.
-
-  ArrayList<Boolean> progress = new ArrayList<>();
-  for (int i = 0; i < queuedPluginNames.size(); i++)
-    progress.add(null);
-  completed.put(sender, progress);
-
   //goes through all plugins & deletes them synchronously.
   for (int i = 0; i < queuedPluginNames.size(); i++) {
     int finalI = i;
 
-    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-      List<Boolean> currentProgress = completed.get(sender);
-      currentProgress.set(finalI, deletePlugin(sender, "deletePlugin", queuedPluginNames.get(finalI), queuedDeleteConfigs.get(finalI)));
-      completed.put(sender, currentProgress);
-    });
-  }
-
-  //blocks until all plugins have attempted to be deleted.
-  boolean allDeleted = false;
-  while (!allDeleted) {
-
-    try {
-      Thread.sleep(100);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-
-    allDeleted = true;
-    List<Boolean> currentProgress = completed.get(sender);
-    for (Boolean finished : currentProgress) {
-      if (finished == null) {
-        allDeleted = false;
-        break;
-      }
-    }
-
-  }
-
-  if (completed.get(sender).contains(true)) {
-    new Log(sender, "deletePlugin.reloadWarn").log();
+    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () ->
+        deletePlugin(sender, "deletePlugin", queuedPluginNames.get(finalI), queuedDeleteConfigs.get(finalI))
+    );
   }
 }
 
@@ -194,6 +164,15 @@ public void setCurrentEvalDeleteConfig(boolean deleteConfig) {
  @param deleteDepends Whether to delete the plugins that depend on the current plugin. */
 public void setCurrentEvalDeleteDepends(boolean deleteDepends) {
   evalDeleteDepends.set(0, deleteDepends);
+}
+
+/**
+ Adds the given plugin to the eval queue.
+ @param pluginName The given plugin. */
+public void addPluginToEval(String pluginName) {
+  evalPluginNames.add(pluginName);
+  evalDeleteConfigs.add(null);
+  evalDeleteDepends.add(null);
 }
 
 }

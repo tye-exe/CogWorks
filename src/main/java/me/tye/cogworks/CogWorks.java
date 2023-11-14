@@ -1,50 +1,42 @@
 package me.tye.cogworks;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import me.tye.cogworks.commands.FileCommand;
 import me.tye.cogworks.commands.PluginCommand;
 import me.tye.cogworks.commands.TabComplete;
-import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.ModrinthSearch;
-import me.tye.cogworks.util.customObjects.yamlClasses.DependencyInfo;
-import me.tye.cogworks.util.customObjects.yamlClasses.PluginData;
+import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
+import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Objects;
 import java.util.logging.Level;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
-import static me.tye.cogworks.FileGui.position;
-import static me.tye.cogworks.util.Plugins.installModrinthDependencies;
-import static me.tye.cogworks.util.Plugins.modrinthSearch;
 import static me.tye.cogworks.util.Util.*;
+import static me.tye.cogworks.util.customObjects.dataClasses.PluginData.read;
 
 public final class CogWorks extends JavaPlugin {
-//TODO: //plugin.getServer().getPluginManager().loadPlugin();
-//TODO: Allow to delete multiple plugins at once - separate by ","?
-//TODO: Check if lang file exists for string the user entered.
-//TODO: Edit lang options based on available lang files.
-//TODO: Add command to force stop ADR?
-//TODO: Instead of deleting files, have them be moved to the .temp folder & either deleted upon reload | after a set time.
+
+//TODO: /file gui_guide
 //TODO: Allow to install multiple plugins at once when using a url.
 //TODO: Fix when using plugin install, if you enter the select number for plugin version quick enough repetitively, the plugin will install twice (only one file will still show up).
 //TODO: Make to try & install plugins for the correct server version if the server is updated.
@@ -71,18 +63,13 @@ public void onEnable() {
   //checks if the selected lang file is the correct one for this version of CogWorks
   langUpdate();
 
-  //deletes temp if present
-  try {
-    FileUtils.deleteDirectory(temp);
-  } catch (IOException e) {
-    new Log(null, "exceptions.tempClear");
-  }
-
   //creates the other files
   createFile(dataStore, null, false);
   createFile(temp, null, false);
   createFile(ADR, null, false);
 
+  createFile(deletePending, null, false);
+  createFile(deleteData, null, true);
   createFile(pluginDataFile, null, true);
 
   //hides non-config files
@@ -92,16 +79,15 @@ public void onEnable() {
   } catch (Exception ignore) {
   }
 
-
-  StoredPlugins.reloadPluginData(null, "exceptions");
+  PluginData.reload(null, "exceptions");
 
   //ADR
-  if (Util.getConfig("ADR"))
-    automaticDependencyResolution();
+  if (Util.getConfig("ADR")) {
+    ADR();
+  }
 
   //checks for new lang files & installs them.
   newLangCheck();
-
 
   //Commands
   Objects.requireNonNull(getCommand("plugin")).setExecutor(new PluginCommand());
@@ -115,240 +101,94 @@ public void onEnable() {
   getServer().getPluginManager().registerEvents(new FileGui(), this);
   getServer().getPluginManager().registerEvents(new SendErrorSummary(), this);
 
+  deletePending();
+
+  //Custom override asked for by canvas creator.
+  if (serverSoftware.equals("canvas")) {
+    serverSoftware = "purpur";
+  }
 }
 
 @Override
 public void onDisable() {
+  //clears temp folder
+  try {
+    FileUtils.deleteDirectory(temp);
+  } catch (IOException e) {
+    new Log(null, "exceptions.tempClear").setException(e).log();
+  }
+
+  //If the player has a CogWorks gui open it is closed.
   for (Player player : Bukkit.getOnlinePlayers()) {
-    if (position.containsKey(player.getName())) {
-      player.closeInventory();
-      new Log(player, "info.menuClose").log();
+    Inventory firstSlot = player.getOpenInventory().getInventory(0);
+    if (firstSlot == null) {
+      return;
     }
+
+    ItemStack[] contents = firstSlot.getContents();
+    if (contents[0].getType().equals(Material.AIR)) {
+      return;
+    }
+
+    ItemMeta firstMeta = contents[0].getItemMeta();
+    if (firstMeta == null) {
+      return;
+    }
+
+    String firstIdentifier = firstMeta.getPersistentDataContainer().get(new NamespacedKey(plugin, "identifier"), PersistentDataType.STRING);
+    if (firstIdentifier == null) {
+      return;
+    }
+
+    player.closeInventory();
+    new Log(player, "info.menuClose").log();
   }
 }
 
 /**
- Automatic dependency resolution, also known as ADR, checks for any plugins that contain dependencies that aren't met.<br>
- If any are found to be not met, it uses modrinth search with the plugin name of the missing dependency and downloads the first ten results.<br>
- It will then check all the plugin names of all the plugins installed by ADR to see if any match the missing dependency name.<br>
- If one does it will be moved into the plugins folder and a success log will be sent. Otherwise, a fail log will be sent. */
-private void automaticDependencyResolution() {
-  ArrayList<PluginData> identifiers;
+ Uses Util.ADR to resolve any missing dependencies for any installed plugins. */
+private static void ADR() {
+  ArrayList<PluginData> unmets = new ArrayList<>();
+
   try {
-    identifiers = StoredPlugins.readPluginData();
-  } catch (IOException e) {
-    new Log("exceptions.noAccessPluginYML", Level.SEVERE, e).log();
-    return;
-  }
-
-  //checks for uninstalled dependencies
-  HashMap<DependencyInfo,ArrayList<PluginData>> unmetDependencies = new HashMap<>();
-  for (PluginData data : identifiers) {
-    if (data.isDeletePending())
-      continue;
-
-    ArrayList<DependencyInfo> dependencies = data.getDependencies();
-    ArrayList<DependencyInfo> metDependencies = new ArrayList<>();
-
-    for (DependencyInfo depInfo : data.getDependencies()) {
-      for (PluginData data1 : identifiers) {
-        if (!data1.getName().equals(depInfo.getName()))
-          continue;
-        metDependencies.add(depInfo);
-      }
-    }
-
-    dependencies.removeAll(metDependencies);
-    for (DependencyInfo dep : dependencies) {
-      if (!dep.attemptADR())
+    //adds the unmet plugins to the list
+    for (PluginData pluginData : read()) {
+      if (pluginData.getUnmetDependencies().isEmpty()) {
         continue;
-
-      if (unmetDependencies.containsKey(dep)) {
-        ArrayList<PluginData> dependingPlugins = unmetDependencies.get(dep);
-        dependingPlugins.add(data);
-        unmetDependencies.put(dep, dependingPlugins);
-      } else {
-        unmetDependencies.put(dep, new ArrayList<>(List.of(data)));
       }
+
+      unmets.add(pluginData);
     }
+  } catch (IOException e) {
+    new Log("ADR.genFail", Level.WARNING, e).setPluginName("any plugins that might be missing some.").log();
   }
 
-  //attempts to resolve unmet dependencies
-  for (DependencyInfo unmetDepInfo : unmetDependencies.keySet()) {
+  for (PluginData unmet : unmets) {
     new Thread(new Runnable() {
-      private DependencyInfo unmetDepInfo;
-      private File ADRStore;
-      private HashMap<DependencyInfo,ArrayList<PluginData>> unmetDependencies;
+      PluginData data;
 
-      public Runnable init(DependencyInfo unmetDepInfo, File pluginStore, HashMap<DependencyInfo,ArrayList<PluginData>> unmetDependencies) {
-        this.unmetDepInfo = unmetDepInfo;
-        //so multiple threads get their own folder.
-        this.ADRStore = new File(pluginStore.getAbsolutePath()+File.separator+LocalDateTime.now().hashCode());
-        this.unmetDependencies = unmetDependencies;
+      public Runnable init(PluginData data) {
+        this.data = data;
         return this;
       }
-
       @Override
       public void run() {
-        ArrayList<PluginData> dependingPlugins = unmetDependencies.get(unmetDepInfo);
-        ArrayList<String> dependingNames = new ArrayList<>(dependingPlugins.size());
-        for (PluginData data : dependingPlugins)
-          dependingNames.add(data.getName());
+        Util.automaticDependencyResolution(null, data);
 
-        if (!ADRStore.mkdir()) {
-          new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
-          return;
-        }
-
-        String unmetDepName = this.unmetDepInfo.getName();
-        String unmetDepVersion = this.unmetDepInfo.getVersion();
-        if (unmetDepVersion != null) {
-          new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
-          return;
-        }
-        ArrayList<JsonObject> validPluginKeys;
-        HashMap<JsonObject,JsonArray> validPlugins;
-
-        new Log("ADR.attempting", Level.WARNING, null).setDepName(unmetDepName).setFileNames(dependingNames).log();
-
-        //searches the dependency name on modrinth
-        ModrinthSearch search = modrinthSearch(null, null, unmetDepName);
-        validPluginKeys = search.getValidPluginKeys();
-        validPlugins = search.getValidPlugins();
-        if (validPlugins.isEmpty() || validPluginKeys.isEmpty()) {
-          new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
-          return;
-        }
-
-        //gets the urls to download from
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        ArrayList<Future<JsonObject>> match = new ArrayList<>();
-
-        for (JsonObject jo : validPluginKeys) {
-          JsonObject latestValidPlugin = null;
-
-          //gets the latest version of a compatible plugin
-          for (JsonElement je : validPlugins.get(jo)) {
-            if (latestValidPlugin == null) {
-              latestValidPlugin = je.getAsJsonObject();
-            } else {
-              Date newDT = Date.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(je.getAsJsonObject().get("date_published").getAsString())));
-              Date dt = Date.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(latestValidPlugin.get("date_published").getAsString())));
-              if (dt.after(newDT)) {
-                latestValidPlugin = je.getAsJsonObject();
-              }
-            }
-          }
-
-          if (latestValidPlugin == null) {
-            new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
-            return;
-          }
-
-          JsonArray files = latestValidPlugin.get("files").getAsJsonArray();
-          int primaryIndex = 0;
-          int i = 0;
-          for (JsonElement je : files) {
-            if (je.getAsJsonObject().get("primary").getAsBoolean())
-              primaryIndex = i;
-            i++;
-          }
-
-          final int givenIndex = primaryIndex;
-          final JsonObject versionInfo = latestValidPlugin;
-
-          //installs possible dependencies & checks if they resolve the missing dependency.
-          match.add(executorService.submit(() -> {
-            JsonObject downloadInfo = files.get(givenIndex).getAsJsonObject();
-            File dependecyFile = new File(ADRStore.getAbsolutePath()+File.separator+downloadInfo.get("filename").getAsString());
-            try {
-              InputStream inputStream = new URL(downloadInfo.get("url").getAsString()).openStream();
-              ReadableByteChannel rbc = Channels.newChannel(inputStream);
-              FileOutputStream fos = new FileOutputStream(dependecyFile);
-              fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-              fos.close();
-              rbc.close();
-              inputStream.close();
-            } catch (IOException e) {
-              new Log("ADR.downloadingErr", Level.WARNING, e).setFileName(dependecyFile.getName()).log();
-            }
-
-            try {
-              ZipFile zip = new ZipFile(dependecyFile);
-              for (Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements(); ) {
-                ZipEntry entry = e.nextElement();
-                if (!entry.getName().equals("plugin.yml"))
-                  continue;
-
-                StringBuilder out = new StringBuilder();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
-                String line;
-                while ((line = reader.readLine()) != null)
-                  out.append(line).append("\n");
-                reader.close();
-
-                Yaml yaml = new Yaml();
-                Map<String,Object> yamlData = yaml.load(out.toString());
-                if (yamlData.get("name").equals(unmetDepName)) {
-                  zip.close();
-                  FileUtils.moveFile(dependecyFile, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+dependecyFile.getName()));
-                  new Log("ADR.success", Level.WARNING, null).setFileNames(dependingNames).setDepName((String) yamlData.get("name")).log();
-                  StoredPlugins.reloadPluginData(null, "exceptions");
-                  return versionInfo;
-                }
-              }
-              zip.close();
-            } catch (Exception e) {
-              new Log("ADR.pluginYMLCheck", Level.WARNING, e).setFileName(dependecyFile.getName()).log();
-            }
-            return null;
-          }));
-
-        }
-
-        executorService.shutdown();
+        //tires to enable the plugin
         try {
-          if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
-            new Log("ADR.threadTime", Level.WARNING, null).log();
-            new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
-            return;
-          }
-        } catch (InterruptedException e) {
-          new Log("ADR.threadTime", Level.WARNING, e).log();
-          new Log("ADR.fail", Level.WARNING, null).setFileNames(dependingNames).log();
-          return;
-        }
+          new Log("ADR.attemptEnable", Level.WARNING, null).setPluginName(data.getName()).log();
 
-        //gets dependencies for the dependency installed & checks if ADR could resolve the missing dependency.
-        boolean failed = true;
-        for (Future<JsonObject> future : match) {
-          try {
-            JsonObject dependency = future.get();
-            if (dependency == null)
-              continue;
+          Plugin loadedPlugin = plugin.getPluginLoader().loadPlugin(new File(pluginFolder.toPath()+data.getFileName()));
+          plugin.getPluginLoader().enablePlugin(loadedPlugin);
 
-            failed = false;
-            installModrinthDependencies(null, null, dependency, null);
-          } catch (InterruptedException | ExecutionException e) {
-            new Log("ADR.getErr", Level.WARNING, e).log();
-          }
-        }
-
-        //if ADR couldn't resolve the missing dependency then it marks not to try and resolve it for next time
-        if (failed) {
-          new Log("ADR.notToRetry", Level.WARNING, null).setDepName(unmetDepName).setPluginNames(dependingNames).log();
-          unmetDepInfo.setAttemptADR(false);
-          for (PluginData dependingPlugin : dependingPlugins) {
-            try {
-              StoredPlugins.modifyPluginData(dependingPlugin.modifyDependency(unmetDepInfo));
-            } catch (IOException e) {
-              new Log("ADR.writeNoADR", Level.WARNING, e).setPluginName(dependingPlugin.getName()).setDepName(unmetDepName).log();
-            }
-          }
+        } catch (Exception ignore) {
+          new Log("ADR.noEnable", Level.WARNING, null).setPluginName(data.getName()).log();
         }
       }
-    }.init(unmetDepInfo, ADR, unmetDependencies)).start();
+    }.init(unmet)).start();
   }
+
 }
 
 /**
@@ -450,6 +290,91 @@ private void newLangCheck() {
       new Log("exceptions.newLangCheck", Level.WARNING, e).log();
     }
   }).start();
+}
+
+
+/**
+ Starts a new thread that checks for out of date files in the restore folder every 10 mins. If a file is older than the limit specified by the user in the config the file will be fully deleted. */
+private static void deletePending() {
+  //If the delete pending thread is already running then don't start a new one.
+  //Added for compatibility with reloads.
+  for (Thread runningThread : Thread.getAllStackTraces().keySet()) {
+    if (runningThread.getName().equals("DeleteTime")) {
+      return;
+    }
+  }
+
+  //deletes any files that are older than the limit
+  new Thread(() -> {
+    String entered = Util.getConfig("keepDeleted.time");
+    if (entered.strip().equals("-1")) {
+      return;
+    }
+    long[] times = parseTime(entered);
+
+    while (true) {
+
+      for (DeletePending deletePending : DeletePending.read(null)) {
+        LocalDateTime deleteTime = deletePending.getDeleteTime();
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime deleteByDate = now.minusWeeks(times[0]).minusDays(times[1]).minusHours(times[2]).minusMinutes(times[3]);
+
+        if (!deleteTime.isBefore(deleteByDate)) {
+          continue;
+        }
+
+        try {
+          deletePending.delete();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      try {
+        Thread.sleep(600000);
+      } catch (InterruptedException ignore) {}
+    }
+
+  }, "DeleteTime").start();
+}
+
+/**
+ Parses the time value entered by the user in the format "{number}{unit}". There can be any length of number-unit pares.<br>
+ Units:<br>
+ w - weeks.<br>
+ d - days.<br>
+ h - hours.<br>
+ m - minutes.
+ @param time The time stored in the config file.
+ @return The parsed units as a long array:<br>index 0 - weeks<br>index 1 - days<br>index 2 - hours<br>index 3 - minutes. */
+private static long[] parseTime(String time) {
+  long[] times = new long[4];
+  char[] timeChars = time.toLowerCase().toCharArray();
+
+  for (int i = 0; i < timeChars.length; i++) {
+
+    switch (timeChars[i]) {
+    case 'w' -> {
+      times[0] = getProceeding(times[0], timeChars, i);
+    }
+
+    case 'd' -> {
+      times[1] = getProceeding(times[1], timeChars, i);
+    }
+
+    case 'h' -> {
+      times[2] = getProceeding(times[2], timeChars, i);
+    }
+
+    case 'm' -> {
+      times[3] = getProceeding(times[3], timeChars, i);
+    }
+
+    }
+  }
+
+  return times;
 }
 
 }

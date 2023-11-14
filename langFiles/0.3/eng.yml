@@ -40,6 +40,7 @@ help:
     help: "§9/file help - §aShows this message."
     chat: "§9/file chat - §a(WIP) Turns your chat into a mock command line which lets you interact with files on the server."
     gui: "§9/file gui - §aOpens an inventory that lets you interact with the files on the server visually."
+    recover: "§9/file recover <Deleted file> <Restore path> - §aRestores a deleted file to the given path, if no path is given then the file is restored to the server folder.
 
 
 tabComplete:
@@ -47,7 +48,8 @@ tabComplete:
     install: "<URL>"
     search: "<query>"
 
-  dataReadError: "§eThere was an error getting the plugin names."
+  pluginReadError: "§eThere was an error getting the plugin names."
+  recoverReadError: "§eThere was an error getting recoverable file names."
 
 reload:
   reloading: "§aReloading Plugins."
@@ -100,6 +102,19 @@ deletePlugin:
   deleteError: "§e{pluginName} couldn't be deleted."
   scheduleDelete: "§e{pluginName} will be marked for deletion & ignored by CogWorks form now on."
   writeNoADR: "§eThere was an error setting {depName} for {pluginName} to not attempt ADR. This will cause ADR to attempt to resolve this dependency on restart."
+
+
+delete:
+  fail: "§eThere was an error in moving the file to delete store folder."
+  readFail: "§eThere was an error reading the data from the delete data file."
+
+
+recover:
+  succeed: "§a{fileName} was restored to {filePath}"
+
+  readFail: "§eThere was an error reading the data from the delete data file."
+  invalidPath: "§eThe path you entered is invalid. Please enter a valid path."
+  noneMatching: "§eNo deleted files match the file name given."
 
 
 ModrinthAPI:
@@ -232,6 +247,7 @@ exceptions:
   stateNotFound: "§cThere was an error matching the state your in. Please report this to the devs. State: \"{state}\"."
   chatError: "§eThere was a general error when interacting with the chat system for CogWorks."
   langUpdateFail: "§eA valid lang file couldn't be found for your version, defaulting to english."
+  noConfigMatch: "§eNo value for {key} could be gotten from the lang file. Please import the devs about this."
 
 
 #DO NOT CHANGE!

@@ -53,3 +53,18 @@
 - Rewrote plugin remove commands for better readability & maintainability.
 - Plugins will be enabled immediately on installation.
 - Release of version 0.3.
+
+## 0.3.1:
+- Multiple plugins can be removed at once by separating each plugin name by a space.
+- Added backwards compatibility to version "1.17".
+- Deleted files & folders will now be moved into a temp dir, & only deleted after certain configurable conditions have been met.
+- Deleted files & folders can be restored by using the "/file recover <Deleted file> <Restore path>" command.
+- Added permission "cogworks.file.rec", which lets a player use the "/file recover" command.
+- Fixed bug with Menu close messages always occurring if the player had opened a CogWorks gui.
+- The server type "canvas" will be set to "purpur" - requested by canvas author.
+- Fixed issue with .temp folder being deleted at the wrong time.
+- Fixed logging issues.
+- Removed unnecessary reload warn.
+- Added log message to clarify that the plugin is enabled after install.
+- CogWorks now accounts for "paper-plugin.yml" files as well as "plugin.yml" files.
+- Dependencies will be installed & enabled before plugin is enabled when using "/plugin install <URL>". 
