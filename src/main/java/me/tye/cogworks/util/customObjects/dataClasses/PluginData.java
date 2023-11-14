@@ -77,6 +77,25 @@ public ArrayList<DependencyInfo> getDependencies() {
 }
 
 /**
+ @return A list of the plugins that this one depends on that aren't installed.
+ @throws IOException If there was an error getting the indexed plugins. */
+public List<DependencyInfo> getUnmetDependencies() throws IOException {
+  ArrayList<DependencyInfo> unmet = new ArrayList<>();
+  ArrayList<DependencyInfo> dependencies = getDependencies();
+  List<String> names = readNames();
+
+  for (DependencyInfo dependency : dependencies) {
+    if (names.contains(dependency.getName())) {
+      continue;
+    }
+
+    unmet.add(dependency);
+  }
+
+  return unmet;
+}
+
+/**
  @return The internal soft dependencies for the plugin. */
 public ArrayList<DependencyInfo> getSoftDependencies() {
   return softDependencies;
@@ -173,6 +192,18 @@ public static PluginData read(String pluginName) throws NoSuchPluginException, I
       return data;
   }
   throw new NoSuchPluginException(getLang("exceptions.pluginNotRegistered", "pluginName", pluginName));
+}
+
+/**
+ * @return The plugin names of all the plugins indexed by CogWorks
+ * @throws IOException If there was an error reading the plugin data.
+ */
+public static List<String> readNames() throws IOException {
+  ArrayList<String> names = new ArrayList<>();
+  for (PluginData pluginData : read()) {
+    names.add(pluginData.getName());
+  }
+  return names;
 }
 
 /**

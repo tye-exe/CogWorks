@@ -213,10 +213,13 @@ terminal:
 
 ADR:
   attempting: "§aAttempting to automatically resolve missing dependency \"{depName}\" for \"{fileNames}\"."
-  success: "§aUnmet dependency for \"{fileNames}\" successfully resolved by installing \"{depName}\".{n}Reload or restart for this to take effect."
+  success: "§aUnmet dependency for \"{fileNames}\" successfully resolved by installing \"{depName}\"."
+  enableAttempt: "§aEnabling {pluginName}."
+  genFail: "§eCould not get dependencies for {pluginName}."
   fail: "§eUnmet dependency for \"{fileNames}\" could not be automatically resolved."
   notToRetry: "§eSetting not to retry resolve missing dependency {depName} for {pluginNames}."
 
+  noEnable: "§e{pluginName} could not be immediately enabled.{n}§eReload or restart for it to activate."
   getErr: "§eError checking if the installed dependency has any dependencies."
   modrinthSearchErr: "§eError querying Modrinth for automatic dependency resolution."
   downloadingErr: "§eError downloading {fileName} to check plugin as possible dependency."

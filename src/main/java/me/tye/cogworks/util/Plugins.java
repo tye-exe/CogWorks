@@ -92,7 +92,7 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
 
     //runs ADR if downloading from a raw URL as the dependencies might not have been installed.
     if (rawUrl) {
-      Util.ADR(sender, pluginData);
+      Util.automaticDependencyResolution(sender, pluginData);
     }
 
     try {
