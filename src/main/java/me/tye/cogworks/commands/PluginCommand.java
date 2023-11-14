@@ -5,8 +5,8 @@ import me.tye.cogworks.operationHandlers.DeleteQueue;
 import me.tye.cogworks.operationHandlers.PluginBrowse;
 import me.tye.cogworks.operationHandlers.PluginSearch;
 import me.tye.cogworks.util.Plugins;
-import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.customObjects.Log;
+import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -56,7 +56,7 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
           return;
 
         new Log(sender, "reload.reloading").log();
-        StoredPlugins.reloadPluginData(sender, "reload");
+        PluginData.reload(sender, "reload");
         new Log(sender, "reload.reloaded").log();
       }
 

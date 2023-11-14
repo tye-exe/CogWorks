@@ -1,7 +1,6 @@
 package me.tye.cogworks.operationHandlers;
 
 import me.tye.cogworks.util.Plugins;
-import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.customObjects.ChatParams;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.dataClasses.DependencyInfo;
@@ -51,10 +50,21 @@ public void evaluatePlugins() {
     String pluginName = evalPluginNames.get(0);
     Boolean deleteConfig = evalDeleteConfigs.get(0);
     Boolean deleteDepends = evalDeleteDepends.get(0);
-    List<PluginData> whatDependsOn = StoredPlugins.getWhatDependsOn(pluginName);
+
+    //if the pluginData couldn't be gotten then it is skipped
+    PluginData pluginData = PluginData.getFromName(pluginName);
+    if (pluginData == null) {
+      new Log(sender, "deletePlugin.noSuchPlugin").setPluginName(pluginName).log();
+      evalPluginNames.remove(0);
+      evalDeleteConfigs.remove(0);
+      evalDeleteDepends.remove(0);
+      continue;
+    }
+
+    List<PluginData> whatDependsOn = pluginData.getWhatDependsOn();
 
     //if the plugin doesn't exist or is already queued then it is skipped.
-    if (!StoredPlugins.registered(pluginName) || queuedPluginNames.contains(pluginName)) {
+    if (!PluginData.registered(pluginName) || queuedPluginNames.contains(pluginName)) {
       evalPluginNames.remove(0);
       evalDeleteConfigs.remove(0);
       evalDeleteDepends.remove(0);
@@ -97,24 +107,24 @@ public void evaluatePlugins() {
 
     //if the user chose to delete the dependencies then they are added to the delete eval queue.
     if (deleteDepends) {
-      for (PluginData pluginData : whatDependsOn) {
-        evalPluginNames.add(pluginData.getName());
+      for (PluginData dependsData : whatDependsOn) {
+        evalPluginNames.add(dependsData.getName());
         evalDeleteConfigs.add(null);
         evalDeleteDepends.add(null);
       }
     }
     //set the dependencies to not be resolved by ADR.
     else {
-      for (PluginData pluginData : whatDependsOn) {
-        for (DependencyInfo dependency : pluginData.getDependencies()) {
+      for (PluginData dependsData : whatDependsOn) {
+        for (DependencyInfo dependency : dependsData.getDependencies()) {
 
           dependency.setAttemptADR(false);
-          pluginData.modifyDependency(dependency);
+          dependsData.modifyDependency(dependency);
 
           try {
-            StoredPlugins.modifyPluginData(pluginData);
+            PluginData.modify(dependsData);
           } catch (IOException e) {
-            new Log(sender, "deletePlugin.writeNoADR").setDepName(dependency.getName()).setPluginName(pluginData.getName()).setException(e).log();
+            new Log(sender, "deletePlugin.writeNoADR").setDepName(dependency.getName()).setPluginName(dependsData.getName()).setException(e).log();
           }
         }
       }
@@ -131,12 +141,6 @@ public void evaluatePlugins() {
   }
 
   //when all the plugins have been evaluated then the delete is executed.
-
-  //this HashMap stores the deletion progress of the plugins.
-  ArrayList<Boolean> progress = new ArrayList<>();
-  for (int i = 0; i < queuedPluginNames.size(); i++) {
-    progress.add(null);
-  }
 
   //goes through all plugins & deletes them synchronously.
   for (int i = 0; i < queuedPluginNames.size(); i++) {

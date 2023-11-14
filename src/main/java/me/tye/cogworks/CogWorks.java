@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import me.tye.cogworks.commands.FileCommand;
 import me.tye.cogworks.commands.PluginCommand;
 import me.tye.cogworks.commands.TabComplete;
-import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.ModrinthSearch;
@@ -90,7 +89,7 @@ public void onEnable() {
   } catch (Exception ignore) {
   }
 
-  StoredPlugins.reloadPluginData(null, "exceptions");
+  PluginData.reload(null, "exceptions");
 
   //ADR
   if (Util.getConfig("ADR")) {
@@ -165,7 +164,7 @@ public void onDisable() {
 public static void automaticDependencyResolution(CommandSender sender) {
   ArrayList<PluginData> identifiers;
   try {
-    identifiers = StoredPlugins.readPluginData();
+    identifiers = PluginData.read();
   } catch (IOException e) {
     new Log(sender, "exceptions.noAccessPluginYML", Level.SEVERE, e).log();
     return;
@@ -326,7 +325,7 @@ public static void automaticDependencyResolution(CommandSender sender) {
                   zip.close();
                   FileUtils.moveFile(dependecyFile, new File(Path.of(plugin.getDataFolder().getAbsolutePath()).getParent().toString()+File.separator+dependecyFile.getName()));
                   new Log(sender, "ADR.success", Level.WARNING, null).setFileNames(dependingNames).setDepName((String) yamlData.get("name")).log();
-                  StoredPlugins.reloadPluginData(null, "exceptions");
+                  PluginData.reload(null, "exceptions");
                   return versionInfo;
                 }
               }
@@ -373,7 +372,7 @@ public static void automaticDependencyResolution(CommandSender sender) {
           unmetDepInfo.setAttemptADR(false);
           for (PluginData dependingPlugin : dependingPlugins) {
             try {
-              StoredPlugins.modifyPluginData(dependingPlugin.modifyDependency(unmetDepInfo));
+              PluginData.modify(dependingPlugin.modifyDependency(unmetDepInfo));
             } catch (IOException e) {
               new Log(sender, "ADR.writeNoADR", Level.WARNING, e).setPluginName(dependingPlugin.getName()).setDepName(unmetDepName).log();
             }

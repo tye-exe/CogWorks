@@ -66,7 +66,7 @@ pluginInstall:
   installingDep: "§aInstalling dependencies for {pluginName}."
   installedDep: "§aInstalled dependencies for {pluginName}."
   downloading: "§aDownloading {fileName}..."
-  installed: "§aDownloaded {fileName}."
+  installed: "§aDownloaded {pluginName}."
   enableAttempt: "§aEnabling {pluginName}."
   pluginSelect: "§aSend the number corresponding to the plugin to install it in chat, or send q to quit."
 
@@ -74,7 +74,7 @@ pluginInstall:
   NAN: "§e{chosen} is not a listed number."
 
   badDeps: "§eSome of the required dependencies could not be installed."
-  noEnable: "§e{fileName} could not be immediately enabled.{n}§eReload or restart for it to activate."
+  noEnable: "§e{pluginName} could not be immediately enabled.{n}§eReload or restart for it to activate."
   noVersions: "§eFailed to find compatible versions to download."
   noFiles: "§eFailed to find compatible file to download."
   oneVersionNoFiles: "§eFailed to find compatible file to download with only one version. Stopping install."

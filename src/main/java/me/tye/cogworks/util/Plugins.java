@@ -64,7 +64,7 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
     fos.close();
     rbc.close();
 
-    if (StoredPlugins.registered(tempPlugin))
+    if (PluginData.registered(tempPlugin))
       throw new FileAlreadyExistsException(tempPlugin.getAbsolutePath());
 
     //adds the file hash to the name since alot of urls just have a generic filename like "download"
@@ -87,12 +87,12 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
 
     //moves the file to plugin folder
     FileUtils.moveFile(tempPlugin, installedPlugin);
-    StoredPlugins.appendPluginData(installedPlugin);
-    new Log(sender, state, "installed").setFileName(fileName).log();
+    PluginData pluginData = PluginData.append(installedPlugin);
+    new Log(sender, state, "installed").setPluginName(pluginData.getName()).log();
 
     //runs ADR if downloading from a raw URL as the dependencies might not have been installed.
     if (rawUrl) {
-      Util.ADR(sender);
+      Util.ADR(sender, pluginData);
     }
 
     try {
@@ -105,7 +105,7 @@ public static boolean installPluginURL(@Nullable CommandSender sender, String st
 
       new Log(sender, state, "enableAttempt").setPluginName(pluginInstance.getName()).log();
     } catch (Exception e) {
-      new Log(sender, state, "noEnable").setFileName(fileName).setException(e).log();
+      new Log(sender, state, "noEnable").setPluginName(pluginData.getName()).setException(e).log();
     }
 
     installed = true;
@@ -143,7 +143,7 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
 
   try {
 
-    PluginData pluginData = StoredPlugins.readPluginData(pluginName);
+    PluginData pluginData = PluginData.read(pluginName);
     File pluginDataFolder = new File(pluginFolder+File.separator+pluginData.getName());
 
     //disables the plugin so that the file can be deleted
@@ -172,11 +172,11 @@ public static boolean deletePlugin(@Nullable CommandSender sender, String state,
       new Log(sender, state, "deleteError").setLevel(Level.WARNING).setException(e).setPluginName(pluginName).log();
       new Log(sender, state, "scheduleDelete").setLevel(Level.WARNING).setPluginName(pluginName).log();
       pluginData.setDeletePending(true);
-      StoredPlugins.modifyPluginData(pluginData);
+      PluginData.modify(pluginData);
       return false;
     }
 
-    StoredPlugins.removePluginData(pluginName);
+    PluginData.remove(pluginName);
     new Log(sender, state, "pluginDelete").setPluginName(pluginName).log();
     return true;
 

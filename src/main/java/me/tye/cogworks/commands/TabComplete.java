@@ -1,6 +1,5 @@
 package me.tye.cogworks.commands;
 
-import me.tye.cogworks.util.StoredPlugins;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
@@ -62,7 +61,7 @@ public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Comman
       ArrayList<String> plugins = new ArrayList<>();
 
       try {
-        for (PluginData data : StoredPlugins.readPluginData()) {
+        for (PluginData data : PluginData.read()) {
           if (data.isDeletePending() || Arrays.stream(args).toList().contains(data.getName())) {
             continue;
           }
