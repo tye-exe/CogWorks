@@ -6,7 +6,7 @@ import me.tye.cogworks.operationHandlers.PluginBrowse;
 import me.tye.cogworks.operationHandlers.PluginSearch;
 import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
+import me.tye.cogworks.util.customObjects.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;

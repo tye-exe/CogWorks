@@ -7,7 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.ModrinthSearch;
-import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
+import me.tye.cogworks.util.customObjects.PluginData;
 import me.tye.cogworks.util.customObjects.exceptions.ModrinthAPIException;
 import me.tye.cogworks.util.customObjects.exceptions.NoSuchPluginException;
 import org.apache.commons.io.FileUtils;

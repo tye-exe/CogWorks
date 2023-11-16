@@ -1,10 +1,10 @@
-package me.tye.cogworks.util.customObjects.dataClasses;
+package me.tye.cogworks.util.customObjects;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static me.tye.cogworks.util.customObjects.dataClasses.PluginData.read;
+import static me.tye.cogworks.util.customObjects.PluginData.read;
 
 public class DependencyInfo {
 

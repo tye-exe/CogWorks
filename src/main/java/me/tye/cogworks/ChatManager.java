@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 
-import static me.tye.cogworks.FileGui.position;
+import static me.tye.cogworks.fileInteractions.FileGui.position;
 import static me.tye.cogworks.util.Util.clearResponse;
 
 public class ChatManager implements Listener {

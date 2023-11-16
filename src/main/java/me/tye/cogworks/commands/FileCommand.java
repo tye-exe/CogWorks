@@ -1,14 +1,11 @@
 package me.tye.cogworks.commands;
 
-import me.tye.cogworks.FileGui;
-import me.tye.cogworks.util.customObjects.ChatParams;
-import me.tye.cogworks.util.customObjects.FileData;
-import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.PathHolder;
-import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
+import me.tye.cogworks.fileInteractions.FileGui;
+import me.tye.cogworks.util.customObjects.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,7 +13,8 @@ import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
-import static me.tye.cogworks.FileGui.*;
+import static me.tye.cogworks.fileInteractions.FileGui.*;
+import static me.tye.cogworks.fileInteractions.GuiGuide.display;
 import static me.tye.cogworks.util.Util.setResponse;
 
 
@@ -44,9 +42,26 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
       open(player);
 
     } else {
-      new Log(sender, "terminal.noGui").log();
+      new Log(sender, "terminal.noGuiTerminal").log();
       chatBasedExplorer(sender);
     }
+
+    return true;
+  }
+
+  if (args.length == 1 && args[0].equals("gui_guide")) {
+    if (sender.hasPermission("cogworks.file.nav")) {
+      return true;
+    }
+
+    if (sender instanceof ConsoleCommandSender) {
+      new Log(sender, "terminal.noGui").log();
+      return true;
+    }
+
+    Player player = ((Player) sender).getPlayer();
+
+    display(player);
 
     return true;
   }

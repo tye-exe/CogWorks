@@ -1,11 +1,11 @@
-package me.tye.cogworks;
+package me.tye.cogworks.fileInteractions;
 
+import me.tye.cogworks.CogWorks;
 import me.tye.cogworks.util.Util;
 import me.tye.cogworks.util.customObjects.FileData;
 import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.PathHolder;
 import net.wesjd.anvilgui.AnvilGUI;
-import org.apache.commons.io.FileUtils;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

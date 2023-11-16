@@ -196,7 +196,8 @@ terminal:
   WIP: "§cWARNING: THIS A VERY MUCH A WIP AND NOT YET IMPLEMENTED"
   blank: ""
   path: "§9{filePath} §6$"
-  noGui: "§eThis command is only available to online players, being redirected to terminal."
+  noGui: "§eThis command is only available to online players."
+  noGuiTerminal: "§eThis command is only available to online players, being redirected to terminal."
 
   #Don't translate anything before the "-" in this section.
   #E.G "§9help - §a{translated text}."

@@ -1,8 +1,7 @@
-package me.tye.cogworks.util.customObjects.dataClasses;
+package me.tye.cogworks.util.customObjects;
 
 import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
-import me.tye.cogworks.util.customObjects.Log;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.Nullable;
 

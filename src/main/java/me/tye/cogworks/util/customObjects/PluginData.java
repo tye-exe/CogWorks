@@ -1,4 +1,4 @@
-package me.tye.cogworks.util.customObjects.dataClasses;
+package me.tye.cogworks.util.customObjects;
 
 import com.google.common.io.Files;
 import com.google.gson.Gson;
@@ -7,7 +7,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import me.tye.cogworks.util.Util;
-import me.tye.cogworks.util.customObjects.Log;
 import me.tye.cogworks.util.customObjects.exceptions.NoSuchPluginException;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.Nullable;

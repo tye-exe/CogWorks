@@ -3,10 +3,12 @@ package me.tye.cogworks;
 import me.tye.cogworks.commands.FileCommand;
 import me.tye.cogworks.commands.PluginCommand;
 import me.tye.cogworks.commands.TabComplete;
+import me.tye.cogworks.fileInteractions.FileGui;
+import me.tye.cogworks.fileInteractions.GuiGuide;
 import me.tye.cogworks.util.Util;
+import me.tye.cogworks.util.customObjects.DeletePending;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
-import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
+import me.tye.cogworks.util.customObjects.PluginData;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -32,7 +34,7 @@ import java.util.Objects;
 import java.util.logging.Level;
 
 import static me.tye.cogworks.util.Util.*;
-import static me.tye.cogworks.util.customObjects.dataClasses.PluginData.read;
+import static me.tye.cogworks.util.customObjects.PluginData.read;
 
 public final class CogWorks extends JavaPlugin {
 
@@ -99,6 +101,7 @@ public void onEnable() {
   //Listeners
   getServer().getPluginManager().registerEvents(new ChatManager(), this);
   getServer().getPluginManager().registerEvents(new FileGui(), this);
+  getServer().getPluginManager().registerEvents(new GuiGuide(), this);
   getServer().getPluginManager().registerEvents(new SendErrorSummary(), this);
 
   deletePending();

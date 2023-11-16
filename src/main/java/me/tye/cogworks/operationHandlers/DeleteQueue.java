@@ -2,9 +2,9 @@ package me.tye.cogworks.operationHandlers;
 
 import me.tye.cogworks.util.Plugins;
 import me.tye.cogworks.util.customObjects.ChatParams;
+import me.tye.cogworks.util.customObjects.DependencyInfo;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.dataClasses.DependencyInfo;
-import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
+import me.tye.cogworks.util.customObjects.PluginData;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
