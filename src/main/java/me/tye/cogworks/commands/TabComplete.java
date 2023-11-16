@@ -1,9 +1,9 @@
 package me.tye.cogworks.commands;
 
 import me.tye.cogworks.util.Util;
+import me.tye.cogworks.util.customObjects.DeletePending;
 import me.tye.cogworks.util.customObjects.Log;
-import me.tye.cogworks.util.customObjects.dataClasses.DeletePending;
-import me.tye.cogworks.util.customObjects.dataClasses.PluginData;
+import me.tye.cogworks.util.customObjects.PluginData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
